@@ -1,65 +1,208 @@
-import Image from "next/image";
+import Link from 'next/link';
+import PublicNav from './components/PublicNav';
+import Footer from './components/Footer';
+import FlowerLogo from './components/FlowerLogo';
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <>
+      <PublicNav />
+
+      {/* ===== HERO ===== */}
+      <section className="hero hero-grid">
+        <div className="hero-copy">
+          <div className="eyebrow">Workforce solutions across borders</div>
+          <h1>
+            The right people, placed <em>precisely</em> where the work is.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="lede">
+            For over three decades, Excelente Solutions has connected vetted candidates with employers
+            across Russia, Greece, Poland and Romania — handling recruitment, documentation and visa
+            processing end to end.
+          </p>
+          <div className="cta">
+            <Link href="/register">
+              <button className="btn btn-gold">Get started</button>
+            </Link>
+            <Link href="/login">
+              <button className="btn btn-ghost">Employer login</button>
+            </Link>
+          </div>
+          <div className="since">
+            <div>
+              <div className="n">34</div>
+              <div className="t">Years placing workforce</div>
+            </div>
+            <div>
+              <div className="n">12k+</div>
+              <div className="t">Candidates placed</div>
+            </div>
+            <div>
+              <div className="n">9</div>
+              <div className="t">Destination countries</div>
+            </div>
+            <div>
+              <div className="n">100%</div>
+              <div className="t">Legal &amp; compliant</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="hero-visual">
+          <div className="hv-card">
+            <FlowerLogo size={172} className="hv-logo" />
+            <div className="hv-name">Excelente Solutions</div>
+            <div className="hv-sub">Recruitment · Since 1991</div>
+          </div>
+          <div className="hv-chip hv-c1">
+            <span className="d" style={{ background: 'var(--blue)' }} />
+            Welders · Russia
+          </div>
+          <div className="hv-chip hv-c2">
+            <span className="d" style={{ background: 'var(--green)' }} />
+            Drivers · Poland
+          </div>
+          <div className="hv-chip hv-c3">
+            <span className="d" style={{ background: 'var(--amber)' }} />
+            Chefs · Greece
+          </div>
+        </div>
+      </section>
+
+      {/* ===== HOW IT WORKS ===== */}
+      <section className="band" id="how-it-works">
+        <div className="band-in">
+          <h2>How it works</h2>
+          <p className="sub">
+            One transparent pipeline from requirement to approved visa — every party sees exactly what
+            they need, and nothing they don't.
+          </p>
+          <div className="steps">
+            <div className="step">
+              <div className="num">01</div>
+              <h4>Requirement</h4>
+              <p>Employers post job offers by country, position and headcount.</p>
+            </div>
+            <div className="step">
+              <div className="num">02</div>
+              <h4>Sourcing</h4>
+              <p>Agents register and document vetted candidates for each market.</p>
+            </div>
+            <div className="step">
+              <div className="num">03</div>
+              <h4>Selection</h4>
+              <p>Employers review profiles and reserve candidates instantly.</p>
+            </div>
+            <div className="step">
+              <div className="num">04</div>
+              <h4>Visa &amp; travel</h4>
+              <p>In-country lawyers process documents through to approval.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FEATURES ===== */}
+      <div className="feats">
+        <div className="feat">
+          <div className="ic">⬡</div>
+          <h3>Affordable staffing</h3>
+          <p>
+            Transparent, flat-fee recruitment with no hidden margins — predictable cost per placement,
+            agreed up front.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="feat">
+          <div className="ic">⚖</div>
+          <h3>Legal &amp; compliant</h3>
+          <p>
+            Country-licensed lawyers handle every visa application, so documentation is correct and
+            defensible from day one.
+          </p>
         </div>
-      </main>
-    </div>
+        <div className="feat">
+          <div className="ic">✦</div>
+          <h3>Why us</h3>
+          <p>
+            Three decades of placements, dedicated salespeople per employer, and a single system
+            tracking every candidate&apos;s status.
+          </p>
+        </div>
+      </div>
+
+      {/* ===== WHY ===== */}
+      <section className="why" id="why-us">
+        <div className="why-in">
+          <div>
+            <div className="eyebrow">Why Excelente</div>
+            <h2>Built around trust, not paperwork.</h2>
+          </div>
+          <div className="ptlist">
+            <div className="pt">
+              <span className="dot">✓</span>
+              <div>
+                <strong>Country-locked visibility</strong>
+                <span>Employers only ever see candidates cleared for their own market.</span>
+              </div>
+            </div>
+            <div className="pt">
+              <span className="dot">✓</span>
+              <div>
+                <strong>Contact details stay private</strong>
+                <span>Personal contact information is visible to administrators only.</span>
+              </div>
+            </div>
+            <div className="pt">
+              <span className="dot">✓</span>
+              <div>
+                <strong>One candidate, one assignment</strong>
+                <span>Selected candidates are reserved instantly and hidden from others.</span>
+              </div>
+            </div>
+            <div className="pt">
+              <span className="dot">✓</span>
+              <div>
+                <strong>Documented end to end</strong>
+                <span>CVs, passports, health certificates and visas tracked in one place.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== CONTACT ===== */}
+      <section className="contact" id="contact">
+        <div>
+          <div className="eyebrow">Get in touch</div>
+          <h2>Let&apos;s staff your next project.</h2>
+          <p className="lede">
+            Tell us your country and headcount — we&apos;ll match candidates within days.
+          </p>
+          <Link href="/register">
+            <button className="btn btn-gold">Create an account</button>
+          </Link>
+        </div>
+        <div className="rows">
+          <div className="row">
+            <div className="k">Office</div>
+            <div className="v">Excelente Solutions, Athens · Warsaw · Moscow</div>
+          </div>
+          <div className="row">
+            <div className="k">Email</div>
+            <div className="v">hello@excelente-solutions.com</div>
+          </div>
+          <div className="row">
+            <div className="k">Phone</div>
+            <div className="v">+30 21 0000 1991</div>
+          </div>
+          <div className="row">
+            <div className="k">Hours</div>
+            <div className="v">Mon–Fri · 09:00–18:00 EET</div>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+    </>
   );
 }
