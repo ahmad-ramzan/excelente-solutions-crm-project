@@ -49,17 +49,17 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
         ],
       },
       {
-        title: 'My Work',
+        title: 'Pipeline',
         items: [
-          { icon: '🏢', label: 'My Employers', href: '/dashboard/salesperson/employers' },
-          { icon: '📋', label: 'Orders', href: '/dashboard/salesperson/orders', badge: '3' },
-          { icon: '💰', label: 'Commission', href: '/dashboard/salesperson/commission' },
+          { icon: '🏢', label: 'Employers', href: '/dashboard/salesperson/employers' },
+          { icon: '📋', label: 'Job Offers', href: '/dashboard/salesperson/orders' },
+          { icon: '+', label: 'New Job Offer', href: '/dashboard/salesperson/orders/new' },
         ],
       },
       {
-        title: 'Tools',
+        title: 'Account',
         items: [
-          { icon: '🔔', label: 'Notifications', href: '/dashboard/salesperson/notifications', badge: '2' },
+          { icon: '🔔', label: 'Notifications', href: '/dashboard/salesperson/notifications' },
         ],
       },
     ],
@@ -73,17 +73,16 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
         ],
       },
       {
-        title: 'My Candidates',
+        title: 'Candidates',
         items: [
-          { icon: '👥', label: 'Candidates', href: '/dashboard/agent/candidates', badge: '18' },
-          { icon: '➕', label: 'Add Candidate', href: '/dashboard/agent/add' },
-          { icon: '📄', label: 'Documents', href: '/dashboard/agent/documents' },
+          { icon: '🪪', label: 'My candidates', href: '/dashboard/agent/candidates', badge: '6' },
+          { icon: '+', label: 'Add candidate', href: '/dashboard/agent/candidates/new' },
         ],
       },
       {
-        title: 'Updates',
+        title: 'Account',
         items: [
-          { icon: '🔔', label: 'Notifications', href: '/dashboard/agent/notifications', badge: '3' },
+          { icon: '🔔', label: 'Notifications', href: '/dashboard/agent/notifications', badge: '2' },
         ],
       },
     ],
@@ -97,17 +96,18 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
         ],
       },
       {
-        title: 'Hiring',
+        title: 'Recruit',
         items: [
-          { icon: '👥', label: 'Browse Candidates', href: '/dashboard/employer/browse' },
-          { icon: '📋', label: 'My Orders', href: '/dashboard/employer/orders' },
-          { icon: '📍', label: 'Positions', href: '/dashboard/employer/positions' },
+          { icon: '🔍', label: 'Browse candidates', href: '/dashboard/employer/candidates' },
+          { icon: '📋', label: 'My Job Offers', href: '/dashboard/employer/orders' },
+          { icon: '+', label: 'New Job Offer', href: '/dashboard/employer/orders/new' },
+          { icon: '✦', label: 'My selections', href: '/dashboard/employer/selections' },
         ],
       },
       {
         title: 'Account',
         items: [
-          { icon: '🔔', label: 'Notifications', href: '/dashboard/employer/notifications', badge: '1' },
+          { icon: '🔔', label: 'Notifications', href: '/dashboard/employer/notifications' },
         ],
       },
     ],
@@ -115,23 +115,21 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
   lawyer: {
     groups: [
       {
-        title: 'Overview',
+        title: 'OVERVIEW',
         items: [
           { icon: '⊞', label: 'Dashboard', href: '/dashboard/lawyer' },
         ],
       },
       {
-        title: 'Cases',
+        title: 'CASEWORK',
         items: [
-          { icon: '🛂', label: 'Visa Pipeline', href: '/dashboard/lawyer/visas', badge: '6' },
-          { icon: '📄', label: 'Documents', href: '/dashboard/lawyer/documents' },
-          { icon: '📋', label: 'Applications', href: '/dashboard/lawyer/applications' },
+          { icon: '⚖️', label: 'Assigned cases', href: '/dashboard/lawyer/cases', badge: '3' },
         ],
       },
       {
-        title: 'Updates',
+        title: 'ACCOUNT',
         items: [
-          { icon: '🔔', label: 'Notifications', href: '/dashboard/lawyer/notifications' },
+          { icon: '🔔', label: 'Notifications', href: '/dashboard/lawyer/notifications', badge: '1' },
         ],
       },
     ],

@@ -10,153 +10,118 @@ export default function SalespersonDashboard() {
       <div className="main">
         <AppTopbar section="Dashboard" />
         <div className="wrap">
-          <div className="page-head">
+          <div className="page-head" style={{ marginBottom: '32px' }}>
             <div>
-              <h1>Salesperson Dashboard</h1>
-              <p className="ph-sub">Your employers, open orders and commission pipeline.</p>
-            </div>
-            <div className="ph-act">
-              <button className="btn btn-ghost btn-sm">New Employer</button>
-              <button className="btn btn-gold btn-sm">+ New Order</button>
+              <h1>Sales overview</h1>
+              <p className="ph-sub">Your employers, their orders and how recruitment is tracking.</p>
             </div>
           </div>
 
-          <div className="stats">
-            <div className="stat accent">
-              <div className="lab">My Employers</div>
-              <div className="v">4</div>
-              <div className="ft">↑ 1 new this month</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '40px' }}>
+            {/* My employers */}
+            <div className="stat" style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', border: 'none', color: '#fff' }}>
+              <div className="lab" style={{ color: 'rgba(255,255,255,0.9)' }}>My employers</div>
+              <div className="v" style={{ color: '#fff' }}>3</div>
             </div>
+            {/* Active Job Offers */}
             <div className="stat">
-              <div className="lab">Open Orders</div>
-              <div className="v">2</div>
-              <div className="ft" style={{ color: 'var(--amber)' }}>38 slots open</div>
+              <div className="lab">Active Job Offers</div>
+              <div className="v">3</div>
             </div>
+            {/* Open positions */}
             <div className="stat">
-              <div className="lab">Placements</div>
-              <div className="v">50</div>
-              <div className="ft">↑ 8 this quarter</div>
+              <div className="lab">Open positions</div>
+              <div className="v">3</div>
             </div>
+            {/* Staff needed */}
             <div className="stat">
-              <div className="lab">Commission YTD</div>
-              <div className="v">€12k</div>
-              <div className="ft">↑ 15% vs last year</div>
+              <div className="lab">Staff needed</div>
+              <div className="v">112</div>
+            </div>
+            {/* Staff selected */}
+            <div className="stat">
+              <div className="lab">Staff selected</div>
+              <div className="v">55</div>
+              <div className="ft" style={{ color: 'var(--green)' }}>49% filled</div>
             </div>
           </div>
 
           <div className="grid-2">
-            {/* Employer accounts */}
+            {/* Job Offers progress */}
             <div className="card">
               <div className="card-h">
-                <h3>My Employers</h3>
-                <span className="lnk">View all →</span>
+                <h3 style={{ fontSize: '18px', fontWeight: 600 }}>Job Offers progress</h3>
+                <span className="lnk" style={{ color: 'var(--brand)', fontWeight: 600 }}>All orders</span>
               </div>
-              <div className="card-b">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Employer</th>
-                      <th>Country</th>
-                      <th>Orders</th>
-                      <th>Placements</th>
-                    </tr>
-                  </thead>
+              <div className="card-b" style={{ padding: '8px 22px 16px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <tbody>
-                    {employers.map((e) => (
-                      <tr key={e.id}>
-                        <td>
-                          <div className="cell-name">
-                            <div className="av-sm">{e.initials}</div>
-                            <div>
-                              <div className="nm">{e.name}</div>
-                              <div className="meta">{e.contact}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span className="flag">
-                            <span className="fc">{e.country.slice(0, 2).toUpperCase()}</span>
-                            {e.country}
-                          </span>
-                        </td>
-                        <td className="mono" style={{ fontWeight: 600 }}>{e.orders}</td>
-                        <td className="mono" style={{ fontWeight: 600, color: 'var(--green)' }}>
-                          {e.placements}
-                        </td>
-                      </tr>
-                    ))}
+                    {orders.slice(0, 4).map((o) => {
+                      const progress = Math.round((o.filled / o.headcount) * 100);
+                      const isComplete = o.filled >= o.headcount;
+                      const empShort = o.employer.split(' ')[0];
+                      return (
+                        <tr key={o.id}>
+                          <td style={{ padding: '12px 0', color: 'var(--slate)', width: '140px' }}>
+                            {empShort} · {o.role}
+                          </td>
+                          <td style={{ padding: '12px 16px' }}>
+                             <div style={{ height: '8px', background: 'var(--line-2)', borderRadius: '999px', overflow: 'hidden', width: '100%' }}>
+                               <div style={{ width: `${progress}%`, height: '100%', background: isComplete ? 'var(--green)' : 'var(--brand)', borderRadius: '999px' }}></div>
+                             </div>
+                          </td>
+                          <td style={{ padding: '12px 0', textAlign: 'right', fontWeight: 600, color: 'var(--ink)', width: '50px' }}>
+                            {o.filled}/{o.headcount}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
 
-            {/* Open orders */}
-            <div className="split-col">
-              <div className="card">
-                <div className="card-h">
-                  <h3>Open Orders</h3>
-                  <span className="lnk">View all →</span>
-                </div>
-                <div className="card-b">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Order</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {orders.map((o) => (
-                        <tr key={o.id}>
-                          <td>
-                            <div className="nm" style={{ fontWeight: 600 }}>{o.employer}</div>
-                            <div className="meta" style={{ fontSize: 11.5, color: 'var(--muted)' }}>
-                              {o.country} · {o.id}
+            {/* My employers */}
+            <div className="card">
+              <div className="card-h">
+                <h3 style={{ fontSize: '18px', fontWeight: 600 }}>My employers</h3>
+                <span className="lnk" style={{ color: 'var(--brand)', fontWeight: 600 }}>Manage</span>
+              </div>
+              <div className="card-b" style={{ padding: '0 22px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <tbody>
+                    {employers.map((e, i) => {
+                      const countryCodes: Record<string, string> = {
+                        'Russia': 'RU', 'Greece': 'GR', 'Poland': 'PL', 'Romania': 'RO'
+                      };
+                      const cCode = countryCodes[e.country] || 'XX';
+                      const totalNeeded = e.orders * 25 + (i * 5); // Mock total for 'staffed' fraction
+                      return (
+                        <tr key={e.id} style={{ borderBottom: i === employers.length - 1 ? 'none' : '1px solid var(--line)' }}>
+                          <td style={{ padding: '16px 0' }}>
+                            <div className="cell-name">
+                              <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)', width: '38px', height: '38px', borderRadius: '10px', fontSize: '14px' }}>
+                                {e.initials}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: 600, color: 'var(--ink)', marginBottom: '4px' }}>{e.name}</div>
+                                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--slate)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  {e.country} <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 5px', fontSize: '10px', border: 'none', margin: 0 }}>{cCode}</span>
+                                </div>
+                              </div>
                             </div>
                           </td>
-                          <td>
-                            {o.role}
-                            <div
-                              className="mono"
-                              style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}
-                            >
-                              {o.filled}/{o.headcount} filled
+                          <td style={{ padding: '16px 0', textAlign: 'right' }}>
+                            <div style={{ color: 'var(--slate)', fontSize: '13.5px', marginBottom: '2px' }}>
+                              <span style={{ color: 'var(--ink)' }}>{e.placements}/{totalNeeded}</span>
                             </div>
-                          </td>
-                          <td>
-                            <StatusBadge status={o.status} />
+                            <div style={{ color: 'var(--slate)', fontSize: '13px' }}>staffed</div>
                           </td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Commission breakdown */}
-              <div className="card">
-                <div className="card-h">
-                  <h3>Commission Pipeline</h3>
-                </div>
-                <div className="card-pad">
-                  <div className="bars">
-                    {[
-                      { label: 'Jan–Mar', pct: 60, n: '€3.2k' },
-                      { label: 'Apr–Jun', pct: 80, n: '€4.8k' },
-                      { label: 'Jul–Sep', pct: 35, n: '€2.1k' },
-                      { label: 'Oct–Dec', pct: 20, n: '€1.9k' },
-                    ].map((b) => (
-                      <div key={b.label} className="barrow">
-                        <div className="bl">{b.label}</div>
-                        <div className="bt">
-                          <div className="bf" style={{ width: `${b.pct}%` }} />
-                        </div>
-                        <div className="bn" style={{ width: 46, fontSize: 11 }}>{b.n}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
