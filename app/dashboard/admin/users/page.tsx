@@ -1,46 +1,34 @@
 import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import StatusBadge from '../../../components/StatusBadge';
+import { createClient } from '@/utils/supabase/server';
+import Link from 'next/link';
 
-export default function UsersPage() {
-  const usersData = [
-    {
-      id: '1',
-      name: 'Daniel Roy',
-      initials: 'DR',
-      role: 'Salesperson',
-      country: null,
-      contact: 'daniel@exc.com',
-      status: 'open',
-    },
-    {
-      id: '2',
-      name: 'Amir Khan',
-      initials: 'AK',
-      role: 'Agent',
-      country: null,
-      contact: 'amir@exc.com',
-      status: 'open',
-    },
-    {
-      id: '3',
-      name: 'Sana Malik',
-      initials: 'SM',
-      role: 'Agent',
-      country: null,
-      contact: 'sana@exc.com',
-      status: 'open',
-    },
-    {
-      id: '4',
-      name: 'Sergei Volkov',
-      initials: 'SV',
-      role: 'Employer',
-      country: { name: 'Russia', code: 'RU' },
-      contact: 'sergei@abc.ru',
-      status: 'open',
-    },
-  ];
+export default async function UsersPage({ searchParams }: { searchParams: Promise<{ role?: string }> }) {
+  const supabase = await createClient();
+  const params = await searchParams;
+  const currentRole = params.role || 'all';
+
+  let query = supabase
+    .from('profiles')
+    .select('id, full_name, role, email, phone, status, countries(name, code)')
+    .order('created_at', { ascending: false });
+
+  if (currentRole !== 'all') {
+    query = query.eq('role', currentRole);
+  }
+
+  const { data: dbUsers } = await query;
+
+  const users = (dbUsers || []).map(u => ({
+    id: u.id,
+    name: u.full_name,
+    initials: u.full_name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase(),
+    role: u.role.charAt(0).toUpperCase() + u.role.slice(1),
+    country: u.countries ? { name: (u.countries as any).name, code: (u.countries as any).code } : null,
+    contact: u.email,
+    status: u.status
+  }));
 
   return (
     <>
@@ -59,11 +47,25 @@ export default function UsersPage() {
           </div>
 
           <div style={{ display: 'flex', gap: '32px', borderBottom: '1px solid var(--line-2)', marginBottom: '24px', fontSize: '14.5px' }}>
-            <div style={{ paddingBottom: '12px', borderBottom: '2px solid var(--gold)', color: 'var(--ink)', fontWeight: 600, cursor: 'pointer' }}>All</div>
-            <div style={{ paddingBottom: '12px', color: 'var(--slate)', fontWeight: 600, cursor: 'pointer' }}>Salespersons</div>
-            <div style={{ paddingBottom: '12px', color: 'var(--slate)', fontWeight: 600, cursor: 'pointer' }}>Agents</div>
-            <div style={{ paddingBottom: '12px', color: 'var(--slate)', fontWeight: 600, cursor: 'pointer' }}>Employers</div>
-            <div style={{ paddingBottom: '12px', color: 'var(--slate)', fontWeight: 600, cursor: 'pointer' }}>Lawyers</div>
+            {[
+              { label: 'All', val: 'all' },
+              { label: 'Salespersons', val: 'salesperson' },
+              { label: 'Agents', val: 'agent' },
+              { label: 'Employers', val: 'employer' },
+              { label: 'Lawyers', val: 'lawyer' }
+            ].map(t => (
+              <Link key={t.val} href={`/dashboard/admin/users?role=${t.val}`}>
+                <div style={{ 
+                  paddingBottom: '12px', 
+                  borderBottom: currentRole === t.val ? '2px solid var(--gold)' : 'none', 
+                  color: currentRole === t.val ? 'var(--ink)' : 'var(--slate)', 
+                  fontWeight: 600, 
+                  cursor: 'pointer' 
+                }}>
+                  {t.label}
+                </div>
+              </Link>
+            ))}
           </div>
 
           <div className="card">
@@ -80,7 +82,7 @@ export default function UsersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {usersData.map((u) => (
+                  {users.map((u) => (
                     <tr key={u.id}>
                       <td>
                         <div className="cell-name">
@@ -113,6 +115,11 @@ export default function UsersPage() {
                       </td>
                     </tr>
                   ))}
+                  {users.length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '20px', color: 'var(--muted)' }}>No users found.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

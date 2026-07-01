@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Logo from './Logo';
 import { roleConfig, type Role } from '../lib/mock-data';
+import { useEffect, useState } from 'react';
+import { createClient } from '@/utils/supabase/client';
 
 interface NavItem {
   icon: string;
@@ -32,10 +34,9 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
       {
         title: 'Operations',
         items: [
-          { icon: '👥', label: 'Candidates', href: '/dashboard/admin/candidates', badge: '89' },
+          { icon: '👥', label: 'Candidates', href: '/dashboard/admin/candidates' },
           { icon: '📄', label: 'Job Offers', href: '/dashboard/admin/offers' },
           { icon: '🛂', label: 'Visa processes', href: '/dashboard/admin/visas' },
-          { icon: '🔔', label: 'Notifications', href: '/dashboard/admin/notifications' },
         ],
       },
     ],
@@ -53,13 +54,6 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
         items: [
           { icon: '🏢', label: 'Employers', href: '/dashboard/salesperson/employers' },
           { icon: '📋', label: 'Job Offers', href: '/dashboard/salesperson/orders' },
-          { icon: '+', label: 'New Job Offer', href: '/dashboard/salesperson/orders/new' },
-        ],
-      },
-      {
-        title: 'Account',
-        items: [
-          { icon: '🔔', label: 'Notifications', href: '/dashboard/salesperson/notifications' },
         ],
       },
     ],
@@ -75,14 +69,8 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
       {
         title: 'Candidates',
         items: [
-          { icon: '🪪', label: 'My candidates', href: '/dashboard/agent/candidates', badge: '6' },
+          { icon: '🪪', label: 'My candidates', href: '/dashboard/agent/candidates' },
           { icon: '+', label: 'Add candidate', href: '/dashboard/agent/candidates/new' },
-        ],
-      },
-      {
-        title: 'Account',
-        items: [
-          { icon: '🔔', label: 'Notifications', href: '/dashboard/agent/notifications', badge: '2' },
         ],
       },
     ],
@@ -99,15 +87,9 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
         title: 'Recruit',
         items: [
           { icon: '🔍', label: 'Browse candidates', href: '/dashboard/employer/candidates' },
-          { icon: '📋', label: 'My Job Offers', href: '/dashboard/employer/orders' },
-          { icon: '+', label: 'New Job Offer', href: '/dashboard/employer/orders/new' },
+          { icon: '📋', label: 'My Job Offers', href: '/dashboard/employer/offers' },
+          { icon: '+', label: 'New Job Offer', href: '/dashboard/employer/offers/new' },
           { icon: '✦', label: 'My selections', href: '/dashboard/employer/selections' },
-        ],
-      },
-      {
-        title: 'Account',
-        items: [
-          { icon: '🔔', label: 'Notifications', href: '/dashboard/employer/notifications' },
         ],
       },
     ],
@@ -123,13 +105,7 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
       {
         title: 'CASEWORK',
         items: [
-          { icon: '⚖️', label: 'Assigned cases', href: '/dashboard/lawyer/cases', badge: '3' },
-        ],
-      },
-      {
-        title: 'ACCOUNT',
-        items: [
-          { icon: '🔔', label: 'Notifications', href: '/dashboard/lawyer/notifications', badge: '1' },
+          { icon: '⚖️', label: 'Assigned cases', href: '/dashboard/lawyer/cases' },
         ],
       },
     ],
@@ -138,8 +114,32 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
 
 export default function AppSidebar({ role }: { role: Role }) {
   const pathname = usePathname();
+  const router = useRouter();
   const config = roleConfig[role];
   const { groups } = navByRole[role];
+
+  const [userName, setUserName] = useState(config.user);
+  const [userInitials, setUserInitials] = useState(config.initials);
+
+  useEffect(() => {
+    async function loadUser() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const fullName = user.user_metadata?.full_name || user.email;
+        setUserName(fullName);
+        setUserInitials((fullName.substring(0,2) || 'XX').toUpperCase());
+      }
+    }
+    loadUser();
+  }, []);
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
 
   return (
     <aside className="side">
@@ -171,30 +171,41 @@ export default function AppSidebar({ role }: { role: Role }) {
         </Link>
       </div>
 
-      {groups.map((group) => (
-        <div key={group.title}>
-          <div className="nav-grp">{group.title}</div>
-          {group.items.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link key={item.href} href={item.href}>
-                <button className={`nav ${isActive ? 'on' : ''}`}>
-                  <span className="ic">{item.icon}</span>
-                  {item.label}
-                  {item.badge && <span className="badge">{item.badge}</span>}
-                </button>
-              </Link>
-            );
-          })}
-        </div>
-      ))}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {groups.map((group) => (
+          <div key={group.title}>
+            <div className="nav-grp">{group.title}</div>
+            {group.items.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link key={item.href} href={item.href}>
+                  <button className={`nav ${isActive ? 'on' : ''}`}>
+                    <span className="ic">{item.icon}</span>
+                    {item.label}
+                    {item.badge && <span className="badge">{item.badge}</span>}
+                  </button>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
+      </div>
 
-      <div className="who">
-        <div className="av">{config.initials}</div>
-        <div>
-          <div className="nm">{config.user}</div>
-          <div className="rl">{config.role}</div>
+      <div className="who" style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="av">{userInitials}</div>
+          <div>
+            <div className="nm">{userName}</div>
+            <div className="rl">{config.role}</div>
+          </div>
         </div>
+        <button 
+          onClick={handleSignOut}
+          style={{ background: 'transparent', border: 'none', color: 'var(--slate)', cursor: 'pointer', padding: '4px' }}
+          title="Sign out"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </button>
       </div>
     </aside>
   );

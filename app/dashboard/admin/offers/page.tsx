@@ -1,10 +1,47 @@
 import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
-import StatusBadge from '../../../components/StatusBadge';
-import { orders } from '../../../lib/mock-data';
+import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 
-export default function JobOffersPage() {
+export default async function JobOffersPage() {
+  const supabase = await createClient();
+
+  const { data: offers } = await supabase
+    .from('job_offers')
+    .select(`
+      id,
+      public_code,
+      title,
+      staff_needed,
+      start_date,
+      end_date,
+      status,
+      employers (name),
+      countries (name, code),
+      positions (name)
+    `)
+    .order('created_at', { ascending: false });
+
+  // Get filled counts
+  const offerIds = (offers || []).map((o: any) => o.id);
+  let filledMap: Record<string, number> = {};
+  if (offerIds.length > 0) {
+    const { data: selections } = await supabase
+      .from('job_offer_selections')
+      .select('job_offer_id')
+      .in('job_offer_id', offerIds);
+    
+    selections?.forEach(s => {
+      filledMap[s.job_offer_id] = (filledMap[s.job_offer_id] || 0) + 1;
+    });
+  }
+
+  const formatMonthYear = (d?: string) => {
+    if (!d) return '--';
+    const date = new Date(d);
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '\n');
+  };
+
   return (
     <>
       <AppSidebar role="admin" />
@@ -14,7 +51,7 @@ export default function JobOffersPage() {
           <div className="page-head">
             <div>
               <h1>Job Offers</h1>
-              <p className="ph-sub">{orders.length} recruitment requirements — click an offer to manage its position slots.</p>
+              <p className="ph-sub">{offers?.length || 0} recruitment requirements — click an offer to manage its position slots.</p>
             </div>
           </div>
 
@@ -35,56 +72,55 @@ export default function JobOffersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((o, i) => {
-                    const countryCodes: Record<string, string> = {
-                      'Russia': 'RU',
-                      'Greece': 'GR',
-                      'Poland': 'PL',
-                      'Romania': 'RO',
-                    };
-                    const cCode = countryCodes[o.country] || 'XX';
+                  {offers?.map((o) => {
+                    const countryName = (o.countries as any)?.name || 'Unknown';
+                    const countryCode = (o.countries as any)?.code || '--';
+                    const employerName = (o.employers as any)?.name || 'Unknown';
+                    const positionName = (o.positions as any)?.name || o.title || 'Unknown';
                     
-                    const progress = Math.round((o.filled / o.headcount) * 100);
-                    const isCompleted = o.filled >= o.headcount;
+                    const filled = filledMap[o.id] || 0;
+                    const headcount = o.staff_needed;
+                    const progress = headcount > 0 ? Math.round((filled / headcount) * 100) : 0;
+                    const isCompleted = filled >= headcount && headcount > 0;
                     
-                    // Mocks for dates based on screenshot format
-                    const startYear = 2026;
-                    const endYear = 2027;
-
                     return (
                       <tr key={o.id} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: '13px' }}>
                         <td style={{ padding: '16px 22px', borderTopLeftRadius: '13px', borderBottomLeftRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)', color: 'var(--slate)', fontFamily: 'var(--font-mono)' }}>
-                          JO-<br/>{118 + i}
+                          <div dangerouslySetInnerHTML={{ __html: o.public_code.replace('-', '-<br/>') }} />
                         </td>
                         <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--brand)', maxWidth: '140px' }}>
-                          {/* Wrap words in employer, matching screenshot */}
-                          {o.employer.split(' ').map((word, wIdx) => <div key={wIdx}>{word}</div>)}
+                          {employerName.split(' ').map((word: string, wIdx: number) => <div key={wIdx}>{word}</div>)}
                         </td>
                         <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
-                          <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{o.country}</span> <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{cCode}</span>
+                          <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{countryName}</span> <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{countryCode}</span>
                         </td>
                         <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--slate)' }}>
-                          {o.role}
+                          {positionName}
                         </td>
                         <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <div style={{ width: '60px', height: '6px', background: 'var(--line-2)', borderRadius: '4px', overflow: 'hidden' }}>
-                              <div style={{ width: `${progress}%`, height: '100%', background: isCompleted ? 'var(--green)' : 'var(--brand)', borderRadius: '4px' }}></div>
+                              <div style={{ width: `${Math.min(progress, 100)}%`, height: '100%', background: isCompleted ? 'var(--green)' : 'var(--brand)', borderRadius: '4px' }}></div>
                             </div>
-                            <span style={{ fontWeight: 600, fontSize: '12px' }}>{o.filled}/{o.headcount}</span>
+                            <span style={{ fontWeight: 600, fontSize: '12px' }}>{filled}/{headcount}</span>
                           </div>
                         </td>
                         <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--slate)', fontSize: '12px', lineHeight: '1.4' }}>
-                          01 Aug<br/>{startYear}<br/>→ {o.deadline ? '15 Mar' : '01 Feb'}<br/>{endYear}
+                          <span style={{ whiteSpace: 'pre-line' }}>{formatMonthYear(o.start_date)}</span>
+                          {o.end_date && (
+                            <>
+                              <br/>→ <span style={{ whiteSpace: 'pre-line' }}>{formatMonthYear(o.end_date)}</span>
+                            </>
+                          )}
                         </td>
                         <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
                           <span className="tag t-approve">• SIGNED</span>
                         </td>
                         <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
-                           <span className={`tag ${isCompleted ? 't-approve' : 't-open'}`}>• {isCompleted ? 'COMPLETED' : 'OPEN'}</span>
+                           <span className={`tag ${o.status === 'completed' || isCompleted ? 't-approve' : o.status === 'closed' ? 't-closed' : 't-open'}`}>• {(o.status === 'completed' || isCompleted) ? 'COMPLETED' : o.status.toUpperCase()}</span>
                         </td>
                         <td style={{ padding: '16px 22px', textAlign: 'right', borderTopRightRadius: '13px', borderBottomRightRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderRight: '1px solid var(--line)' }}>
-                          <Link href={`/dashboard/admin/offers/JO-${118 + i}`}>
+                          <Link href={`/dashboard/admin/offers/${o.public_code}`}>
                             <button className="ico-btn" style={{ fontSize: '14px', border: '1px solid var(--line-2)', borderRadius: '6px', width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', background: 'transparent', cursor: 'pointer' }}>
                               →
                             </button>
@@ -93,6 +129,11 @@ export default function JobOffersPage() {
                       </tr>
                     );
                   })}
+                  {offers?.length === 0 && (
+                    <tr>
+                      <td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>No job offers found.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

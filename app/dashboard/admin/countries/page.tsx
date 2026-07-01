@@ -1,41 +1,23 @@
 import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
+import { createClient } from '@/utils/supabase/server';
+import Link from 'next/link';
 
-export default function CountriesPage() {
-  const countryData = [
-    {
-      id: 'ru',
-      name: 'Russia',
-      code: 'RU',
-      employers: 3,
-      lawyers: 1,
-      candidates: 18,
-    },
-    {
-      id: 'gr',
-      name: 'Greece',
-      code: 'GR',
-      employers: 4,
-      lawyers: 1,
-      candidates: 24,
-    },
-    {
-      id: 'pl',
-      name: 'Poland',
-      code: 'PL',
-      employers: 2,
-      lawyers: 2,
-      candidates: 11,
-    },
-    {
-      id: 'ro',
-      name: 'Romania',
-      code: 'RO',
-      employers: 1,
-      lawyers: 1,
-      candidates: 7,
-    },
-  ];
+export default async function CountriesPage() {
+  const supabase = await createClient();
+
+  const { data: countries } = await supabase
+    .from('countries')
+    .select('*')
+    .order('name');
+
+  // We could fetch counts for employers/lawyers/candidates per country but for now we'll just show the country list
+  // Doing a complex join just for the counts might be overkill right now, but let's do a basic candidates count.
+  const { data: candCounts } = await supabase.from('candidates').select('country_id');
+  const countMap: Record<string, number> = {};
+  candCounts?.forEach(c => {
+    countMap[c.country_id] = (countMap[c.country_id] || 0) + 1;
+  });
 
   return (
     <>
@@ -49,7 +31,9 @@ export default function CountriesPage() {
               <p className="ph-sub">Destination markets candidates can be placed in.</p>
             </div>
             <div className="ph-act">
-              <button className="btn btn-gold">+ Add country</button>
+              <Link href="/dashboard/admin/countries/new">
+                <button className="btn btn-gold">+ Add country</button>
+              </Link>
             </div>
           </div>
 
@@ -60,19 +44,18 @@ export default function CountriesPage() {
                   <tr>
                     <th>Country</th>
                     <th>Code</th>
-                    <th>Employers</th>
-                    <th>Lawyers</th>
+                    <th>Status</th>
                     <th>Candidates</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {countryData.map((c) => (
+                  {countries?.map((c) => (
                     <tr key={c.id}>
                       <td>
                         <div className="cell-name">
                           <div className="av-sm">
-                            {c.id.toUpperCase()}
+                            {c.code.toUpperCase()}
                           </div>
                           <div className="nm">{c.name}</div>
                         </div>
@@ -80,11 +63,12 @@ export default function CountriesPage() {
                       <td className="mono" style={{ color: 'var(--slate)' }}>
                         {c.code}
                       </td>
-                      <td className="mono">{c.employers}</td>
-                      <td className="mono" style={{ color: 'var(--teal)' }}>
-                        {c.lawyers}
+                      <td>
+                        <span className="tag" style={{ background: c.is_active ? '#dcfce7' : 'var(--line-2)', color: c.is_active ? '#166534' : 'var(--slate)', border: 'none' }}>
+                          {c.is_active ? 'Active' : 'Inactive'}
+                        </span>
                       </td>
-                      <td className="mono">{c.candidates}</td>
+                      <td className="mono">{countMap[c.id] || 0}</td>
                       <td style={{ textAlign: 'right' }}>
                         <button className="btn btn-ghost" style={{ width: '32px', height: '32px', padding: 0, display: 'inline-flex', justifyContent: 'center' }}>
                           ✏️
@@ -92,6 +76,11 @@ export default function CountriesPage() {
                       </td>
                     </tr>
                   ))}
+                  {countries?.length === 0 && (
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: 'var(--muted)' }}>No countries found.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

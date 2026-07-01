@@ -2,24 +2,74 @@ import AppSidebar from '../../components/AppSidebar';
 import AppTopbar from '../../components/AppTopbar';
 import StatusBadge from '../../components/StatusBadge';
 import { createClient } from '@/utils/supabase/server';
+import { getDashboardStats } from '@/app/lib/queries';
+import Link from 'next/link';
 
 export default async function AdminDashboard() {
   const supabase = await createClient();
 
-  // Fetch Candidates
-  const { data: dbCandidates } = await supabase.from('candidates').select('id, first_name, last_name, nationality, status, countries(name), candidate_positions(position_name)').limit(5);
-  // Using static agents for mockup fidelity
-  const agents = ['Amir Khan', 'Amir Khan', 'Amir Khan', 'Amir Khan', 'Sami Malik'];
-  const candidates = (dbCandidates || []).map((c: any, index: number) => ({
+  const stats = await getDashboardStats(supabase, 'admin');
+
+  // Fetch Recent Candidates
+  const { data: dbCandidates } = await supabase
+    .from('candidate_public_view')
+    .select('*')
+    .limit(5)
+    .order('created_at', { ascending: false });
+
+  const candidates = (dbCandidates || []).map((c: any) => ({
     id: c.id,
+    public_code: c.public_code,
     initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
     name: `${c.first_name} ${c.last_name}`,
     nationality: c.nationality,
-    country: c.countries?.name || 'Unassigned',
-    trade: c.candidate_positions?.[0]?.position_name || 'N/A',
-    agent: agents[index % agents.length],
+    country: c.country_name || 'Unassigned',
+    countryCode: c.country_code || '--',
+    trade: c.positions?.[0] || 'N/A',
+    agent_id: c.agent_id, // we should probably join profiles for agent name, let's just show 'Agent' for now if not joined
+    agent: '',
     status: c.status
   }));
+
+  // Fetch Agent Names for candidates
+  const agentIds = Array.from(new Set(candidates.map(c => c.agent_id).filter(Boolean)));
+  let agentMap: Record<string, string> = {};
+  if (agentIds.length > 0) {
+    const { data: agents } = await supabase.from('profiles').select('id, full_name').in('id', agentIds);
+    agents?.forEach(a => agentMap[a.id] = a.full_name);
+  }
+  
+  // Assign agent name
+  candidates.forEach(c => c.agent = agentMap[c.agent_id] || 'N/A');
+
+  // Fetch Country Breakdown
+  const { data: countryData } = await supabase
+    .from('candidates')
+    .select('country_id, countries(name, code)');
+  
+  const countryCounts: Record<string, { count: number; name: string; code: string }> = {};
+  let totalCountryCands = 0;
+  
+  countryData?.forEach(c => {
+    if (c.countries) {
+      const cid = c.country_id;
+      if (!countryCounts[cid]) {
+        countryCounts[cid] = { count: 0, name: (c.countries as any).name, code: (c.countries as any).code };
+      }
+      countryCounts[cid].count++;
+      totalCountryCands++;
+    }
+  });
+
+  const topCountries = Object.values(countryCounts)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 4)
+    .map(c => ({
+      label: c.name,
+      code: c.code,
+      pct: totalCountryCands > 0 ? Math.round((c.count / totalCountryCands) * 100) : 0,
+      n: c.count.toString()
+    }));
 
   return (
     <>
@@ -34,32 +84,31 @@ export default async function AdminDashboard() {
             </div>
             <div className="ph-act">
               <button className="btn btn-ghost btn-sm">Export</button>
-              <button className="btn btn-gold btn-sm">+ New Order</button>
             </div>
           </div>
 
-          {/* Stats — matching prototype */}
+          {/* Stats — Live from DB */}
           <div className="stats">
             <div className="stat accent">
               <div className="lab">Total candidates</div>
-              <div className="v">89</div>
-              <div className="ft">+12 this month</div>
+              <div className="v">{stats.total_candidates}</div>
+              <div className="ft">Live metrics</div>
             </div>
             <div className="stat">
               <div className="lab">Available</div>
-              <div className="v">41</div>
+              <div className="v">{stats.candidates?.available || 0}</div>
             </div>
             <div className="stat">
               <div className="lab">Selected</div>
-              <div className="v">17</div>
+              <div className="v">{stats.candidates?.selected || 0}</div>
             </div>
             <div className="stat">
               <div className="lab">Visa processing</div>
-              <div className="v">19</div>
+              <div className="v">{stats.candidates?.visa_processing || 0}</div>
             </div>
             <div className="stat">
               <div className="lab">Approved</div>
-              <div className="v">12</div>
+              <div className="v">{stats.candidates?.approved || 0}</div>
             </div>
           </div>
 
@@ -67,27 +116,27 @@ export default async function AdminDashboard() {
           <div className="stats">
             <div className="stat">
               <div className="lab">Countries</div>
-              <div className="v">4</div>
+              <div className="v">{stats.entities?.countries || 0}</div>
             </div>
             <div className="stat">
               <div className="lab">Positions</div>
-              <div className="v">8</div>
+              <div className="v">{stats.entities?.positions || 0}</div>
             </div>
             <div className="stat">
               <div className="lab">Salespersons</div>
-              <div className="v">3</div>
+              <div className="v">{stats.entities?.salespersons || 0}</div>
             </div>
             <div className="stat">
               <div className="lab">Agents</div>
-              <div className="v">6</div>
+              <div className="v">{stats.entities?.agents || 0}</div>
             </div>
             <div className="stat">
               <div className="lab">Employers</div>
-              <div className="v">9</div>
+              <div className="v">{stats.entities?.employers || 0}</div>
             </div>
             <div className="stat">
               <div className="lab">Lawyers</div>
-              <div className="v">5</div>
+              <div className="v">{stats.entities?.lawyers || 0}</div>
             </div>
           </div>
 
@@ -116,7 +165,7 @@ export default async function AdminDashboard() {
                             <div className="av-sm">{c.initials}</div>
                             <div>
                               <div className="nm">{c.name}</div>
-                              <div className="meta">CAC - 204{candidates.indexOf(c) + 1}</div>
+                              <div className="meta">{c.public_code}</div>
                             </div>
                           </div>
                         </td>
@@ -146,12 +195,7 @@ export default async function AdminDashboard() {
                 </div>
                 <div className="card-pad">
                   <div className="bars">
-                    {[
-                      { label: 'Russia', code: 'RU', pct: 75, n: '18' },
-                      { label: 'Greece', code: 'GR', pct: 100, n: '24' },
-                      { label: 'Poland', code: 'PL', pct: 45, n: '11' },
-                      { label: 'Romania', code: 'RO', pct: 30, n: '7' },
-                    ].map((b) => (
+                    {topCountries.length > 0 ? topCountries.map((b) => (
                       <div key={b.label} className="barrow">
                         <div className="bl" style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '120px' }}>
                           <span style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '12.5px' }}>{b.label}</span>
@@ -162,7 +206,9 @@ export default async function AdminDashboard() {
                         </div>
                         <div className="bn">{b.n}</div>
                       </div>
-                    ))}
+                    )) : (
+                      <div style={{ fontSize: '13px', color: 'var(--muted)', textAlign: 'center', padding: '20px 0' }}>No candidate data available.</div>
+                    )}
                   </div>
                 </div>
               </div>

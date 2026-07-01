@@ -1,17 +1,15 @@
 import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
+import { createClient } from '@/utils/supabase/server';
+import Link from 'next/link';
 
-export default function PositionsPage() {
-  const positions = [
-    { id: '100', title: 'Driver', code: 'POS-100' },
-    { id: '101', title: 'Cleaner', code: 'POS-101' },
-    { id: '102', title: 'Welder', code: 'POS-102' },
-    { id: '103', title: 'Electrician', code: 'POS-103' },
-    { id: '104', title: 'Chef', code: 'POS-104' },
-    { id: '105', title: 'Security Guard', code: 'POS-105' },
-    { id: '106', title: 'Mason', code: 'POS-106' },
-    { id: '107', title: 'Plumber', code: 'POS-107' },
-  ];
+export default async function PositionsPage() {
+  const supabase = await createClient();
+
+  const { data: positions } = await supabase
+    .from('positions')
+    .select('*')
+    .order('name');
 
   return (
     <>
@@ -25,7 +23,9 @@ export default function PositionsPage() {
               <p className="ph-sub">Job roles candidates can apply for.</p>
             </div>
             <div className="ph-act">
-              <button className="btn btn-gold">+ Add position</button>
+              <Link href="/dashboard/admin/positions/new">
+                <button className="btn btn-gold">+ Add position</button>
+              </Link>
             </div>
           </div>
 
@@ -37,7 +37,7 @@ export default function PositionsPage() {
               marginTop: '22px' 
             }}
           >
-            {positions.map((pos) => (
+            {positions?.map((pos) => (
               <div 
                 key={pos.id} 
                 className="card" 
@@ -49,9 +49,9 @@ export default function PositionsPage() {
                 }}
               >
                 <div>
-                  <h3 style={{ fontSize: '18px', marginBottom: '8px' }}>{pos.title}</h3>
-                  <div className="mono" style={{ color: 'var(--slate)', fontSize: '13px' }}>
-                    {pos.code}
+                  <h3 style={{ fontSize: '18px', marginBottom: '8px' }}>{pos.name}</h3>
+                  <div className="mono" style={{ color: 'var(--slate)', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>
+                    {pos.id}
                   </div>
                 </div>
                 <button 
@@ -69,6 +69,9 @@ export default function PositionsPage() {
                 </button>
               </div>
             ))}
+            {positions?.length === 0 && (
+              <div style={{ color: 'var(--muted)', fontSize: '14px', marginTop: '20px' }}>No positions found.</div>
+            )}
           </div>
         </div>
       </div>

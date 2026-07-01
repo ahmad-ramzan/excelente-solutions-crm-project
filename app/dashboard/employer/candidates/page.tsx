@@ -1,49 +1,77 @@
 import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
+import { createClient } from '@/utils/supabase/server';
+import Link from 'next/link';
 
-export default function EmployerCandidatesPage() {
-  const candidates = [
-    {
-      id: 'CND-2041',
-      initials: 'BA',
-      name: 'Bilal Ahmed',
-      nationality: 'Pakistani',
-      positions: ['Driver', 'Security Guard'],
-      status: 'APPROVED',
-      statusColor: '#008a3d',
-      statusBg: '#dcf4e6'
-    },
-    {
-      id: 'CND-2042',
-      initials: 'HI',
-      name: 'Hamza Iqbal',
-      nationality: 'Pakistani',
-      positions: ['Welder'],
-      status: 'VISA PROCESSING',
-      statusColor: '#b46d00',
-      statusBg: '#fef1d8'
-    },
-    {
-      id: 'CND-2043',
-      initials: 'UR',
-      name: 'Usman Riaz',
-      nationality: 'Pakistani',
-      positions: ['Driver'],
-      status: 'SELECTED',
-      statusColor: '#3b82f6',
-      statusBg: '#eff6ff'
-    },
-    {
-      id: 'CND-2044',
-      initials: 'SM',
-      name: 'Saad Mahmood',
-      nationality: 'Pakistani',
-      positions: ['Electrician', 'Welder'],
+export default async function EmployerCandidatesPage({ searchParams }: { searchParams: Promise<{ position?: string }> }) {
+  const supabase = await createClient();
+  const params = await searchParams;
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  // 1. Find the employer record for this user
+  const { data: employerUser } = await supabase
+    .from('employer_users')
+    .select('employer_id')
+    .eq('profile_id', user.id)
+    .single();
+
+  if (!employerUser) return null;
+
+  // 2. Fetch employer details
+  const { data: employer } = await supabase
+    .from('employers')
+    .select('id, name, country_id, countries(name, code)')
+    .eq('id', employerUser.employer_id)
+    .single();
+
+  if (!employer) return null;
+  const countryName = employer.countries?.name || 'Unknown';
+  const countryCode = employer.countries?.code || 'N/A';
+
+  // 3. Build query for available candidates in this country
+  let query = supabase
+    .from('candidate_public_view')
+    .select('*')
+    .eq('status', 'available')
+    .eq('country_name', countryName)
+    .order('created_at', { ascending: false });
+
+  const { data: dbCandidates } = await query;
+  
+  // Filter by position if provided in search params
+  const currentPosition = params.position || 'all';
+  let filteredCandidates = dbCandidates || [];
+  
+  if (currentPosition !== 'all') {
+    filteredCandidates = filteredCandidates.filter(c => 
+      c.positions && c.positions.includes(currentPosition)
+    );
+  }
+
+  // 4. Extract unique positions from candidates for the tabs
+  const positionSet = new Set<string>();
+  (dbCandidates || []).forEach(c => {
+    if (c.positions) {
+      c.positions.forEach((p: string) => positionSet.add(p));
+    }
+  });
+  const positionsTabs = Array.from(positionSet).sort();
+
+  const candidates = filteredCandidates.map((c: any) => {
+    return {
+      id: c.id,
+      public_code: c.public_code,
+      initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
+      name: `${c.first_name} ${c.last_name}`,
+      nationality: c.nationality,
+      positions: c.positions || [],
       status: 'AVAILABLE',
       statusColor: '#475569',
       statusBg: '#f1f5f9'
-    }
-  ];
+    };
+  });
 
   return (
     <>
@@ -54,11 +82,11 @@ export default function EmployerCandidatesPage() {
           <div className="page-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
             <div>
               <h1>Browse candidates</h1>
-              <p className="ph-sub">Candidates cleared for Russia. Select one to reserve them instantly.</p>
+              <p className="ph-sub">Candidates cleared for {countryName}. Select one to reserve them instantly.</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--ink)' }}>
-              Showing Russia
-              <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 5px', fontSize: '10px', border: 'none' }}>RU</span>
+              Showing {countryName}
+              <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 5px', fontSize: '10px', border: 'none' }}>{countryCode.substring(0, 3).toUpperCase()}</span>
             </div>
           </div>
 
@@ -92,12 +120,19 @@ export default function EmployerCandidatesPage() {
           </div>
 
           {/* Filter Tabs */}
-          <div style={{ display: 'flex', gap: '24px', marginBottom: '32px' }}>
-            <button style={{ background: 'none', border: 'none', borderBottom: '2px solid var(--brand)', padding: '0 0 8px 0', fontSize: '14.5px', fontWeight: 600, color: 'var(--ink)', cursor: 'pointer' }}>All positions</button>
-            <button style={{ background: 'none', border: 'none', padding: '0 0 8px 0', fontSize: '14.5px', fontWeight: 600, color: 'var(--slate)', cursor: 'pointer' }}>Driver</button>
-            <button style={{ background: 'none', border: 'none', padding: '0 0 8px 0', fontSize: '14.5px', fontWeight: 600, color: 'var(--slate)', cursor: 'pointer' }}>Welder</button>
-            <button style={{ background: 'none', border: 'none', padding: '0 0 8px 0', fontSize: '14.5px', fontWeight: 600, color: 'var(--slate)', cursor: 'pointer' }}>Electrician</button>
-            <button style={{ background: 'none', border: 'none', padding: '0 0 8px 0', fontSize: '14.5px', fontWeight: 600, color: 'var(--slate)', cursor: 'pointer' }}>Security Guard</button>
+          <div style={{ display: 'flex', gap: '24px', marginBottom: '32px', overflowX: 'auto', paddingBottom: '4px' }}>
+            <Link href="/dashboard/employer/candidates">
+              <button style={{ background: 'none', border: 'none', borderBottom: currentPosition === 'all' ? '2px solid var(--brand)' : 'none', padding: '0 0 8px 0', fontSize: '14.5px', fontWeight: 600, color: currentPosition === 'all' ? 'var(--ink)' : 'var(--slate)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                All positions
+              </button>
+            </Link>
+            {positionsTabs.map(p => (
+              <Link key={p} href={`/dashboard/employer/candidates?position=${encodeURIComponent(p)}`}>
+                <button style={{ background: 'none', border: 'none', borderBottom: currentPosition === p ? '2px solid var(--brand)' : 'none', padding: '0 0 8px 0', fontSize: '14.5px', fontWeight: 600, color: currentPosition === p ? 'var(--ink)' : 'var(--slate)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  {p}
+                </button>
+              </Link>
+            ))}
           </div>
 
           {/* Candidate Cards Grid */}
@@ -123,11 +158,11 @@ export default function EmployerCandidatesPage() {
                   <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flex: 1 }}>
                     <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '16px', marginBottom: '4px' }}>{c.name}</div>
                     <div style={{ color: 'var(--muted)', fontSize: '11.5px', fontFamily: 'var(--font-mono)', marginBottom: '16px' }}>
-                      {c.id} <span style={{ color: 'var(--line-2)' }}>·</span> {c.nationality}
+                      {c.public_code} <span style={{ color: 'var(--line-2)' }}>·</span> {c.nationality}
                     </div>
                     
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '24px', flex: 1 }}>
-                      {c.positions.map(p => (
+                      {c.positions.map((p: string) => (
                         <span key={p} style={{ fontSize: '11.5px', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--line-2)', background: '#fff', color: 'var(--slate)' }}>
                           {p}
                         </span>
@@ -137,22 +172,34 @@ export default function EmployerCandidatesPage() {
                     {/* Actions */}
                     {isAvailable ? (
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <button className="btn" style={{ background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)', padding: '10px 0', borderRadius: '8px', fontSize: '13.5px', fontWeight: 600 }}>
-                          View
-                        </button>
-                        <button className="btn" style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', border: 'none', color: '#fff', padding: '10px 0', borderRadius: '8px', fontSize: '13.5px', fontWeight: 600 }}>
-                          Select
-                        </button>
+                        <Link href={`/dashboard/employer/candidates/${c.public_code}`}>
+                          <button className="btn" style={{ width: '100%', background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)', padding: '10px 0', borderRadius: '8px', fontSize: '13.5px', fontWeight: 600, cursor: 'pointer' }}>
+                            View
+                          </button>
+                        </Link>
+                        <Link href={`/dashboard/employer/offers?select=${c.public_code}`}>
+                          <button className="btn" style={{ width: '100%', background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', border: 'none', color: '#fff', padding: '10px 0', borderRadius: '8px', fontSize: '13.5px', fontWeight: 600, cursor: 'pointer' }}>
+                            Select
+                          </button>
+                        </Link>
                       </div>
                     ) : (
-                      <button className="btn" style={{ width: '100%', background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)', padding: '10px 0', borderRadius: '8px', fontSize: '13.5px', fontWeight: 600 }}>
-                        View profile
-                      </button>
+                      <Link href={`/dashboard/employer/candidates/${c.public_code}`}>
+                        <button className="btn" style={{ width: '100%', background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)', padding: '10px 0', borderRadius: '8px', fontSize: '13.5px', fontWeight: 600, cursor: 'pointer' }}>
+                          View profile
+                        </button>
+                      </Link>
                     )}
                   </div>
                 </div>
               );
             })}
+            
+            {candidates.length === 0 && (
+              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)', gridColumn: '1 / -1', background: 'var(--card)', borderRadius: '16px', border: '1px solid var(--line)' }}>
+                No available candidates found matching the selected position.
+              </div>
+            )}
           </div>
 
         </div>

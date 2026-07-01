@@ -1,43 +1,78 @@
 import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
+import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 
-export default function VisaProcessesPage() {
-  const visaCases = [
-    {
-      id: 'VP-501',
-      candidateInitials: 'BA',
-      candidateName: 'Bilal Ahmed',
-      agent: 'Amir Khan',
-      employer: 'ABC Construction',
-      remarks: 'Visa stamped, travel booked',
-      status: 'APPROVED',
-      statusColor: '#008a3d',
-      statusBg: '#dcf4e6'
-    },
-    {
-      id: 'VP-502',
-      candidateInitials: 'HI',
-      candidateName: 'Hamza Iqbal',
-      agent: 'Amir Khan',
-      employer: 'ABC Construction',
-      remarks: 'Application lodged at consulate',
-      status: 'SUBMITTED',
-      statusColor: '#b46d00',
-      statusBg: '#fef1d8'
-    },
-    {
-      id: 'VP-503',
-      candidateInitials: 'UR',
-      candidateName: 'Usman Riaz',
-      agent: 'Amir Khan',
-      employer: 'ABC Construction',
-      remarks: 'Awaiting passport scan',
-      status: 'DOCS REQUESTED',
-      statusColor: '#b46d00',
-      statusBg: '#f6ebd7'
+export default async function VisaProcessesPage() {
+  const supabase = await createClient();
+
+  const { data: dbVisas } = await supabase
+    .from('visa_cases')
+    .select(`
+      id,
+      public_code,
+      status,
+      remarks,
+      candidates (
+        id,
+        first_name,
+        last_name,
+        agent_id
+      ),
+      job_offer_selections (
+        job_offers (
+          employers (name)
+        )
+      )
+    `)
+    .order('created_at', { ascending: false });
+
+  // fetch agents for the candidates
+  const agentIds = Array.from(new Set(dbVisas?.map((v: any) => v.candidates?.agent_id).filter(Boolean)));
+  const agentMap: Record<string, string> = {};
+  if (agentIds.length > 0) {
+    const { data: agents } = await supabase.from('profiles').select('id, full_name').in('id', agentIds);
+    agents?.forEach(a => {
+      agentMap[a.id] = a.full_name;
+    });
+  }
+
+  const visaCases = (dbVisas || []).map((vc: any) => {
+    const c = vc.candidates;
+    const emp = vc.job_offer_selections?.job_offers?.employers?.name || 'Unknown';
+    const agent = agentMap[c?.agent_id] || 'Unknown';
+    
+    let statusColor = 'var(--slate)';
+    let statusBg = 'var(--line-2)';
+    let statusLabel = vc.status.replace(/_/g, ' ').toUpperCase();
+    
+    if (vc.status === 'approved') {
+      statusColor = '#008a3d';
+      statusBg = '#dcf4e6';
+    } else if (vc.status === 'pending' || vc.status === 'documents_requested') {
+      statusColor = '#b46d00';
+      statusBg = '#f6ebd7';
+    } else if (vc.status === 'submitted') {
+      statusColor = '#b46d00';
+      statusBg = '#fef1d8';
+    } else if (vc.status === 'rejected') {
+      statusColor = '#b91c1c';
+      statusBg = '#fee2e2';
     }
-  ];
+
+    return {
+      id: vc.id,
+      public_code: vc.public_code,
+      candidateInitials: `${c?.first_name?.[0] || ''}${c?.last_name?.[0] || ''}`.toUpperCase(),
+      candidateName: `${c?.first_name} ${c?.last_name}`,
+      agent,
+      employer: emp,
+      remarks: vc.remarks || 'No remarks',
+      status: statusLabel,
+      statusColor,
+      statusBg
+    };
+  });
 
   return (
     <>
@@ -48,7 +83,7 @@ export default function VisaProcessesPage() {
           <div className="page-head">
             <div>
               <h1>Visa processes</h1>
-              <p className="ph-sub">3 visa cases across all countries.</p>
+              <p className="ph-sub">{visaCases.length} visa cases across all countries.</p>
             </div>
           </div>
 
@@ -67,51 +102,51 @@ export default function VisaProcessesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {visaCases.map((vc) => {
-                    const [casePrefix, caseNum] = vc.id.split('-');
-                    
-                    return (
-                      <tr key={vc.id} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: '13px' }}>
-                        <td style={{ padding: '16px 22px', borderTopLeftRadius: '13px', borderBottomLeftRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)', color: 'var(--slate)', fontFamily: 'var(--font-mono)' }}>
-                          {casePrefix}-<br/>{caseNum}
-                        </td>
-                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
-                          <div className="cell-name">
-                            <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}>
-                              {vc.candidateInitials}
-                            </div>
-                            <div style={{ fontWeight: 600, color: 'var(--ink)' }}>
-                              {vc.candidateName.split(' ')[0]}<br />{vc.candidateName.split(' ').slice(1).join(' ')}
-                            </div>
+                  {visaCases.map((vc) => (
+                    <tr key={vc.id} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: '13px' }}>
+                      <td style={{ padding: '16px 22px', borderTopLeftRadius: '13px', borderBottomLeftRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)', color: 'var(--slate)', fontFamily: 'var(--font-mono)' }}>
+                        <div dangerouslySetInnerHTML={{ __html: vc.public_code.replace('-', '-<br/>') }} />
+                      </td>
+                      <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                        <div className="cell-name">
+                          <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}>
+                            {vc.candidateInitials}
                           </div>
-                        </td>
-                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--slate)' }}>
-                          {vc.agent.split(' ')[0]}<br />{vc.agent.split(' ').slice(1).join(' ')}
-                        </td>
-                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--brand)' }}>
-                          {vc.employer.split(' ')[0]}<br />{vc.employer.split(' ').slice(1).join(' ')}
-                        </td>
-                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--slate)', fontSize: '13px' }}>
-                           {/* Limit remarks width for wrapping like in screenshot */}
-                          <div style={{ maxWidth: '140px', lineHeight: '1.4' }}>
-                             {vc.remarks}
+                          <div style={{ fontWeight: 600, color: 'var(--ink)' }}>
+                            {vc.candidateName.split(' ')[0]}<br />{vc.candidateName.split(' ').slice(1).join(' ')}
                           </div>
-                        </td>
-                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
-                           <span className="tag" style={{ background: vc.statusBg, color: vc.statusColor, border: 'none', lineHeight: '1.2' }}>
-                             • {vc.status.includes(' ') ? <>{vc.status.split(' ')[0]}<br/>{vc.status.split(' ').slice(1).join(' ')}</> : vc.status}
-                           </span>
-                        </td>
-                        <td style={{ padding: '16px 22px', textAlign: 'right', borderTopRightRadius: '13px', borderBottomRightRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderRight: '1px solid var(--line)' }}>
-                          <Link href={`/dashboard/admin/visas/${vc.id}`}>
-                            <button className="ico-btn" style={{ fontSize: '14px', border: '1px solid var(--line-2)', borderRadius: '6px', width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', background: 'transparent', cursor: 'pointer' }}>
-                              →
-                            </button>
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        </div>
+                      </td>
+                      <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--slate)' }}>
+                        {vc.agent.split(' ')[0]}<br />{vc.agent.split(' ').slice(1).join(' ')}
+                      </td>
+                      <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--brand)' }}>
+                        {vc.employer.split(' ')[0]}<br />{vc.employer.split(' ').slice(1).join(' ')}
+                      </td>
+                      <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--slate)', fontSize: '13px' }}>
+                        <div style={{ maxWidth: '140px', lineHeight: '1.4' }}>
+                           {vc.remarks}
+                        </div>
+                      </td>
+                      <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                         <span className="tag" style={{ background: vc.statusBg, color: vc.statusColor, border: 'none', lineHeight: '1.2' }}>
+                           • {vc.status.includes(' ') ? <>{vc.status.split(' ')[0]}<br/>{vc.status.split(' ').slice(1).join(' ')}</> : vc.status}
+                         </span>
+                      </td>
+                      <td style={{ padding: '16px 22px', textAlign: 'right', borderTopRightRadius: '13px', borderBottomRightRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderRight: '1px solid var(--line)' }}>
+                        <Link href={`/dashboard/admin/visas/${vc.public_code}`}>
+                          <button className="ico-btn" style={{ fontSize: '14px', border: '1px solid var(--line-2)', borderRadius: '6px', width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', background: 'transparent', cursor: 'pointer' }}>
+                            →
+                          </button>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                  {visaCases.length === 0 && (
+                    <tr>
+                      <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>No visa cases found.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

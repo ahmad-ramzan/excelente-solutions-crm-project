@@ -4,31 +4,54 @@ import StatusBadge from '../../../components/StatusBadge';
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 
-export default async function CandidatesPage() {
+export default async function CandidatesPage({ searchParams }: { searchParams: Promise<{ status?: string, country?: string }> }) {
   const supabase = await createClient();
-  const { data: dbCandidates } = await supabase
-    .from('candidates')
-    .select(`
-      id,
-      first_name,
-      last_name,
-      nationality,
-      status,
-      countries (name, code),
-      candidate_positions (position_name)
-    `);
+  const params = await searchParams;
+  
+  let query = supabase.from('candidate_public_view').select('*').order('created_at', { ascending: false });
+  
+  if (params.status && params.status !== 'all') {
+    query = query.eq('status', params.status);
+  }
+  
+  if (params.country && params.country !== 'all') {
+    query = query.eq('country_name', params.country);
+  }
+
+  const { data: dbCandidates } = await query;
+  
+  const { data: countries } = await supabase.from('countries').select('name');
+  
+  // Try to get employer name via selections for selected/visa_processing/approved candidates
+  const selectedCandidateIds = (dbCandidates || []).filter((c: any) => c.status !== 'available').map((c: any) => c.id);
+  let employerMap: Record<string, string> = {};
+  if (selectedCandidateIds.length > 0) {
+    const { data: selections } = await supabase
+      .from('job_offer_selections')
+      .select('candidate_id, employers(name)')
+      .in('candidate_id', selectedCandidateIds);
+      
+    selections?.forEach((s: any) => {
+      employerMap[s.candidate_id] = s.employers?.name || 'Unknown';
+    });
+  }
 
   const candidates = (dbCandidates || []).map((c: any) => ({
     id: c.id,
+    public_code: c.public_code,
     initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
     name: `${c.first_name} ${c.last_name}`,
     nationality: c.nationality,
-    country: c.countries?.name || 'Unassigned',
-    countryCode: c.countries?.code || '--',
-    trade: c.candidate_positions?.[0]?.position_name || 'N/A',
-    skills: c.candidate_positions?.map((p: any) => p.position_name).slice(1) || [],
+    country: c.country_name || 'Unassigned',
+    countryCode: c.country_code || '--',
+    trade: c.positions?.[0] || 'N/A',
+    skills: c.positions?.slice(1) || [],
+    employer: employerMap[c.id] || 'Not Assigned',
     status: c.status
   }));
+
+  const currentStatus = params.status || 'all';
+  const currentCountry = params.country || 'all';
 
   return (
     <>
@@ -45,19 +68,29 @@ export default async function CandidatesPage() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px' }}>
             <div className="tabs" style={{ marginBottom: 0, borderBottom: 'none', gap: '20px' }}>
-              <div className="tab on" style={{ color: 'var(--brand)', borderBottomColor: 'var(--brand)', padding: '0 0 10px 0' }}>All</div>
-              <div className="tab" style={{ padding: '0 0 10px 0' }}>Available</div>
-              <div className="tab" style={{ padding: '0 0 10px 0' }}>Selected</div>
-              <div className="tab" style={{ padding: '0 0 10px 0' }}>Visa processing</div>
-              <div className="tab" style={{ padding: '0 0 10px 0' }}>Approved</div>
+              {[
+                { label: 'All', val: 'all' },
+                { label: 'Available', val: 'available' },
+                { label: 'Selected', val: 'selected' },
+                { label: 'Visa processing', val: 'visa_processing' },
+                { label: 'Approved', val: 'approved' }
+              ].map(t => (
+                <Link key={t.val} href={`/dashboard/admin/candidates?status=${t.val}&country=${currentCountry}`}>
+                  <div className={`tab ${currentStatus === t.val ? 'on' : ''}`} style={currentStatus === t.val ? { color: 'var(--brand)', borderBottomColor: 'var(--brand)', padding: '0 0 10px 0' } : { padding: '0 0 10px 0' }}>{t.label}</div>
+                </Link>
+              ))}
             </div>
 
-            <select className="input" style={{ width: 'auto', minWidth: '160px', padding: '8px 12px', fontSize: '13px' }}>
-              <option>All countries</option>
-              <option>Russia</option>
-              <option>Greece</option>
-              <option>Poland</option>
-              <option>Romania</option>
+            {/* In a real app we'd use a client component for the select to update searchParams on change */}
+            <select 
+              className="input" 
+              style={{ width: 'auto', minWidth: '160px', padding: '8px 12px', fontSize: '13px' }}
+              defaultValue={currentCountry}
+            >
+              <option value="all">All countries</option>
+              {countries?.map(c => (
+                <option key={c.name} value={c.name}>{c.name}</option>
+              ))}
             </select>
           </div>
 
@@ -75,64 +108,43 @@ export default async function CandidatesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {candidates.map((c, i) => {
-                    // Mocks based on the screenshot, but use the data where possible
-                    const empMap: Record<string, string> = {
-                      'C-001': 'ABC Construction',
-                      'C-002': 'XYZ Logistics',
-                      'C-003': 'Hellenic Cuisine',
-                      'C-004': 'EuroBuild'
-                    };
-                    const employer = empMap[c.id] || 'ABC Construction';
-                    const countryCodes: Record<string, string> = {
-                      'Russia': 'RU',
-                      'Greece': 'GR',
-                      'Poland': 'PL',
-                      'Romania': 'RO',
-                    };
-                    const cCode = countryCodes[c.country] || 'XX';
-
-                    // The design shows the candidate ID like CND-2041
-                    const cndNum = 2041 + i;
-
-                    return (
-                      <tr key={c.id} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: '13px' }}>
-                        <td style={{ padding: '16px 22px', borderTopLeftRadius: '13px', borderBottomLeftRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)' }}>
-                          <div className="cell-name">
-                            <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}>
-                              {c.initials}
-                            </div>
-                            <div>
-                              <div className="nm" style={{ marginBottom: '2px' }}>{c.name}</div>
-                              <div className="meta" style={{ fontFamily: 'var(--font-mono)', fontSize: '10.5px', color: 'var(--muted)' }}>CND - {cndNum}</div>
-                            </div>
+                  {candidates.map((c, i) => (
+                    <tr key={c.id} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: '13px' }}>
+                      <td style={{ padding: '16px 22px', borderTopLeftRadius: '13px', borderBottomLeftRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)' }}>
+                        <div className="cell-name">
+                          <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}>
+                            {c.initials}
                           </div>
-                        </td>
-                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
-                          <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{c.country}</span> <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{cCode}</span>
-                        </td>
-                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
-                          <span className="chip">{c.trade}</span>
-                          {c.skills && c.skills[0] && (
-                            <span className="chip">{c.skills[0]}</span>
-                          )}
-                        </td>
-                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--slate)' }}>
-                          {employer}
-                        </td>
-                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
-                          <StatusBadge status={c.status} />
-                        </td>
-                        <td style={{ padding: '16px 22px', textAlign: 'right', borderTopRightRadius: '13px', borderBottomRightRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderRight: '1px solid var(--line)' }}>
-                          <Link href={`/dashboard/admin/candidates/CND-${cndNum}`}>
-                            <button className="ico-btn" style={{ fontSize: '14px', border: '1px solid var(--line-2)', borderRadius: '6px', width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', background: 'transparent', cursor: 'pointer' }}>
-                              →
-                            </button>
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          <div>
+                            <div className="nm" style={{ marginBottom: '2px' }}>{c.name}</div>
+                            <div className="meta" style={{ fontFamily: 'var(--font-mono)', fontSize: '10.5px', color: 'var(--muted)' }}>{c.public_code}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{c.country}</span> <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{c.countryCode}</span>
+                      </td>
+                      <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                        <span className="chip">{c.trade}</span>
+                        {c.skills && c.skills[0] && (
+                          <span className="chip">{c.skills[0]}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--slate)' }}>
+                        {c.employer}
+                      </td>
+                      <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                        <StatusBadge status={c.status} />
+                      </td>
+                      <td style={{ padding: '16px 22px', textAlign: 'right', borderTopRightRadius: '13px', borderBottomRightRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderRight: '1px solid var(--line)' }}>
+                        <Link href={`/dashboard/admin/candidates/${c.public_code}`}>
+                          <button className="ico-btn" style={{ fontSize: '14px', border: '1px solid var(--line-2)', borderRadius: '6px', width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', background: 'transparent', cursor: 'pointer' }}>
+                            →
+                          </button>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

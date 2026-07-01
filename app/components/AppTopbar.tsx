@@ -1,7 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-
 interface AppTopbarProps {
   section: string;
 }
@@ -22,9 +20,6 @@ export default function AppTopbar({ section }: AppTopbarProps) {
         <button className="bell" aria-label="Notifications">
           🔔<span className="dot" />
         </button>
-        <Link href="/login">
-          <button className="btn btn-ghost btn-sm">Sign out</button>
-        </Link>
       </div>
     </div>
   );
