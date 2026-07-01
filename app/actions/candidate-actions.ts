@@ -83,17 +83,24 @@ export async function createCandidate(formData: FormData) {
   const uploadDoc = async (file: File, docType: string) => {
     if (!file || file.size === 0) return;
     
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
     const filePath = `${candidate.id}/${docType}-${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from('candidate-documents')
-      .upload(filePath, file);
+      .upload(filePath, buffer, {
+        contentType: file.type,
+        upsert: true,
+      });
       
     if (uploadError) {
       console.error(`Error uploading ${docType}:`, uploadError);
+      require('fs').appendFileSync('upload-debug.log', JSON.stringify({ type: 'upload_error', docType, error: uploadError }) + '\\n');
       return;
     }
 
-    await supabase.from('candidate_documents').insert({
+    const { error: dbInsertError } = await supabase.from('candidate_documents').insert({
       candidate_id: candidate.id,
       type: docType,
       status: 'uploaded',
@@ -103,6 +110,9 @@ export async function createCandidate(formData: FormData) {
       size_bytes: file.size,
       uploaded_by: user.id
     });
+    if (dbInsertError) {
+      require('fs').appendFileSync('upload-debug.log', JSON.stringify({ type: 'db_insert_error', docType, error: dbInsertError }) + '\\n');
+    }
   };
 
   if (photo) await uploadDoc(photo, 'photo');

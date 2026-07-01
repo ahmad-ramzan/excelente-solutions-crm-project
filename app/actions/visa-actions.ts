@@ -69,11 +69,16 @@ export async function uploadVisaDocument(formData: FormData) {
 
   if (!file || file.size === 0) return { error: 'No file provided' };
 
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
   const filePath = `${candidateId}/${docType}-${Date.now()}-${file.name}`;
-  
   const { error: uploadError } = await supabase.storage
     .from('candidate-documents')
-    .upload(filePath, file);
+    .upload(filePath, buffer, {
+      contentType: file.type,
+      upsert: true,
+    });
 
   if (uploadError) {
     console.error('Document upload error:', uploadError);
