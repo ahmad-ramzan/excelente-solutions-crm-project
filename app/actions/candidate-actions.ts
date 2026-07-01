@@ -9,7 +9,6 @@ export async function createCandidate(formData: FormData) {
   const firstName = formData.get('firstName') as string;
   const lastName = formData.get('lastName') as string;
   const gender = formData.get('gender') as string;
-  const nationality = formData.get('nationality') as string;
   const dateOfBirth = formData.get('dateOfBirth') as string;
   const phone = formData.get('phone') as string;
   const email = formData.get('email') as string;
@@ -34,7 +33,6 @@ export async function createCandidate(formData: FormData) {
       first_name: firstName,
       last_name: lastName,
       gender,
-      nationality,
       city,
       country_id: countryId,
       agent_id: user.id,
@@ -120,6 +118,8 @@ export async function createCandidate(formData: FormData) {
 
   revalidatePath('/dashboard/agent/candidates');
   revalidatePath('/dashboard/admin/candidates');
-  
+  revalidatePath('/dashboard/employer/candidates');
+  revalidatePath('/dashboard/employer');
+
   return { success: true, candidateId: candidate.id };
 }

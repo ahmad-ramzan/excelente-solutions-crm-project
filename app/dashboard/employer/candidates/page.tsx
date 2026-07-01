@@ -6,29 +6,51 @@ import Link from 'next/link';
 export default async function EmployerCandidatesPage({ searchParams }: { searchParams: Promise<{ position?: string }> }) {
   const supabase = await createClient();
   const params = await searchParams;
-  
+
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) return <div style={{ padding: 40 }}>Not logged in</div>;
 
   // 1. Find the employer record for this user
-  const { data: employerUser } = await supabase
+  const { data: employerUsers, error: euError } = await supabase
     .from('employer_users')
     .select('employer_id')
     .eq('profile_id', user.id)
-    .single();
+    .limit(1);
 
-  if (!employerUser) return null;
+  const employerUser = employerUsers?.[0];
+  if (!employerUser) {
+    return (
+      <>
+        <AppSidebar role="employer" />
+        <div className="main">
+          <AppTopbar section="Browse candidates" />
+          <div className="wrap">
+            <div style={{ padding: '60px 40px', textAlign: 'center', background: '#fff', borderRadius: '16px', border: '1px solid var(--line)', marginTop: '40px' }}>
+              <div style={{ width: '48px', height: '48px', background: '#f5f3ff', color: 'var(--brand)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
+              </div>
+              <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Account Not Linked</h2>
+              <p style={{ color: 'var(--slate)', maxWidth: '400px', margin: '0 auto', lineHeight: '1.5' }}>
+                Your account has not been linked to an employer profile yet. Please contact your salesperson or an administrator to complete your setup.
+              </p>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   // 2. Fetch employer details
-  const { data: employer } = await supabase
+  const { data: employer, error: eError } = await supabase
     .from('employers')
     .select('id, name, country_id, countries(name, code)')
     .eq('id', employerUser.employer_id)
     .single();
 
-  if (!employer) return null;
-  const countryName = employer.countries?.name || 'Unknown';
-  const countryCode = employer.countries?.code || 'N/A';
+  if (!employer) return <div style={{ padding: 40 }}>Employer details not found. Error: {eError?.message}</div>;
+  const countries: any = employer.countries;
+  const countryName = Array.isArray(countries) ? countries[0]?.name : countries?.name || 'Unknown';
+  const countryCode = Array.isArray(countries) ? countries[0]?.code : countries?.code || 'N/A';
 
   // 3. Build query for available candidates in this country
   let query = supabase
@@ -39,13 +61,13 @@ export default async function EmployerCandidatesPage({ searchParams }: { searchP
     .order('created_at', { ascending: false });
 
   const { data: dbCandidates } = await query;
-  
+
   // Filter by position if provided in search params
   const currentPosition = params.position || 'all';
   let filteredCandidates = dbCandidates || [];
-  
+
   if (currentPosition !== 'all') {
-    filteredCandidates = filteredCandidates.filter(c => 
+    filteredCandidates = filteredCandidates.filter(c =>
       c.positions && c.positions.includes(currentPosition)
     );
   }
@@ -91,23 +113,23 @@ export default async function EmployerCandidatesPage({ searchParams }: { searchP
           </div>
 
           {/* Privacy Alert Box */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
             gap: '16px',
-            padding: '16px 20px', 
-            background: '#f5f3ff', 
-            border: '1px solid #e1d4fc', 
+            padding: '16px 20px',
+            background: '#f5f3ff',
+            border: '1px solid #e1d4fc',
             borderRadius: '12px',
             marginBottom: '32px'
           }}>
-            <div style={{ 
-              width: '32px', 
-              height: '32px', 
-              background: 'var(--brand)', 
-              borderRadius: '8px', 
-              display: 'flex', 
-              alignItems: 'center', 
+            <div style={{
+              width: '32px',
+              height: '32px',
+              background: 'var(--brand)',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'center',
               color: '#fff',
               flexShrink: 0
@@ -160,7 +182,7 @@ export default async function EmployerCandidatesPage({ searchParams }: { searchP
                     <div style={{ color: 'var(--muted)', fontSize: '11.5px', fontFamily: 'var(--font-mono)', marginBottom: '16px' }}>
                       {c.public_code} <span style={{ color: 'var(--line-2)' }}>·</span> {c.nationality}
                     </div>
-                    
+
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '24px', flex: 1 }}>
                       {c.positions.map((p: string) => (
                         <span key={p} style={{ fontSize: '11.5px', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--line-2)', background: '#fff', color: 'var(--slate)' }}>
@@ -194,7 +216,7 @@ export default async function EmployerCandidatesPage({ searchParams }: { searchP
                 </div>
               );
             })}
-            
+
             {candidates.length === 0 && (
               <div style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)', gridColumn: '1 / -1', background: 'var(--card)', borderRadius: '16px', border: '1px solid var(--line)' }}>
                 No available candidates found matching the selected position.

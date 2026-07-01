@@ -117,20 +117,41 @@ export default function RegisterPage() {
             <input id="regemail" name="email" className="input" type="email" placeholder="you@company.com" required />
           </div>
 
-          <div className="row2">
+          {selected === 'Employer' && (
+            <div className="row2">
+              <div className="field">
+                <label htmlFor="companyName">Company name</label>
+                <input id="companyName" name="companyName" className="input" placeholder="Acme Construction Ltd" required />
+              </div>
+              <div className="field">
+                <label htmlFor="country">Country</label>
+                <select id="country" name="country" className="input" required defaultValue="">
+                  <option value="" disabled>Select country</option>
+                  <option>Russia</option>
+                  <option>Greece</option>
+                  <option>Poland</option>
+                  <option>Romania</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {selected === 'Lawyer' && (
             <div className="field">
               <label htmlFor="country">Country</label>
-              <select id="country" name="country" className="input">
+              <select id="country" name="country" className="input" required defaultValue="">
+                <option value="" disabled>Select country</option>
                 <option>Russia</option>
                 <option>Greece</option>
                 <option>Poland</option>
                 <option>Romania</option>
               </select>
             </div>
-            <div className="field">
-              <label htmlFor="regpwd">Password</label>
-              <input id="regpwd" name="password" className="input" type="password" placeholder="••••••••" required minLength={6} />
-            </div>
+          )}
+
+          <div className="field">
+            <label htmlFor="regpwd">Password</label>
+            <input id="regpwd" name="password" className="input" type="password" placeholder="••••••••" required minLength={6} />
           </div>
 
           <button

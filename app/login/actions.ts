@@ -78,14 +78,38 @@ export async function signup(formData: FormData) {
     return { error: 'Invalid role selected' }
   }
 
+  const metadata: Record<string, string> = {
+    full_name: fullName,
+    role: roleEnum,
+  }
+
+  if (roleEnum === 'employer') {
+    const companyName = formData.get('companyName') as string
+    const country = formData.get('country') as string
+
+    if (!companyName || !country) {
+      return { error: 'Company name and country are required for employer accounts' }
+    }
+
+    metadata.company_name = companyName
+    metadata.country_name = country
+  }
+
+  if (roleEnum === 'lawyer') {
+    const country = formData.get('country') as string
+
+    if (!country) {
+      return { error: 'Country is required for lawyer accounts' }
+    }
+
+    metadata.country_name = country
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: {
-        full_name: fullName,
-        role: roleEnum,
-      },
+      data: metadata,
     },
   })
 

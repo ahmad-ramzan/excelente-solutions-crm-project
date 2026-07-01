@@ -2,9 +2,11 @@ import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
+import SelectCandidateButton from './SelectCandidateButton';
 
-export default async function EmployerJobOffersPage() {
+export default async function EmployerJobOffersPage({ searchParams }: { searchParams: Promise<{ select?: string }> }) {
   const supabase = await createClient();
+  const params = await searchParams;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -52,6 +54,29 @@ export default async function EmployerJobOffersPage() {
     });
   }
 
+  // If arriving from "Select" on a candidate card, look them up and find offers with a vacant slot
+  let selectingCandidate: { id: string; name: string; positions: string[] } | null = null;
+  let eligibleOffers: typeof offers = [];
+
+  if (params.select) {
+    const { data: candidateRow } = await supabase
+      .from('candidate_public_view')
+      .select('id, first_name, last_name, positions')
+      .eq('public_code', params.select)
+      .single();
+
+    if (candidateRow) {
+      selectingCandidate = {
+        id: candidateRow.id,
+        name: `${candidateRow.first_name} ${candidateRow.last_name}`,
+        positions: candidateRow.positions || [],
+      };
+      eligibleOffers = offers.filter(
+        (o) => o.status === 'open' && (filledCounts[o.id] || 0) < o.staff_needed
+      );
+    }
+  }
+
   return (
     <>
       <AppSidebar role="employer" />
@@ -69,6 +94,34 @@ export default async function EmployerJobOffersPage() {
               </button>
             </Link>
           </div>
+
+          {selectingCandidate && (
+            <div className="card" style={{ marginTop: '24px', padding: '20px 24px', background: '#f5f3ff', border: '1px solid #e1d4fc' }}>
+              <div style={{ fontWeight: 600, color: 'var(--ink)', marginBottom: '4px' }}>
+                Selecting {selectingCandidate.name}
+              </div>
+              <div style={{ color: 'var(--slate)', fontSize: '13px', marginBottom: '16px' }}>
+                Choose which job offer to place this candidate into.
+              </div>
+
+              {eligibleOffers.length === 0 ? (
+                <div style={{ color: 'var(--slate)', fontSize: '13.5px' }}>
+                  No open job offers with a vacant slot right now. Create one first.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {eligibleOffers.map((o) => (
+                    <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#fff', borderRadius: '10px', border: '1px solid var(--line)' }}>
+                      <div style={{ fontSize: '13.5px', color: 'var(--ink)' }}>
+                        <b>{o.positions?.name || 'Various'}</b> · {o.countries?.name || 'Unknown'} · {(filledCounts[o.id] || 0)}/{o.staff_needed} filled
+                      </div>
+                      <SelectCandidateButton jobOfferId={o.id} candidateId={selectingCandidate.id} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="card" style={{ border: 'none', background: 'transparent', marginTop: '24px' }}>
             <div className="card-b" style={{ padding: 0 }}>

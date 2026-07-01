@@ -56,6 +56,58 @@ export async function updateVisaStatus(formData: FormData) {
   return { success: true };
 }
 
+export async function reassignLawyer(visaCaseId: string, newLawyerId: string) {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data: vc, error: fetchError } = await supabase
+    .from('visa_cases')
+    .select('status, candidate_id, candidates(first_name, last_name)')
+    .eq('id', visaCaseId)
+    .single();
+
+  if (fetchError || !vc) {
+    return { error: 'Visa case not found' };
+  }
+
+  const { error: updateError } = await supabase
+    .from('visa_cases')
+    .update({ lawyer_id: newLawyerId })
+    .eq('id', visaCaseId);
+
+  if (updateError) {
+    console.error('Lawyer reassignment error:', updateError);
+    return { error: 'Failed to reassign lawyer' };
+  }
+
+  await supabase.from('visa_case_events').insert({
+    visa_case_id: visaCaseId,
+    status: vc.status,
+    remarks: 'Case reassigned to a different lawyer',
+    changed_by: user.id,
+  });
+
+  const candidate: any = vc.candidates;
+  const candidateName = candidate ? `${candidate.first_name} ${candidate.last_name}` : 'a candidate';
+
+  await supabase.from('notifications').insert({
+    recipient_id: newLawyerId,
+    actor_id: user.id,
+    type: 'visa_updated',
+    title: 'Case assigned to you',
+    body: `You've been assigned the visa case for ${candidateName}.`,
+    entity_table: 'visa_cases',
+    entity_id: visaCaseId,
+  });
+
+  revalidatePath(`/dashboard/admin/visas`);
+  revalidatePath(`/dashboard/lawyer/cases`);
+
+  return { success: true };
+}
+
 export async function uploadVisaDocument(formData: FormData) {
   const supabase = await createClient();
 

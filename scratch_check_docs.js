@@ -13,11 +13,7 @@ const supabase = createClient(
 );
 
 async function test() {
-  const { data: bData, error: bError } = await supabase.storage.getBucket('candidate-documents');
-  console.log('Bucket exists:', !!bData, bError);
-
-  const buffer = Buffer.from('test content');
-  const { data, error } = await supabase.storage.from('candidate-documents').upload('test-file.txt', buffer, { upsert: true });
-  console.log('Upload result:', data, error);
+  const { data, error } = await supabase.storage.listBuckets();
+  console.log('Buckets:', data?.map(b => b.name), error);
 }
 test();

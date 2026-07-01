@@ -411,6 +411,8 @@ for each row execute function public.set_updated_at();
 create or replace function public.create_job_offer_slots()
 returns trigger
 language plpgsql
+security definer
+set search_path = public
 as $$
 declare
   i int;
@@ -438,7 +440,13 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  v_role app_role;
+  v_employer_id uuid;
+  v_country_id uuid;
 begin
+  v_role := coalesce((new.raw_user_meta_data->>'role')::app_role, 'agent');
+
   insert into public.profiles (
     id,
     email,
@@ -450,9 +458,33 @@ begin
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', 'New User'),
-    coalesce((new.raw_user_meta_data->>'role')::app_role, 'agent'),
+    v_role,
     (case when new.email_confirmed_at is not null then 'active' else 'pending' end)::account_status
   );
+
+  -- Employer self-registration also provisions the company record and links it
+  if v_role = 'employer' and (new.raw_user_meta_data->>'company_name') is not null then
+    select id into v_country_id
+    from public.countries
+    where name = new.raw_user_meta_data->>'country_name';
+
+    insert into public.employers (name, country_id, created_by)
+    values (new.raw_user_meta_data->>'company_name', v_country_id, new.id)
+    returning id into v_employer_id;
+
+    insert into public.employer_users (employer_id, profile_id, is_primary)
+    values (v_employer_id, new.id, true);
+  end if;
+
+  -- Lawyer self-registration also assigns their country
+  if v_role = 'lawyer' and (new.raw_user_meta_data->>'country_name') is not null then
+    select id into v_country_id
+    from public.countries
+    where name = new.raw_user_meta_data->>'country_name';
+
+    insert into public.lawyer_countries (lawyer_id, country_id, is_primary)
+    values (new.id, v_country_id, true);
+  end if;
 
   return new;
 end;
@@ -974,6 +1006,33 @@ with check (
   )
 );
 
+create policy "employers read passport details for visible candidates"
+on public.candidate_private_details for select
+to authenticated
+using (
+  exists (
+    select 1 from public.candidates c
+    where c.id = candidate_private_details.candidate_id
+    and public.current_user_role() = 'employer'
+    and (
+      (
+        c.status = 'available'
+        and c.country_id in (
+          select e.country_id from public.employers e
+          where e.id = any(public.current_employer_ids())
+        )
+      )
+      or exists (
+        select 1
+        from public.job_offer_slots s
+        join public.job_offers jo on jo.id = s.job_offer_id
+        where s.candidate_id = c.id
+        and jo.employer_id = any(public.current_employer_ids())
+      )
+    )
+  )
+);
+
 -- Candidate positions
 create policy "candidate positions visible with candidate"
 on public.candidate_positions for select
@@ -1035,6 +1094,33 @@ using (
     select 1 from public.visa_cases vc
     where vc.candidate_id = candidate_documents.candidate_id
     and vc.lawyer_id = auth.uid()
+  )
+);
+
+create policy "employers read documents for visible candidates"
+on public.candidate_documents for select
+to authenticated
+using (
+  exists (
+    select 1 from public.candidates c
+    where c.id = candidate_documents.candidate_id
+    and public.current_user_role() = 'employer'
+    and (
+      (
+        c.status = 'available'
+        and c.country_id in (
+          select e.country_id from public.employers e
+          where e.id = any(public.current_employer_ids())
+        )
+      )
+      or exists (
+        select 1
+        from public.job_offer_slots s
+        join public.job_offers jo on jo.id = s.job_offer_id
+        where s.candidate_id = c.id
+        and jo.employer_id = any(public.current_employer_ids())
+      )
+    )
   )
 );
 

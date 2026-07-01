@@ -11,11 +11,13 @@ export default async function EmployerDashboard() {
   if (!user) return null;
 
   // 1. Find the employer record for this user
-  const { data: employerUser } = await supabase
+  const { data: employerUsers } = await supabase
     .from('employer_users')
     .select('employer_id')
     .eq('profile_id', user.id)
-    .single();
+    .limit(1);
+
+  const employerUser = employerUsers?.[0];
 
   if (!employerUser) {
     return (
@@ -23,8 +25,16 @@ export default async function EmployerDashboard() {
         <AppSidebar role="employer" />
         <div className="main">
           <AppTopbar section="Dashboard" />
-          <div className="wrap" style={{ padding: '40px', textAlign: 'center', color: 'var(--slate)' }}>
-            You are not assigned to any employer account yet. Please contact support.
+          <div className="wrap">
+            <div style={{ padding: '60px 40px', textAlign: 'center', background: '#fff', borderRadius: '16px', border: '1px solid var(--line)', marginTop: '40px' }}>
+              <div style={{ width: '48px', height: '48px', background: '#f5f3ff', color: 'var(--brand)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
+              </div>
+              <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Account Not Linked</h2>
+              <p style={{ color: 'var(--slate)', maxWidth: '400px', margin: '0 auto', lineHeight: '1.5' }}>
+                Your account has not been linked to an employer profile yet. Please contact your salesperson or an administrator to complete your setup.
+              </p>
+            </div>
           </div>
         </div>
       </>
@@ -39,7 +49,8 @@ export default async function EmployerDashboard() {
     .single();
 
   if (!employer) return null;
-  const countryName = employer.countries?.name || 'Unknown';
+  const countryData = employer.countries as any;
+  const countryName = (Array.isArray(countryData) ? countryData[0]?.name : countryData?.name) || 'Unknown';
 
   // 3. Fetch Stats
   const stats = await getDashboardStats(supabase, 'employer', employer.id);
@@ -91,28 +102,28 @@ export default async function EmployerDashboard() {
           </div>
 
           {/* Info Alert Box */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
             gap: '16px',
-            padding: '16px 20px', 
-            background: '#f5f3ff', 
-            border: '1px solid #e1d4fc', 
+            padding: '16px 20px',
+            background: '#f5f3ff',
+            border: '1px solid #e1d4fc',
             borderRadius: '12px',
             marginBottom: '32px'
           }}>
-            <div style={{ 
-              width: '32px', 
-              height: '32px', 
-              background: 'var(--brand)', 
-              borderRadius: '8px', 
-              display: 'flex', 
-              alignItems: 'center', 
+            <div style={{
+              width: '32px',
+              height: '32px',
+              background: 'var(--brand)',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'center',
               color: '#fff',
               flexShrink: 0
             }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" /></svg>
             </div>
             <div style={{ color: 'var(--slate)', fontSize: '14.5px', lineHeight: '1.5' }}>
               You're viewing the <strong style={{ color: 'var(--ink)' }}>{countryName}</strong> market. You can only see candidates cleared for {countryName} — that keeps every shortlist relevant to your visas.
@@ -125,7 +136,7 @@ export default async function EmployerDashboard() {
               <div className="lab" style={{ color: 'rgba(255,255,255,0.9)', marginBottom: '12px' }}>Total Job Offers</div>
               <div className="v" style={{ color: '#fff' }}>{stats.total_offers}</div>
             </div>
-            
+
             <div className="stat" style={{ background: 'var(--card)', border: '1px solid var(--line)', padding: '24px', borderRadius: '12px' }}>
               <div className="lab" style={{ marginBottom: '12px' }}>Staff needed (Total slots)</div>
               <div className="v">{stats.total_slots}</div>
@@ -190,9 +201,9 @@ export default async function EmployerDashboard() {
                           </div>
                         </td>
                         <td style={{ padding: '16px 0' }}>
-                           <span className="tag" style={{ background: c.statusBg, color: c.statusColor, border: 'none' }}>
-                             • {c.status}
-                           </span>
+                          <span className="tag" style={{ background: c.statusBg, color: c.statusColor, border: 'none' }}>
+                            • {c.status}
+                          </span>
                         </td>
                         <td style={{ padding: '16px 0', textAlign: 'right' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
@@ -230,14 +241,14 @@ export default async function EmployerDashboard() {
                   </Link>
                 </div>
                 <div className="card-b" style={{ padding: '24px' }}>
-                  
+
                   {/* Progress bar */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
                     <span style={{ color: 'var(--slate)', fontSize: '13px', fontWeight: 600 }}>Slots</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, margin: '0 16px' }}>
-                       <div style={{ width: '100%', height: '6px', background: 'var(--line-2)', borderRadius: '999px', overflow: 'hidden' }}>
-                         <div style={{ width: '0%', height: '100%', background: 'var(--brand)', borderRadius: '999px' }}></div>
-                       </div>
+                      <div style={{ width: '100%', height: '6px', background: 'var(--line-2)', borderRadius: '999px', overflow: 'hidden' }}>
+                        <div style={{ width: '0%', height: '100%', background: 'var(--brand)', borderRadius: '999px' }}></div>
+                      </div>
                     </div>
                     <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--ink)' }}>{latestOffer.staff_needed}</span>
                   </div>
@@ -246,13 +257,13 @@ export default async function EmployerDashboard() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ color: 'var(--slate)', fontSize: '13px' }}>Country</span>
                       <div>
-                        <span style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '13px' }}>{latestOffer.countries?.name}</span> 
+                        <span style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '13px' }}>{latestOffer.countries?.name}</span>
                       </div>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ color: 'var(--slate)', fontSize: '13px' }}>Status</span>
                       <span className="tag" style={{ background: '#dcf4e6', color: '#008a3d', border: 'none', padding: '2px 8px', fontSize: '11px' }}>
-                         • {latestOffer.status.toUpperCase()}
+                        • {latestOffer.status.toUpperCase()}
                       </span>
                     </div>
                   </div>

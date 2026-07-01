@@ -1,5 +1,5 @@
-import AppSidebar from '../../../../../components/AppSidebar';
-import AppTopbar from '../../../../../components/AppTopbar';
+import AppSidebar from '@/app/components/AppSidebar';
+import AppTopbar from '@/app/components/AppTopbar';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/server';
 
