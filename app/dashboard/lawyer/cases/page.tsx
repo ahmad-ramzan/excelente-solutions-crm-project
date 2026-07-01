@@ -16,7 +16,10 @@ export default async function LawyerCasesPage() {
     .eq('profile_id', user.id)
     .limit(1);
 
-  const countryName = lcData && lcData.length > 0 ? lcData[0].countries?.name : 'your assigned country';
+  const countryData = lcData && lcData.length > 0 ? (lcData[0].countries as any) : null;
+  const countryName = countryData
+    ? (Array.isArray(countryData) ? countryData[0]?.name : countryData?.name)
+    : 'your assigned country';
 
   // Fetch Cases for this Lawyer
   const { data: dbCases } = await supabase
@@ -33,13 +36,13 @@ export default async function LawyerCasesPage() {
       .from('profiles')
       .select('id, raw_user_meta_data')
       .in('id', agentIds);
-    
+
     (agentsData || []).forEach(a => {
       // @ts-ignore
       agentsMap[a.id] = a.raw_user_meta_data?.full_name || 'Agent';
     });
   }
-  
+
   const cases = (dbCases || []).map((c: any) => ({
     id: c.id,
     public_code: c.public_code,
@@ -108,9 +111,9 @@ export default async function LawyerCasesPage() {
                         {c.remarks}
                       </td>
                       <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
-                         <span className="tag" style={{ background: c.statusBg, color: c.statusColor, border: 'none' }}>
-                           • {c.status.replace('_', ' ').toUpperCase()}
-                         </span>
+                        <span className="tag" style={{ background: c.statusBg, color: c.statusColor, border: 'none' }}>
+                          • {c.status.replace('_', ' ').toUpperCase()}
+                        </span>
                       </td>
                       <td style={{ padding: '16px 22px', textAlign: 'right', borderTopRightRadius: '13px', borderBottomRightRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderRight: '1px solid var(--line)' }}>
                         <Link href={`/dashboard/lawyer/cases/${c.public_code}`}>

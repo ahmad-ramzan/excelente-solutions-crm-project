@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
 // Aggregate stats by role
-export async function getDashboardStats(supabase: SupabaseClient, role: string) {
+export async function getDashboardStats(supabase: SupabaseClient, role: string, entityId?: string) {
   const stats: any = {};
   
   if (role === 'admin') {
@@ -36,7 +36,7 @@ export async function getDashboardStats(supabase: SupabaseClient, role: string) 
     };
   } else if (role === 'agent') {
     // Need user ID for agent (assuming it's passed as 3rd arg)
-    const userId = arguments[2];
+    const userId = entityId;
     if (userId) {
       const { data: candStats } = await supabase.from('candidates').select('status').eq('agent_id', userId);
       const candCounts = { available: 0, selected: 0, visa_processing: 0, approved: 0 };
@@ -49,7 +49,7 @@ export async function getDashboardStats(supabase: SupabaseClient, role: string) 
       stats.total_candidates = candStats?.length || 0;
     }
   } else if (role === 'employer') {
-    const employerId = arguments[2];
+    const employerId = entityId;
     if (employerId) {
       // Get job offers stats
       const { data: jobOffers } = await supabase.from('job_offers').select('id, status, staff_needed').eq('employer_id', employerId);

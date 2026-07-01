@@ -48,13 +48,10 @@ export default async function LawyerCaseDetailPage({ params }: { params: { id: s
     .eq('candidate_id', caseData.candidate_id)
     .order('created_at', { ascending: false });
 
-  const c = caseData.candidates;
-  // @ts-ignore
+  const c = caseData.candidates as any;
   const candidateName = `${c?.first_name} ${c?.last_name}`;
-  // @ts-ignore
-  const employerName = caseData.employers?.name;
-  // @ts-ignore
-  const countryName = caseData.countries?.name;
+  const employerName = (caseData.employers as any)?.name;
+  const countryName = (caseData.countries as any)?.name;
 
   return (
     <>

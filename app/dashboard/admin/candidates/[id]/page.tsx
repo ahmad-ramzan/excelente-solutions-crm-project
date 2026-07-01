@@ -177,7 +177,10 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                     {visa && (
                       <div className="r">
                         <div className="k">Assigned slot</div>
-                        <div className="v">{visa.job_offer_selections?.job_offers?.title || 'Slot'} - {visa.job_offer_selections?.job_offers?.employers?.name}</div>
+                        <div className="v">
+                          {/* We use [0] because Supabase returns nested relations as arrays by default unless using !inner or specific single modifiers */}
+                          {visa.job_offer_selections?.[0]?.job_offers?.[0]?.title || 'Slot'} - {visa.job_offer_selections?.[0]?.job_offers?.[0]?.employers?.[0]?.name || 'Unknown'}
+                        </div>
                       </div>
                     )}
                     <div className="r">

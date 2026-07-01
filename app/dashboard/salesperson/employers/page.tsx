@@ -48,13 +48,15 @@ export default async function SalespersonEmployersPage() {
     const eSlots = slotsData.filter(s => eOfferIds.includes(s.job_offer_id));
     const eFilled = eSlots.filter(s => ['reserved', 'filled'].includes(s.status)).length;
 
+    const countryObj = Array.isArray(e.countries) ? e.countries[0] : e.countries;
+
     return {
       id: e.id,
       public_code: e.public_code,
       initials: e.name.substring(0, 2).toUpperCase(),
       name: e.name,
-      country: e.countries?.name || 'Unassigned',
-      countryCode: e.countries?.code || 'XX',
+      country: (countryObj as any)?.name || 'Unassigned',
+      countryCode: (countryObj as any)?.code || 'XX',
       orders: eOffers.length,
       placements: eFilled,
       totalNeeded: eStaffNeeded
