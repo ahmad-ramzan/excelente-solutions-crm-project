@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import FlowerLogo from '../components/FlowerLogo';
 import { type Role } from '../lib/mock-data';
@@ -7,9 +8,29 @@ import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  function enterApp(role: Role) {
-    router.push(`/dashboard/${role}`);
+  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    
+    const formData = new FormData(e.currentTarget);
+    const { login } = await import('./actions');
+    
+    try {
+      const result = await login(formData);
+      if (result?.error) {
+        setError(result.error);
+        setLoading(false);
+      }
+    } catch (err) {
+      // The redirect inside the action throws an error that Next.js catches,
+      // but sometimes it can be caught here if not careful.
+      // NEXT_REDIRECT is handled internally by Next.js
+      setLoading(false);
+    }
   }
 
   return (
@@ -46,51 +67,63 @@ export default function LoginPage() {
           Your role decides where you land — admin, salesperson, agent, employer or lawyer.
         </p>
 
-        <div className="field">
-          <label htmlFor="email">Email address</label>
-          <input
-            id="email"
-            className="input"
-            type="email"
-            placeholder="you@company.com"
-            defaultValue="agent@excelente-solutions.com"
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            className="input"
-            type="password"
-            defaultValue="············"
-          />
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            margin: '6px 0 22px',
-          }}
-        >
-          <label
-            className="small"
-            style={{ display: 'flex', gap: 7, alignItems: 'center', color: 'var(--slate)' }}
-          >
-            <input type="checkbox" defaultChecked /> Keep me signed in
-          </label>
-          <a className="small" style={{ color: 'var(--gold)', fontWeight: 600, cursor: 'pointer' }}>
-            Forgot password?
-          </a>
-        </div>
+        {error && (
+          <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
+            {error}
+          </div>
+        )}
 
-        <button
-          className="btn btn-gold"
-          style={{ width: '100%', justifyContent: 'center', padding: '13px' }}
-          onClick={() => enterApp('agent')}
-        >
-          Sign in
-        </button>
+        <form onSubmit={handleLogin}>
+          <div className="field">
+            <label htmlFor="email">Email address</label>
+            <input
+              id="email"
+              name="email"
+              className="input"
+              type="email"
+              placeholder="you@company.com"
+              required
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              name="password"
+              className="input"
+              type="password"
+              placeholder="••••••••••••"
+              required
+            />
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              margin: '6px 0 22px',
+            }}
+          >
+            <label
+              className="small"
+              style={{ display: 'flex', gap: 7, alignItems: 'center', color: 'var(--slate)' }}
+            >
+              <input type="checkbox" defaultChecked /> Keep me signed in
+            </label>
+            <a className="small" style={{ color: 'var(--gold)', fontWeight: 600, cursor: 'pointer' }}>
+              Forgot password?
+            </a>
+          </div>
+
+          <button
+            type="submit"
+            className="btn btn-gold"
+            disabled={loading}
+            style={{ width: '100%', justifyContent: 'center', padding: '13px' }}
+          >
+            {loading ? 'Signing in...' : 'Sign in'}
+          </button>
+        </form>
 
         <div className="alt">
           New to Excelente?{' '}
@@ -99,38 +132,6 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <hr className="soft" style={{ margin: '26px 0 16px' }} />
-
-        <p className="small muted" style={{ textAlign: 'center', marginBottom: 10 }}>
-          Demo — jump straight into any role&apos;s dashboard:
-        </p>
-
-        <div className="role-pick">
-          <button className="role-opt" onClick={() => enterApp('admin')}>
-            <b>Admin</b>
-            <span>Full control</span>
-          </button>
-          <button className="role-opt" onClick={() => enterApp('salesperson')}>
-            <b>Salesperson</b>
-            <span>Employers &amp; orders</span>
-          </button>
-          <button className="role-opt" onClick={() => enterApp('agent')}>
-            <b>Agent</b>
-            <span>Candidates</span>
-          </button>
-          <button className="role-opt" onClick={() => enterApp('employer')}>
-            <b>Employer</b>
-            <span>Browse &amp; select</span>
-          </button>
-          <button
-            className="role-opt"
-            onClick={() => enterApp('lawyer')}
-            style={{ gridColumn: 'span 2' }}
-          >
-            <b>Lawyer</b>
-            <span>Visa processing</span>
-          </button>
-        </div>
       </div>
     </div>
   );

@@ -1,36 +1,23 @@
 import AppSidebar from '../../components/AppSidebar';
 import AppTopbar from '../../components/AppTopbar';
+import { createClient } from '@/utils/supabase/server';
 
-export default function LawyerDashboard() {
-  const cases = [
-    {
-      id: 'VP-581',
-      initials: 'BA',
-      name: 'Bilal Ahmed',
-      employer: 'ABC Construction',
-      status: 'APPROVED',
-      statusColor: '#008a3d',
-      statusBg: '#dcf4e6'
-    },
-    {
-      id: 'VP-582',
-      initials: 'HI',
-      name: 'Hamza Iqbal',
-      employer: 'ABC Construction',
-      status: 'SUBMITTED',
-      statusColor: '#b46d00',
-      statusBg: '#fef1d8'
-    },
-    {
-      id: 'VP-583',
-      initials: 'UR',
-      name: 'Usman Riaz',
-      employer: 'ABC Construction',
-      status: 'DOCS REQUESTED',
-      statusColor: '#b46d00',
-      statusBg: '#fef1d8'
-    }
-  ];
+export default async function LawyerDashboard() {
+  const supabase = await createClient();
+
+  // Fetch Cases for this Lawyer
+  const { data: dbCases } = await supabase.from('visa_cases').select('id, status, remarks, candidates(first_name, last_name), employers(name)').limit(5);
+  
+  const cases = (dbCases || []).map((c: any) => ({
+    id: c.id,
+    initials: `${c.candidates?.first_name?.[0] || ''}${c.candidates?.last_name?.[0] || ''}`.toUpperCase(),
+    name: `${c.candidates?.first_name} ${c.candidates?.last_name}`,
+    employer: c.employers?.name || 'Unknown',
+    status: c.status,
+    statusColor: c.status === 'APPROVED' ? '#008a3d' : '#b46d00',
+    statusBg: c.status === 'APPROVED' ? '#dcf4e6' : '#fef1d8'
+  }));
+
 
   return (
     <>

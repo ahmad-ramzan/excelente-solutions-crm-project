@@ -16,7 +16,32 @@ const roles: { label: RoleOpt; sub: string }[] = [
 
 export default function RegisterPage() {
   const [selected, setSelected] = useState<RoleOpt>('Employer');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  async function handleRegister(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    formData.append('role', selected);
+
+    // The action will read 'fullname' directly from formData
+
+    const { signup } = await import('../login/actions');
+
+    try {
+      const result = await signup(formData);
+      if (result?.error) {
+        setError(result.error);
+        setLoading(false);
+      }
+    } catch (err) {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="auth">
@@ -52,6 +77,12 @@ export default function RegisterPage() {
           Choose how you&apos;ll use the platform. An administrator confirms every new account.
         </p>
 
+        {error && (
+          <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
+            {error}
+          </div>
+        )}
+
         <label className="small" style={{ fontWeight: 600, display: 'block', marginBottom: 9 }}>
           I am registering as
         </label>
@@ -59,6 +90,7 @@ export default function RegisterPage() {
           {roles.map((r) => (
             <button
               key={r.label}
+              type="button"
               className={`role-opt ${selected === r.label ? 'on' : ''}`}
               onClick={() => setSelected(r.label)}
             >
@@ -68,45 +100,48 @@ export default function RegisterPage() {
           ))}
         </div>
 
-        <div className="row2">
-          <div className="field">
-            <label htmlFor="fullname">Full name</label>
-            <input id="fullname" className="input" placeholder="Jane Doe" />
+        <form onSubmit={handleRegister}>
+          <div className="row2">
+            <div className="field">
+              <label htmlFor="fullname">Full name</label>
+              <input id="fullname" name="fullname" className="input" placeholder="Jane Doe" required />
+            </div>
+            <div className="field">
+              <label htmlFor="phone">Phone</label>
+              <input id="phone" name="phone" className="input" placeholder="+30 …" />
+            </div>
           </div>
-          <div className="field">
-            <label htmlFor="phone">Phone</label>
-            <input id="phone" className="input" placeholder="+30 …" />
-          </div>
-        </div>
 
-        <div className="field">
-          <label htmlFor="regemail">Email address</label>
-          <input id="regemail" className="input" type="email" placeholder="you@company.com" />
-        </div>
-
-        <div className="row2">
           <div className="field">
-            <label htmlFor="country">Country</label>
-            <select id="country" className="input">
-              <option>Russia</option>
-              <option>Greece</option>
-              <option>Poland</option>
-              <option>Romania</option>
-            </select>
+            <label htmlFor="regemail">Email address</label>
+            <input id="regemail" name="email" className="input" type="email" placeholder="you@company.com" required />
           </div>
-          <div className="field">
-            <label htmlFor="regpwd">Password</label>
-            <input id="regpwd" className="input" type="password" placeholder="••••••••" />
-          </div>
-        </div>
 
-        <button
-          className="btn btn-gold"
-          style={{ width: '100%', justifyContent: 'center', padding: '13px', marginTop: 8 }}
-          onClick={() => router.push('/login')}
-        >
-          Create account
-        </button>
+          <div className="row2">
+            <div className="field">
+              <label htmlFor="country">Country</label>
+              <select id="country" name="country" className="input">
+                <option>Russia</option>
+                <option>Greece</option>
+                <option>Poland</option>
+                <option>Romania</option>
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="regpwd">Password</label>
+              <input id="regpwd" name="password" className="input" type="password" placeholder="••••••••" required minLength={6} />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="btn btn-gold"
+            disabled={loading}
+            style={{ width: '100%', justifyContent: 'center', padding: '13px', marginTop: 8 }}
+          >
+            {loading ? 'Creating account...' : 'Create account'}
+          </button>
+        </form>
 
         <div className="alt">
           Already registered?{' '}

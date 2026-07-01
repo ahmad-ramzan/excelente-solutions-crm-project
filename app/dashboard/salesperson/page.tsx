@@ -1,9 +1,35 @@
 import AppSidebar from '../../components/AppSidebar';
 import AppTopbar from '../../components/AppTopbar';
 import StatusBadge from '../../components/StatusBadge';
-import { employers, orders } from '../../lib/mock-data';
+import { createClient } from '@/utils/supabase/server';
 
-export default function SalespersonDashboard() {
+export default async function SalespersonDashboard() {
+  const supabase = await createClient();
+
+  // Fetch Employers for this Salesperson
+  const { data: dbEmployers } = await supabase.from('employers').select('id, name, contact_details, countries(name)').limit(5);
+  const employers = (dbEmployers || []).map((e: any) => ({
+    id: e.id,
+    initials: e.name.substring(0, 2).toUpperCase(),
+    name: e.name,
+    country: e.countries?.name || 'Unassigned',
+    contact: e.contact_details || 'N/A',
+    orders: 0,
+    placements: 0
+  }));
+
+  // Fetch Job Offers
+  const { data: dbOrders } = await supabase.from('job_offers').select('id, position_name, headcount, status, countries(name, code), employers(name)').limit(5);
+  const orders = (dbOrders || []).map((o: any) => ({
+    id: o.id,
+    employer: o.employers?.name || 'Unknown',
+    country: o.countries?.name || 'Unassigned',
+    role: o.position_name,
+    headcount: o.headcount,
+    filled: 0,
+    status: o.status
+  }));
+
   return (
     <>
       <AppSidebar role="salesperson" />

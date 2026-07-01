@@ -1,9 +1,35 @@
 import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import StatusBadge from '../../../components/StatusBadge';
-import { candidates } from '../../../lib/mock-data';
+import { createClient } from '@/utils/supabase/server';
+import Link from 'next/link';
 
-export default function CandidatesPage() {
+export default async function CandidatesPage() {
+  const supabase = await createClient();
+  const { data: dbCandidates } = await supabase
+    .from('candidates')
+    .select(`
+      id,
+      first_name,
+      last_name,
+      nationality,
+      status,
+      countries (name, code),
+      candidate_positions (position_name)
+    `);
+
+  const candidates = (dbCandidates || []).map((c: any) => ({
+    id: c.id,
+    initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
+    name: `${c.first_name} ${c.last_name}`,
+    nationality: c.nationality,
+    country: c.countries?.name || 'Unassigned',
+    countryCode: c.countries?.code || '--',
+    trade: c.candidate_positions?.[0]?.position_name || 'N/A',
+    skills: c.candidate_positions?.map((p: any) => p.position_name).slice(1) || [],
+    status: c.status
+  }));
+
   return (
     <>
       <AppSidebar role="admin" />
@@ -25,7 +51,7 @@ export default function CandidatesPage() {
               <div className="tab" style={{ padding: '0 0 10px 0' }}>Visa processing</div>
               <div className="tab" style={{ padding: '0 0 10px 0' }}>Approved</div>
             </div>
-            
+
             <select className="input" style={{ width: 'auto', minWidth: '160px', padding: '8px 12px', fontSize: '13px' }}>
               <option>All countries</option>
               <option>Russia</option>
@@ -65,7 +91,7 @@ export default function CandidatesPage() {
                       'Romania': 'RO',
                     };
                     const cCode = countryCodes[c.country] || 'XX';
-                    
+
                     // The design shows the candidate ID like CND-2041
                     const cndNum = 2041 + i;
 
@@ -98,9 +124,11 @@ export default function CandidatesPage() {
                           <StatusBadge status={c.status} />
                         </td>
                         <td style={{ padding: '16px 22px', textAlign: 'right', borderTopRightRadius: '13px', borderBottomRightRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderRight: '1px solid var(--line)' }}>
-                          <button className="ico-btn" style={{ fontSize: '12px', border: '1px solid var(--line-2)', borderRadius: '6px', width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', background: 'transparent' }}>
-                            ...
-                          </button>
+                          <Link href={`/dashboard/admin/candidates/CND-${cndNum}`}>
+                            <button className="ico-btn" style={{ fontSize: '14px', border: '1px solid var(--line-2)', borderRadius: '6px', width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', background: 'transparent', cursor: 'pointer' }}>
+                              →
+                            </button>
+                          </Link>
                         </td>
                       </tr>
                     );

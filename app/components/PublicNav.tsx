@@ -14,12 +14,8 @@ export default function PublicNav() {
         <a href="#how-it-works">How it works</a>
         <a href="#why-us">Why us</a>
         <a href="#contact">Contact</a>
-        <Link href="/login">
-          <button className="btn btn-ghost btn-sm">Log in</button>
-        </Link>
-        <Link href="/register">
-          <button className="btn btn-gold btn-sm">Register</button>
-        </Link>
+        <Link href="/login" className="btn btn-ghost btn-sm">Log in</Link>
+        <Link href="/register" className="btn btn-gold btn-sm">Register</Link>
       </div>
     </nav>
   );

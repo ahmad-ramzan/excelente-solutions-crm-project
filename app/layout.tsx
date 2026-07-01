@@ -29,14 +29,11 @@ export const metadata: Metadata = {
   keywords: 'international recruitment, workforce solutions, visa processing, employment agency',
 };
 
-import ProtoSwitcher from './components/ProtoSwitcher';
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${fraunces.variable} ${ibmPlexMono.variable}`}>
       <body>
         {children}
-        <ProtoSwitcher />
       </body>
     </html>
   );

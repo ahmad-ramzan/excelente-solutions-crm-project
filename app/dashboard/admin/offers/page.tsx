@@ -2,6 +2,7 @@ import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import StatusBadge from '../../../components/StatusBadge';
 import { orders } from '../../../lib/mock-data';
+import Link from 'next/link';
 
 export default function JobOffersPage() {
   return (
@@ -83,9 +84,11 @@ export default function JobOffersPage() {
                            <span className={`tag ${isCompleted ? 't-approve' : 't-open'}`}>• {isCompleted ? 'COMPLETED' : 'OPEN'}</span>
                         </td>
                         <td style={{ padding: '16px 22px', textAlign: 'right', borderTopRightRadius: '13px', borderBottomRightRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderRight: '1px solid var(--line)' }}>
-                          <button className="ico-btn" style={{ fontSize: '14px', border: '1px solid var(--line-2)', borderRadius: '6px', width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', background: 'transparent' }}>
-                            →
-                          </button>
+                          <Link href={`/dashboard/admin/offers/JO-${118 + i}`}>
+                            <button className="ico-btn" style={{ fontSize: '14px', border: '1px solid var(--line-2)', borderRadius: '6px', width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', background: 'transparent', cursor: 'pointer' }}>
+                              →
+                            </button>
+                          </Link>
                         </td>
                       </tr>
                     );

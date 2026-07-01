@@ -1,45 +1,35 @@
 import AppSidebar from '../../components/AppSidebar';
 import AppTopbar from '../../components/AppTopbar';
+import { createClient } from '@/utils/supabase/server';
 
-export default function AgentDashboard() {
-  const candidates = [
-    {
-      id: 'CND-2041',
-      initials: 'BA',
-      name: 'Bilal Ahmed',
-      country: 'Russia',
-      countryCode: 'RU',
-      positions: ['Driver', 'Security Guard'],
-      employer: 'ABC Construction',
-      status: 'APPROVED',
-      statusColor: '#008a3d',
-      statusBg: '#dcf4e6'
-    },
-    {
-      id: 'CND-2042',
-      initials: 'HI',
-      name: 'Hamza Iqbal',
-      country: 'Russia',
-      countryCode: 'RU',
-      positions: ['Welder'],
-      employer: 'ABC Construction',
-      status: 'VISA PROCESSING',
-      statusColor: '#b46d00',
-      statusBg: '#fef1d8'
-    },
-    {
-      id: 'CND-2043',
-      initials: 'UR',
-      name: 'Usman Riaz',
-      country: 'Russia',
-      countryCode: 'RU',
-      positions: ['Welder', 'Driver'],
-      employer: 'ABC Construction',
-      status: 'SELECTED',
-      statusColor: '#3b82f6',
-      statusBg: '#eff6ff'
-    }
-  ];
+export default async function AgentDashboard() {
+  const supabase = await createClient();
+
+  // Fetch Candidates for this Agent
+  const { data: dbCandidates } = await supabase.from('candidates').select('id, first_name, last_name, nationality, status, countries(name), candidate_positions(position_name)').limit(5);
+  const candidates = (dbCandidates || []).map((c: any) => {
+    let bg = 'var(--line-2)';
+    let color = 'var(--slate)';
+    if (c.status === 'available') { bg = '#dcfce7'; color = '#166534'; }
+    else if (c.status === 'selected') { bg = '#fef08a'; color = '#854d0e'; }
+    else if (c.status === 'visa') { bg = '#e0e7ff'; color = '#3730a3'; }
+    else if (c.status === 'approved') { bg = '#dbeafe'; color = '#1e40af'; }
+
+    return {
+      id: c.id,
+      initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
+      name: `${c.first_name} ${c.last_name}`,
+      nationality: c.nationality,
+      country: c.countries?.name || 'Unassigned',
+      countryCode: c.countries?.name ? c.countries.name.substring(0, 3).toUpperCase() : 'N/A',
+      positions: c.candidate_positions?.map((cp: any) => cp.position_name) || [],
+      trade: c.candidate_positions?.[0]?.position_name || 'N/A',
+      employer: 'Not Assigned',
+      status: c.status || 'unknown',
+      statusBg: bg,
+      statusColor: color,
+    };
+  });
 
   return (
     <>
@@ -55,24 +45,24 @@ export default function AgentDashboard() {
           </div>
 
           {/* Action Required Alert Box */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '16px 20px', 
-            background: '#f5f3ff', 
-            border: '1px solid #e1d4fc', 
+            padding: '16px 20px',
+            background: '#f5f3ff',
+            border: '1px solid #e1d4fc',
             borderRadius: '12px',
             marginBottom: '24px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ 
-                width: '32px', 
-                height: '32px', 
-                background: 'var(--brand)', 
-                borderRadius: '8px', 
-                display: 'flex', 
-                alignItems: 'center', 
+              <div style={{
+                width: '32px',
+                height: '32px',
+                background: 'var(--brand)',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
                 justifyContent: 'center',
                 color: '#fff',
                 fontWeight: 700,
@@ -148,12 +138,12 @@ export default function AgentDashboard() {
                         </div>
                       </td>
                       <td style={{ padding: '16px 0' }}>
-                        <span style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '13px' }}>{c.country}</span> 
+                        <span style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '13px' }}>{c.country}</span>
                         <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 5px', fontSize: '10px', border: 'none', marginLeft: '6px' }}>{c.countryCode}</span>
                       </td>
                       <td style={{ padding: '16px 0' }}>
                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                          {c.positions.map(p => (
+                          {c.positions.map((p: string) => (
                             <span key={p} style={{ fontSize: '12px', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--line-2)', background: 'var(--paper)', color: 'var(--slate)' }}>
                               {p}
                             </span>
@@ -164,9 +154,9 @@ export default function AgentDashboard() {
                         {c.employer}
                       </td>
                       <td style={{ padding: '16px 0' }}>
-                         <span className="tag" style={{ background: c.statusBg, color: c.statusColor, border: 'none' }}>
-                           • {c.status}
-                         </span>
+                        <span className="tag" style={{ background: c.statusBg, color: c.statusColor, border: 'none' }}>
+                          • {c.status}
+                        </span>
                       </td>
                     </tr>
                   ))}
