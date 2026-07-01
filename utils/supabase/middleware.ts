@@ -38,13 +38,31 @@ export async function updateSession(request: NextRequest) {
       url.pathname = '/login'
       return NextResponse.redirect(url)
     }
+
+    const [, roleSegment] = url.pathname.split('/').filter(Boolean)
+    const validRoles = ['admin', 'salesperson', 'agent', 'employer', 'lawyer']
+
+    if (roleSegment && validRoles.includes(roleSegment)) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, status')
+        .eq('id', user.id)
+        .single()
+
+      if (!profile || profile.status !== 'active') {
+        url.pathname = '/login'
+        return NextResponse.redirect(url)
+      }
+
+      // Send users away from dashboards that aren't their own role
+      if (profile.role !== roleSegment) {
+        url.pathname = `/dashboard/${profile.role}`
+        return NextResponse.redirect(url)
+      }
+    }
   }
 
-  // Redirect authenticated users away from auth pages
-  if (user && (url.pathname === '/login' || url.pathname === '/register')) {
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
-  }
+  // Removed redirect for authenticated users from auth pages to allow easy testing.
 
   return supabaseResponse
 }

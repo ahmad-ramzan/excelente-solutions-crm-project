@@ -9,6 +9,7 @@ export async function login(formData: FormData) {
 
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  const selectedRole = (formData.get('loginRole') as string | null)?.toLowerCase()
 
   if (!email || !password) {
     return { error: 'Email and password are required' }
@@ -23,10 +24,10 @@ export async function login(formData: FormData) {
     return { error: error?.message || 'Failed to authenticate' }
   }
 
-  // Fetch user role
+  // Fetch user role and account status
   const { data: userData, error: userError } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, status')
     .eq('id', user.id)
     .single()
 
@@ -36,9 +37,28 @@ export async function login(formData: FormData) {
     return { error: 'Failed to fetch user role.' }
   }
 
+  if (userData.status !== 'active') {
+    await supabase.auth.signOut()
+
+    if (userData.status === 'pending') {
+      return { error: 'Please confirm your email address before signing in.' }
+    }
+    if (userData.status === 'suspended') {
+      return { error: 'Your account has been suspended. Contact an administrator.' }
+    }
+    return { error: 'Your account application was not approved.' }
+  }
+
+  if (selectedRole && selectedRole !== userData.role) {
+    await supabase.auth.signOut()
+    return { error: `This account is not registered as ${selectedRole}. Please select the correct role.` }
+  }
+
   revalidatePath('/', 'layout')
   redirect(`/dashboard/${userData.role}`)
 }
+
+const PUBLIC_SIGNUP_ROLES = ['employer', 'agent', 'salesperson', 'lawyer']
 
 export async function signup(formData: FormData) {
   const supabase = await createClient()
@@ -54,6 +74,10 @@ export async function signup(formData: FormData) {
 
   const roleEnum = role.toLowerCase()
 
+  if (!PUBLIC_SIGNUP_ROLES.includes(roleEnum)) {
+    return { error: 'Invalid role selected' }
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -66,7 +90,8 @@ export async function signup(formData: FormData) {
   })
 
   if (error) {
-    return { error: error.message }
+    console.error('Signup error:', error)
+    return { error: error.message || 'Failed to create account. Please try again.' }
   }
 
   revalidatePath('/', 'layout')

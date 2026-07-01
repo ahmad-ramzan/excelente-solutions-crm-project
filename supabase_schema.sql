@@ -451,7 +451,7 @@ begin
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', 'New User'),
     coalesce((new.raw_user_meta_data->>'role')::app_role, 'agent'),
-    'pending'
+    (case when new.email_confirmed_at is not null then 'active' else 'pending' end)::account_status
   );
 
   return new;
@@ -463,6 +463,31 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_user();
+
+-- Activate the profile automatically once the user confirms their email
+create or replace function public.handle_email_confirmed()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.email_confirmed_at is not null and old.email_confirmed_at is null then
+    update public.profiles
+    set status = 'active'
+    where id = new.id
+    and status = 'pending';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_email_confirmed on auth.users;
+
+create trigger on_auth_user_email_confirmed
+after update on auth.users
+for each row execute function public.handle_email_confirmed();
 
 -- =========================
 -- HELPER FUNCTIONS FOR RLS
