@@ -13,10 +13,11 @@ export default async function LawyerDashboard() {
   const { data: lcData } = await supabase
     .from('lawyer_countries')
     .select('country_id, countries(name)')
-    .eq('profile_id', user.id)
+    .eq('lawyer_id', user.id)
     .limit(1);
 
-  const countryName = lcData && lcData.length > 0 ? lcData[0].countries?.name : 'your assigned country';
+  const lcCountry: any = lcData && lcData.length > 0 ? lcData[0].countries : null;
+  const countryName = (Array.isArray(lcCountry) ? lcCountry[0]?.name : lcCountry?.name) || 'your assigned country';
 
   // Fetch Cases for this Lawyer
   const { data: dbCases } = await supabase

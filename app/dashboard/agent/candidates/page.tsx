@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 import CountrySelect from './CountrySelect';
 
-export default async function AgentCandidatesPage({ searchParams }: { searchParams: Promise<{ status?: string, country?: string }> }) {
+export default async function AgentCandidatesPage({ searchParams }: { searchParams: Promise<{ status?: string, country?: string, q?: string }> }) {
   const supabase = await createClient();
   const params = await searchParams;
 
@@ -26,6 +26,11 @@ export default async function AgentCandidatesPage({ searchParams }: { searchPara
   }
   if (params.country && params.country !== 'all') {
     query = query.eq('country_name', params.country);
+  }
+
+  if (params.q) {
+    const q = params.q.trim();
+    query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,public_code.ilike.%${q}%`);
   }
 
   const { data: dbCandidates } = await query;

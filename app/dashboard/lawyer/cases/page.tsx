@@ -13,7 +13,7 @@ export default async function LawyerCasesPage() {
   const { data: lcData } = await supabase
     .from('lawyer_countries')
     .select('country_id, countries(name)')
-    .eq('profile_id', user.id)
+    .eq('lawyer_id', user.id)
     .limit(1);
 
   const countryData = lcData && lcData.length > 0 ? (lcData[0].countries as any) : null;

@@ -42,7 +42,9 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
               <p className="ph-sub">Everyone with access to the platform.</p>
             </div>
             <div className="ph-act">
-              <button className="btn btn-gold">+ Add user</button>
+              <Link href="/dashboard/admin/users/new">
+                <button className="btn btn-gold">+ Add user</button>
+              </Link>
             </div>
           </div>
 
@@ -111,7 +113,9 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                         <StatusBadge status={u.status as any} />
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <button className="ico-btn">✏️</button>
+                        <Link href={`/dashboard/admin/users/${u.id}`}>
+                          <button className="ico-btn">✏️</button>
+                        </Link>
                       </td>
                     </tr>
                   ))}

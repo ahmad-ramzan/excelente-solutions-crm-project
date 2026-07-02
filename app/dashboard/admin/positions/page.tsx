@@ -54,19 +54,21 @@ export default async function PositionsPage() {
                     {pos.id}
                   </div>
                 </div>
-                <button 
-                  className="btn btn-ghost" 
-                  style={{ 
-                    width: '32px', 
-                    height: '32px', 
-                    padding: 0, 
-                    display: 'inline-flex', 
-                    justifyContent: 'center',
-                    alignItems: 'center'
-                  }}
-                >
-                  ✏️
-                </button>
+                <Link href={`/dashboard/admin/positions/${pos.id}`}>
+                  <button
+                    className="btn btn-ghost"
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      padding: 0,
+                      display: 'inline-flex',
+                      justifyContent: 'center',
+                      alignItems: 'center'
+                    }}
+                  >
+                    ✏️
+                  </button>
+                </Link>
               </div>
             ))}
             {positions?.length === 0 && (

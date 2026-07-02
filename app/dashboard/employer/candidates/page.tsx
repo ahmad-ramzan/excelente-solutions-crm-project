@@ -3,7 +3,7 @@ import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 
-export default async function EmployerCandidatesPage({ searchParams }: { searchParams: Promise<{ position?: string }> }) {
+export default async function EmployerCandidatesPage({ searchParams }: { searchParams: Promise<{ position?: string, q?: string }> }) {
   const supabase = await createClient();
   const params = await searchParams;
 
@@ -69,6 +69,14 @@ export default async function EmployerCandidatesPage({ searchParams }: { searchP
   if (currentPosition !== 'all') {
     filteredCandidates = filteredCandidates.filter(c =>
       c.positions && c.positions.includes(currentPosition)
+    );
+  }
+
+  if (params.q) {
+    const q = params.q.trim().toLowerCase();
+    filteredCandidates = filteredCandidates.filter(c =>
+      `${c.first_name} ${c.last_name}`.toLowerCase().includes(q) ||
+      (c.public_code || '').toLowerCase().includes(q)
     );
   }
 

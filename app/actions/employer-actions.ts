@@ -47,7 +47,10 @@ export async function createJobOffer(formData: FormData) {
   const positionId = formData.get('positionId') as string;
   const staffNeeded = parseInt(formData.get('staffNeeded') as string, 10);
   const salaryAmount = formData.get('salaryAmount') as string;
-  
+  const startDate = (formData.get('startDate') as string) || null;
+  const endDate = (formData.get('endDate') as string) || null;
+  const contractSigned = formData.get('contractSigned') === 'on';
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -55,6 +58,8 @@ export async function createJobOffer(formData: FormData) {
   if (!employerId || !countryId || !positionId || isNaN(staffNeeded) || staffNeeded <= 0) {
     return { error: 'Invalid input' };
   }
+
+  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
 
   const { error } = await supabase
     .from('job_offers')
@@ -64,7 +69,11 @@ export async function createJobOffer(formData: FormData) {
       position_id: positionId,
       staff_needed: staffNeeded,
       salary_amount: salaryAmount ? parseFloat(salaryAmount) : null,
+      start_date: startDate,
+      end_date: endDate,
+      contract_signed: contractSigned,
       created_by: user.id,
+      assigned_salesperson_id: callerProfile?.role === 'salesperson' ? user.id : null,
       status: 'open',
     });
 

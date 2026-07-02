@@ -1,10 +1,42 @@
-'use client';
+import { createClient } from '@/utils/supabase/server';
+import { signOut } from '@/app/dashboard/actions';
+import NotificationBell from './NotificationBell';
 
 interface AppTopbarProps {
   section: string;
 }
 
-export default function AppTopbar({ section }: AppTopbarProps) {
+const CANDIDATE_SEARCH_TARGETS: Record<string, string> = {
+  admin: '/dashboard/admin/candidates',
+  agent: '/dashboard/agent/candidates',
+  employer: '/dashboard/employer/candidates',
+};
+
+export default async function AppTopbar({ section }: AppTopbarProps) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let notifications: any[] = [];
+  let unreadCount = 0;
+  let searchTarget: string | null = null;
+
+  if (user) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    if (profile?.role) {
+      searchTarget = CANDIDATE_SEARCH_TARGETS[profile.role] || null;
+    }
+
+    const { data: notifData } = await supabase
+      .from('notifications')
+      .select('id, title, body, created_at, read_at')
+      .eq('recipient_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(8);
+
+    notifications = notifData || [];
+    unreadCount = notifications.filter(n => !n.read_at).length;
+  }
+
   return (
     <div className="topbar">
       <div className="crumb">
@@ -13,13 +45,23 @@ export default function AppTopbar({ section }: AppTopbarProps) {
         <b>{section}</b>
       </div>
       <div className="tb-r">
-        <div className="search">
-          <span>🔍</span>
-          <input placeholder="Search candidates, orders…" />
-        </div>
-        <button className="bell" aria-label="Notifications">
-          🔔<span className="dot" />
-        </button>
+        {searchTarget ? (
+          <form action={searchTarget} method="GET" className="search">
+            <span>🔍</span>
+            <input name="q" placeholder="Search candidates…" />
+          </form>
+        ) : (
+          <div className="search">
+            <span>🔍</span>
+            <input placeholder="Search candidates, orders…" disabled />
+          </div>
+        )}
+
+        <NotificationBell notifications={notifications} unreadCount={unreadCount} />
+
+        <form action={signOut}>
+          <button type="submit" className="btn btn-ghost btn-sm">Sign out</button>
+        </form>
       </div>
     </div>
   );

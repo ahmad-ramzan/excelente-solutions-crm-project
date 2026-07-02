@@ -72,11 +72,11 @@ export default async function JobOffersPage() {
               <h1>Job Offers</h1>
               <p className="ph-sub">{orders.length} recruitment requirements across your employers.</p>
             </div>
-            {/*
-            <button className="btn" style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', color: '#fff', fontSize: '13px', border: 'none', padding: '10px 20px', borderRadius: '8px' }}>
-              + New Job Offer
-            </button>
-            */}
+            <Link href="/dashboard/salesperson/orders/new">
+              <button className="btn" style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', color: '#fff', fontSize: '13px', border: 'none', padding: '10px 20px', borderRadius: '8px' }}>
+                + New Job Offer
+              </button>
+            </Link>
           </div>
 
           <div className="card" style={{ border: 'none', background: 'transparent', marginTop: '24px' }}>
@@ -152,7 +152,7 @@ export default async function JobOffersPage() {
                            </span>
                         </td>
                         <td style={{ padding: '16px 22px', textAlign: 'right', borderTopRightRadius: '13px', borderBottomRightRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderRight: '1px solid var(--line)' }}>
-                          <Link href={`/dashboard/salesperson/offers/${o.id}`}>
+                          <Link href={`/dashboard/salesperson/orders/${o.id}`}>
                             <button className="ico-btn" style={{ fontSize: '14px', border: '1px solid var(--line-2)', borderRadius: '6px', width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', background: 'transparent', cursor: 'pointer' }}>
                               →
                             </button>

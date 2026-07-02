@@ -4,6 +4,7 @@ import StatusBadge from '../../components/StatusBadge';
 import { createClient } from '@/utils/supabase/server';
 import { getDashboardStats } from '@/app/lib/queries';
 import Link from 'next/link';
+import ExportButton from './ExportButton';
 
 export default async function AdminDashboard() {
   const supabase = await createClient();
@@ -83,7 +84,7 @@ export default async function AdminDashboard() {
               <p className="ph-sub">Everything across all countries, roles and candidates.</p>
             </div>
             <div className="ph-act">
-              <button className="btn btn-ghost btn-sm">Export</button>
+              <ExportButton />
             </div>
           </div>
 

@@ -34,6 +34,7 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
       {
         title: 'Operations',
         items: [
+          { icon: '🏢', label: 'Employers', href: '/dashboard/admin/employers' },
           { icon: '👥', label: 'Candidates', href: '/dashboard/admin/candidates' },
           { icon: '📄', label: 'Job Offers', href: '/dashboard/admin/offers' },
           { icon: '🛂', label: 'Visa processes', href: '/dashboard/admin/visas' },
@@ -54,6 +55,7 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
         items: [
           { icon: '🏢', label: 'Employers', href: '/dashboard/salesperson/employers' },
           { icon: '📋', label: 'Job Offers', href: '/dashboard/salesperson/orders' },
+          { icon: '✈️', label: 'Approved cases', href: '/dashboard/salesperson/cases' },
         ],
       },
     ],

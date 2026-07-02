@@ -1,23 +1,47 @@
 import AppSidebar from '../../../../components/AppSidebar';
 import AppTopbar from '../../../../components/AppTopbar';
 import Link from 'next/link';
+import { createClient } from '@/utils/supabase/server';
+import { notFound } from 'next/navigation';
 
-export default function OfferDetailsPage({ params }: { params: { id: string } }) {
-  // Using JO-118 mockup data
-  const orderId = params.id || 'JO-118';
-  const role = 'Driver';
-  const headcount = 50;
-  const filled = 21;
-  const vacant = headcount - filled;
-  const employer = 'ABC Construction';
-  const country = 'Russia';
-  const cCode = 'RU';
+export default async function OfferDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const supabase = await createClient();
+  const { id } = await params;
+
+  const { data: offer } = await supabase
+    .from('job_offers')
+    .select('*, countries(name, code), positions(name), employers(name)')
+    .eq('public_code', id)
+    .single();
+
+  if (!offer) notFound();
+
+  // Fetch slots
+  const { data: slotsData } = await supabase
+    .from('job_offer_slots')
+    .select('*, candidates(first_name, last_name, public_code)')
+    .eq('job_offer_id', offer.id)
+    .order('slot_no');
+
+  const slots = slotsData || [];
+  const filled = slots.filter(s => s.status === 'filled' || s.status === 'reserved').length;
+  const vacant = slots.length - filled;
+  const role = offer.positions?.name || 'Various';
+  const cCode = offer.countries?.code || 'XX';
+  const countryName = offer.countries?.name || 'Unknown';
+  const employerName = offer.employers?.name || 'Unknown';
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'N/A';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
 
   return (
     <>
       <AppSidebar role="admin" />
       <div className="main">
-        <AppTopbar section={orderId} />
+        <AppTopbar section={offer.public_code} />
         <div className="wrap">
           <div style={{ marginBottom: '24px' }}>
             <Link href="/dashboard/admin/offers">
@@ -30,20 +54,17 @@ export default function OfferDetailsPage({ params }: { params: { id: string } })
           <div className="page-head" style={{ marginBottom: '32px' }}>
             <div>
               <h1 style={{ fontSize: '36px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {role} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>×</span> {headcount}
+                {role} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>×</span> {offer.staff_needed}
               </h1>
               <p className="ph-sub" style={{ fontSize: '13.5px', marginTop: '8px' }}>
-                Offer {orderId} · {employer} · destination {country} <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{cCode}</span>
+                Offer {offer.public_code} · {employerName} · destination {countryName} <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{cCode.substring(0, 3).toUpperCase()}</span>
               </p>
-            </div>
-            <div className="ph-act">
-              <button className="btn btn-ghost btn-sm">Edit offer</button>
             </div>
           </div>
 
           <div className="slotsum">
             <div className="sc">
-              <div className="v">{headcount}</div>
+              <div className="v">{offer.staff_needed}</div>
               <div className="l">Total position slots</div>
             </div>
             <div className="sc fill">
@@ -63,25 +84,37 @@ export default function OfferDetailsPage({ params }: { params: { id: string } })
                 <span style={{ fontSize: '11px', color: 'var(--muted)' }}>Auto-generated on order creation</span>
               </div>
               <div className="slotgrid">
-                {Array.from({ length: filled }).map((_, i) => (
-                  <div key={`filled-${i}`} className="slot filled">
-                    <div className="sa">✓</div>
-                    <div>
-                      <div className="sl">DRIVER • SLOT {i + 1}</div>
-                      <div className="sn">{i === 0 ? 'Bilal Ahmed' : i === 1 ? 'Usman Riaz' : 'Assigned candidate'}</div>
-                      <div className="ss">Driver - Selected</div>
+                {slots.map(s => {
+                  const isVacant = s.status === 'vacant';
+                  const candidateName = s.candidates ? `${s.candidates.first_name} ${s.candidates.last_name}` : 'Unknown';
+
+                  return isVacant ? (
+                    <div key={s.id} className="slot vacant">
+                      <div className="sa" style={{ borderStyle: 'dashed' }}>{s.slot_no}</div>
+                      <div>
+                        <div className="sl">{role.toUpperCase()} • SLOT {s.slot_no}</div>
+                        <div className="sn">Vacant</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-                {Array.from({ length: vacant }).map((_, i) => (
-                  <div key={`vacant-${i}`} className="slot vacant">
-                    <div className="sa" style={{ borderStyle: 'dashed' }}>{filled + i + 1}</div>
-                    <div>
-                      <div className="sl">DRIVER • SLOT {filled + i + 1}</div>
-                      <div className="sn">Vacant</div>
+                  ) : (
+                    <div key={s.id} className="slot filled">
+                      <div className="sa">✓</div>
+                      <div>
+                        <div className="sl">{role.toUpperCase()} • SLOT {s.slot_no}</div>
+                        <div className="sn">
+                          {s.candidates ? (
+                            <Link href={`/dashboard/admin/candidates/${s.candidates.public_code}`} style={{ color: 'var(--ink)', textDecoration: 'none' }}>
+                              {candidateName}
+                            </Link>
+                          ) : (
+                            'Assigned candidate'
+                          )}
+                        </div>
+                        <div className="ss">{role} - {s.status}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -93,8 +126,12 @@ export default function OfferDetailsPage({ params }: { params: { id: string } })
                 <div className="card-b" style={{ padding: '4px 0' }}>
                   <div className="kv" style={{ padding: '0 22px' }}>
                     <div className="r">
+                      <div className="k">Employer</div>
+                      <div className="v">{employerName}</div>
+                    </div>
+                    <div className="r">
                       <div className="k">Country</div>
-                      <div className="v">{country} <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{cCode}</span></div>
+                      <div className="v">{countryName} <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{cCode.substring(0, 3).toUpperCase()}</span></div>
                     </div>
                     <div className="r">
                       <div className="k">Position</div>
@@ -102,7 +139,7 @@ export default function OfferDetailsPage({ params }: { params: { id: string } })
                     </div>
                     <div className="r">
                       <div className="k">Staff needed</div>
-                      <div className="v">{headcount}</div>
+                      <div className="v">{offer.staff_needed}</div>
                     </div>
                     <div className="r">
                       <div className="k">Staff selected</div>
@@ -110,19 +147,27 @@ export default function OfferDetailsPage({ params }: { params: { id: string } })
                     </div>
                     <div className="r">
                       <div className="k">Start date</div>
-                      <div className="v">01 Aug 2026</div>
+                      <div className="v">{formatDate(offer.start_date)}</div>
                     </div>
                     <div className="r">
                       <div className="k">End date</div>
-                      <div className="v">01 Feb 2027</div>
+                      <div className="v">{formatDate(offer.end_date)}</div>
                     </div>
                     <div className="r">
                       <div className="k">Contract signed</div>
-                      <div className="v"><span className="tag t-approve">• YES</span></div>
+                      <div className="v"><span className="tag t-approve">• {offer.contract_signed ? 'YES' : 'NO'}</span></div>
                     </div>
                     <div className="r">
                       <div className="k">Status</div>
-                      <div className="v"><span className="tag t-approve">• OPEN</span></div>
+                      <div className="v">
+                        <span className="tag" style={{
+                          background: offer.status === 'open' ? '#eff6ff' : (offer.status === 'completed' ? '#dcf4e6' : '#f1f5f9'),
+                          color: offer.status === 'open' ? '#3b82f6' : (offer.status === 'completed' ? '#008a3d' : '#475569'),
+                          border: 'none'
+                        }}>
+                          • {offer.status.toUpperCase()}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -134,7 +179,7 @@ export default function OfferDetailsPage({ params }: { params: { id: string } })
                 </div>
                 <div className="card-b" style={{ padding: '18px 22px' }}>
                   <p style={{ fontSize: '12.5px', color: 'var(--slate)', lineHeight: 1.5 }}>
-                    When this order was created the system generated <strong>{headcount} {role.toLowerCase()} slots</strong>.
+                    When this order was created the system generated <strong>{offer.staff_needed} {role.toLowerCase()} slots</strong>.
                     Each employer selection assigns the candidate to the next vacant slot automatically.
                     Slots stay empty until a candidate is assigned.
                   </p>

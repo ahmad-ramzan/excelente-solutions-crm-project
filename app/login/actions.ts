@@ -119,5 +119,12 @@ export async function signup(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
+
+  // If email confirmation is required, signUp() won't have established a session yet —
+  // fall back to the login page in that case instead of bouncing into a dashboard with no auth.
+  if (data.session) {
+    redirect(`/dashboard/${roleEnum}`)
+  }
+
   redirect('/login?registered=true')
 }

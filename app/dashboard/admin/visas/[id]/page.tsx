@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import ReassignLawyerForm from './ReassignLawyerForm';
+import TravelCoordinationCard from '@/app/components/TravelCoordinationCard';
 
 export default async function VisaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -13,6 +14,7 @@ export default async function VisaDetailPage({ params }: { params: Promise<{ id:
     .from('visa_cases')
     .select(`
       id, public_code, status, remarks, lawyer_id, country_id,
+      application_reference, embassy_appointment_at, expected_decision_date, legal_notes, rejection_reason,
       candidates ( id, first_name, last_name, agent_id ),
       job_offer_selections ( job_offers ( employers ( name ) ) ),
       countries ( name, code )
@@ -44,6 +46,10 @@ export default async function VisaDetailPage({ params }: { params: Promise<{ id:
     supabase.from('country_document_requirements').select('type').eq('country_id', vc.country_id),
   ]);
 
+  const { data: travel } = vc.status === 'approved'
+    ? await supabase.from('visa_case_travel').select('*').eq('visa_case_id', vc.id).maybeSingle()
+    : { data: null };
+
   const lawyerOptions = (countryLawyers || [])
     .map((lc: any) => lc.profiles)
     .filter((p: any) => p && p.status === 'active')
@@ -59,9 +65,16 @@ export default async function VisaDetailPage({ params }: { params: Promise<{ id:
     switch (s) {
       case 'approved': return { bg: '#dcf4e6', color: '#008a3d' };
       case 'pending':
-      case 'documents_requested': return { bg: '#f6ebd7', color: '#b46d00' };
+      case 'documents_requested':
+      case 'additional_documents_requested': return { bg: '#f6ebd7', color: '#b46d00' };
+      case 'documents_received':
+      case 'documents_under_review':
+      case 'ready_for_submission': return { bg: '#e0e7ff', color: '#3730a3' };
       case 'submitted':
-      case 'documents_received': return { bg: '#fef1d8', color: '#b46d00' };
+      case 'appointment_scheduled':
+      case 'biometrics_required':
+      case 'under_immigration_review': return { bg: '#fef1d8', color: '#b46d00' };
+      case 'on_hold': return { bg: '#f1f5f9', color: '#475569' };
       case 'rejected': return { bg: '#fee2e2', color: '#b91c1c' };
       default: return { bg: 'var(--line-2)', color: 'var(--slate)' };
     }
@@ -225,10 +238,53 @@ export default async function VisaDetailPage({ params }: { params: Promise<{ id:
                 </div>
               </div>
 
-              {/* Reassign lawyer */}
+              {/* Application details */}
+              {(vc.application_reference || vc.embassy_appointment_at || vc.expected_decision_date || vc.legal_notes || vc.rejection_reason) && (
+                <div className="card">
+                  <div className="card-h">
+                    <h3>Application details</h3>
+                  </div>
+                  <div className="card-b" style={{ padding: '4px 0' }}>
+                    <div className="kv" style={{ padding: '0 22px' }}>
+                      {vc.application_reference && (
+                        <div className="r">
+                          <div className="k">Reference no.</div>
+                          <div className="v">{vc.application_reference}</div>
+                        </div>
+                      )}
+                      {vc.embassy_appointment_at && (
+                        <div className="r">
+                          <div className="k">Embassy appointment</div>
+                          <div className="v">{new Date(vc.embassy_appointment_at).toLocaleString()}</div>
+                        </div>
+                      )}
+                      {vc.expected_decision_date && (
+                        <div className="r">
+                          <div className="k">Expected decision</div>
+                          <div className="v">{vc.expected_decision_date}</div>
+                        </div>
+                      )}
+                    </div>
+                    {vc.legal_notes && (
+                      <div style={{ padding: '14px 22px', borderTop: '1px solid var(--line)' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600, marginBottom: '4px' }}>LEGAL NOTES</div>
+                        <div style={{ fontSize: '13px', color: 'var(--slate)' }}>{vc.legal_notes}</div>
+                      </div>
+                    )}
+                    {vc.rejection_reason && (
+                      <div style={{ padding: '14px 22px', borderTop: '1px solid #fecaca', background: '#fef2f2' }}>
+                        <div style={{ fontSize: '11px', color: '#b91c1c', fontWeight: 600, marginBottom: '4px' }}>REJECTION REASON</div>
+                        <div style={{ fontSize: '13px', color: '#b91c1c' }}>{vc.rejection_reason}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Lawyer assignment */}
               <div className="card">
                 <div className="card-h">
-                  <h3>Reassign lawyer</h3>
+                  <h3>{vc.lawyer_id ? 'Reassign lawyer' : 'Assign lawyer'}</h3>
                 </div>
                 <div className="card-b" style={{ padding: '22px' }}>
                   {lawyerOptions.length === 0 ? (
@@ -238,6 +294,11 @@ export default async function VisaDetailPage({ params }: { params: Promise<{ id:
                   )}
                 </div>
               </div>
+
+              {/* Travel coordination — only relevant once the visa is approved */}
+              {vc.status === 'approved' && (
+                <TravelCoordinationCard visaCaseId={vc.id} travel={travel} />
+              )}
 
               {/* Country visa requirements */}
               <div className="card">

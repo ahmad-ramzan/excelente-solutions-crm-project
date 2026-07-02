@@ -70,9 +70,11 @@ export default async function CountriesPage() {
                       </td>
                       <td className="mono">{countMap[c.id] || 0}</td>
                       <td style={{ textAlign: 'right' }}>
-                        <button className="btn btn-ghost" style={{ width: '32px', height: '32px', padding: 0, display: 'inline-flex', justifyContent: 'center' }}>
-                          ✏️
-                        </button>
+                        <Link href={`/dashboard/admin/countries/${c.id}`}>
+                          <button className="btn btn-ghost" style={{ width: '32px', height: '32px', padding: 0, display: 'inline-flex', justifyContent: 'center' }}>
+                            ✏️
+                          </button>
+                        </Link>
                       </td>
                     </tr>
                   ))}

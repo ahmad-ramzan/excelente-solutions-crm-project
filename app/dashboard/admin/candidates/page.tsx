@@ -4,18 +4,23 @@ import StatusBadge from '../../../components/StatusBadge';
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 
-export default async function CandidatesPage({ searchParams }: { searchParams: Promise<{ status?: string, country?: string }> }) {
+export default async function CandidatesPage({ searchParams }: { searchParams: Promise<{ status?: string, country?: string, q?: string }> }) {
   const supabase = await createClient();
   const params = await searchParams;
-  
+
   let query = supabase.from('candidate_public_view').select('*').order('created_at', { ascending: false });
-  
+
   if (params.status && params.status !== 'all') {
     query = query.eq('status', params.status);
   }
-  
+
   if (params.country && params.country !== 'all') {
     query = query.eq('country_name', params.country);
+  }
+
+  if (params.q) {
+    const q = params.q.trim();
+    query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,public_code.ilike.%${q}%`);
   }
 
   const { data: dbCandidates } = await query;

@@ -6,7 +6,8 @@ import { redirect } from 'next/navigation';
 import ClientCaseStatusForm from './ClientCaseStatusForm';
 import ClientDocumentUpload from './ClientDocumentUpload';
 
-export default async function LawyerCaseDetailPage({ params }: { params: { id: string } }) {
+export default async function LawyerCaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -19,15 +20,21 @@ export default async function LawyerCaseDetailPage({ params }: { params: { id: s
       public_code,
       status,
       remarks,
+      application_reference,
+      embassy_appointment_at,
+      expected_decision_date,
+      legal_notes,
+      rejection_reason,
       opened_at,
       candidate_id,
       candidates (
-        public_code, first_name, last_name, gender, nationality, passport_no
+        public_code, first_name, last_name, gender, nationality,
+        candidate_private_details ( passport_number )
       ),
       employers ( name ),
       countries ( name )
     `)
-    .eq('public_code', params.id)
+    .eq('public_code', id)
     .single();
 
   if (!caseData) {
@@ -52,6 +59,8 @@ export default async function LawyerCaseDetailPage({ params }: { params: { id: s
   const candidateName = `${c?.first_name} ${c?.last_name}`;
   const employerName = (caseData.employers as any)?.name;
   const countryName = (caseData.countries as any)?.name;
+  const privateDetails = Array.isArray(c?.candidate_private_details) ? c.candidate_private_details[0] : c?.candidate_private_details;
+  const passportNumber = privateDetails?.passport_number;
 
   return (
     <>
@@ -101,7 +110,7 @@ export default async function LawyerCaseDetailPage({ params }: { params: { id: s
                     </div>
                     <div>
                       <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>Passport No.</div>
-                      <div style={{ fontSize: '14.5px', color: 'var(--ink)' }}>{c?.passport_no || 'N/A'}</div>
+                      <div style={{ fontSize: '14.5px', color: 'var(--ink)' }}>{passportNumber || 'N/A'}</div>
                     </div>
                     <div>
                       <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>Nationality</div>
@@ -173,10 +182,15 @@ export default async function LawyerCaseDetailPage({ params }: { params: { id: s
                   <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Update Case Status</h3>
                 </div>
                 <div className="card-b">
-                  <ClientCaseStatusForm 
-                    visaCaseId={caseData.id} 
-                    currentStatus={caseData.status} 
+                  <ClientCaseStatusForm
+                    visaCaseId={caseData.id}
+                    currentStatus={caseData.status}
                     currentRemarks={caseData.remarks || ''}
+                    currentApplicationReference={caseData.application_reference}
+                    currentEmbassyAppointmentAt={caseData.embassy_appointment_at}
+                    currentExpectedDecisionDate={caseData.expected_decision_date}
+                    currentLegalNotes={caseData.legal_notes}
+                    currentRejectionReason={caseData.rejection_reason}
                   />
                 </div>
               </div>

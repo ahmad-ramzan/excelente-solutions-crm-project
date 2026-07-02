@@ -56,7 +56,7 @@ export default function ReassignLawyerForm({
         className="btn btn-gold"
         style={{ width: '100%', justifyContent: 'center', opacity: loading ? 0.7 : 1 }}
       >
-        {loading ? 'Reassigning…' : 'Reassign lawyer'}
+        {loading ? 'Saving…' : currentLawyerId ? 'Reassign lawyer' : 'Assign lawyer'}
       </button>
       {error && (
         <div style={{ color: '#b91c1c', fontSize: '12px', marginTop: '8px' }}>{error}</div>

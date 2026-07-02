@@ -16,10 +16,8 @@ export default function ClientDocumentUpload({
   const [error, setError] = useState<string | null>(null);
 
   const docTypes = [
-    { value: 'passport', label: 'Passport' },
-    { value: 'visa', label: 'Visa' },
-    { value: 'work_permit', label: 'Work Permit' },
-    { value: 'medical', label: 'Medical Report' },
+    { value: 'visa_application_slip', label: 'Visa Application Slip' },
+    { value: 'approved_visa', label: 'Approved Visa' },
     { value: 'other', label: 'Other Document' }
   ];
 

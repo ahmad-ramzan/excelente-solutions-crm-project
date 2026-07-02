@@ -25,7 +25,7 @@ export default async function VisaProcessesPage() {
         )
       )
     `)
-    .order('created_at', { ascending: false });
+    .order('opened_at', { ascending: false });
 
   // fetch agents for the candidates
   const agentIds = Array.from(new Set(dbVisas?.map((v: any) => v.candidates?.agent_id).filter(Boolean)));

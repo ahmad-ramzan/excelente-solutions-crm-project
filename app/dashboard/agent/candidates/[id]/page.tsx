@@ -2,6 +2,7 @@ import AppSidebar from '../../../../components/AppSidebar';
 import AppTopbar from '../../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
+import ClientAgentDocumentUpload from './ClientAgentDocumentUpload';
 
 export default async function CandidateDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -267,6 +268,9 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                   {docs?.length === 0 && (
                     <div style={{ padding: '20px 0', fontSize: '13px', color: 'var(--muted)' }}>No documents uploaded.</div>
                   )}
+                  <div style={{ padding: '16px 0 20px' }}>
+                    <ClientAgentDocumentUpload candidateId={cand.id} visaCaseId={visa?.id} />
+                  </div>
                 </div>
               </div>
 

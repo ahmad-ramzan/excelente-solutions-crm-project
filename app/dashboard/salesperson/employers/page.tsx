@@ -74,11 +74,11 @@ export default async function SalespersonEmployersPage() {
               <h1>Employers</h1>
               <p className="ph-sub">Companies you manage recruitment for.</p>
             </div>
-            {/* 
-            <button className="btn" style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', color: '#fff', fontSize: '13px', border: 'none', padding: '10px 20px', borderRadius: '8px' }}>
-              + Add employer
-            </button>
-            */}
+            <Link href="/dashboard/salesperson/employers/new">
+              <button className="btn" style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', color: '#fff', fontSize: '13px', border: 'none', padding: '10px 20px', borderRadius: '8px' }}>
+                + Add employer
+              </button>
+            </Link>
           </div>
 
           <div className="card" style={{ border: 'none', background: 'transparent', marginTop: '24px' }}>

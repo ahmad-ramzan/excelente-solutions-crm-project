@@ -51,7 +51,14 @@ create type visa_status as enum (
   'pending',
   'documents_requested',
   'documents_received',
+  'documents_under_review',
+  'ready_for_submission',
   'submitted',
+  'appointment_scheduled',
+  'biometrics_required',
+  'under_immigration_review',
+  'additional_documents_requested',
+  'on_hold',
   'approved',
   'rejected',
   'closed'
@@ -61,6 +68,9 @@ create type document_type as enum (
   'cv',
   'passport_scan',
   'health_certificate',
+  'experience_letter',
+  'police_clearance',
+  'education_document',
   'visa_application_slip',
   'approved_visa',
   'contract',
@@ -307,6 +317,12 @@ create table public.visa_cases (
 
   status visa_status not null default 'pending',
   remarks text,
+
+  application_reference text,
+  embassy_appointment_at timestamptz,
+  expected_decision_date date,
+  legal_notes text,
+  rejection_reason text,
 
   opened_at timestamptz not null default now(),
   submitted_at timestamptz,
@@ -576,8 +592,9 @@ declare
   v_employer_id uuid;
   v_country_id uuid;
   v_agent_id uuid;
-  v_lawyer_id uuid;
+  v_admin_id uuid;
   v_selection_id uuid;
+  v_visa_case_id uuid;
 begin
   select employer_id, country_id
   into v_employer_id, v_country_id
@@ -650,16 +667,8 @@ begin
   )
   returning id into v_selection_id;
 
-  select lc.lawyer_id
-  into v_lawyer_id
-  from public.lawyer_countries lc
-  join public.profiles p on p.id = lc.lawyer_id
-  where lc.country_id = v_country_id
-  and p.role = 'lawyer'
-  and p.status = 'active'
-  order by lc.is_primary desc, p.created_at asc
-  limit 1;
-
+  -- Visa case starts unassigned — admin picks the country-specific lawyer
+  -- (see admin's "Reassign lawyer" control / reassignLawyer action).
   insert into public.visa_cases (
     selection_id,
     candidate_id,
@@ -677,11 +686,12 @@ begin
     p_job_offer_id,
     v_employer_id,
     v_agent_id,
-    v_lawyer_id,
+    null,
     v_country_id,
     'pending',
     'Visa case opened after candidate selection'
-  );
+  )
+  returning id into v_visa_case_id;
 
   insert into public.notifications (
     recipient_id,
@@ -703,7 +713,11 @@ begin
     v_selection_id
   );
 
-  if v_lawyer_id is not null then
+  for v_admin_id in
+    select id from public.profiles
+    where role = 'admin'
+    and status = 'active'
+  loop
     insert into public.notifications (
       recipient_id,
       actor_id,
@@ -714,15 +728,15 @@ begin
       entity_id
     )
     values (
-      v_lawyer_id,
+      v_admin_id,
       auth.uid(),
       'candidate_selected',
-      'New visa case',
-      'A new candidate has been selected and needs visa processing.',
-      'job_offer_selections',
-      v_selection_id
+      'Visa case needs a lawyer',
+      'A new candidate has been selected and needs a lawyer assigned for visa processing.',
+      'visa_cases',
+      v_visa_case_id
     );
-  end if;
+  end loop;
 
   return v_selection_id;
 end;
@@ -1097,6 +1111,17 @@ using (
   )
 );
 
+create policy "lawyers upload documents for assigned cases"
+on public.candidate_documents for insert
+to authenticated
+with check (
+  exists (
+    select 1 from public.visa_cases vc
+    where vc.candidate_id = candidate_documents.candidate_id
+    and vc.lawyer_id = auth.uid()
+  )
+);
+
 create policy "employers read documents for visible candidates"
 on public.candidate_documents for select
 to authenticated
@@ -1282,6 +1307,71 @@ create policy "admin reads audit logs"
 on public.audit_logs for select
 to authenticated
 using (public.is_admin());
+
+-- =========================
+-- TRAVEL COORDINATION
+-- =========================
+
+create table public.visa_case_travel (
+  id uuid primary key default gen_random_uuid(),
+  visa_case_id uuid not null unique references public.visa_cases(id) on delete cascade,
+  ticket_booked boolean not null default false,
+  travel_date date,
+  arrival_date date,
+  employer_joining_date date,
+  notes text,
+  coordinated_by uuid references public.profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create trigger visa_case_travel_updated_at
+before update on public.visa_case_travel
+for each row execute function public.set_updated_at();
+
+alter table public.visa_case_travel enable row level security;
+
+create policy "admin manages travel coordination"
+on public.visa_case_travel for all
+to authenticated
+using (public.is_admin())
+with check (public.is_admin());
+
+create policy "salesperson manages travel for own job offers"
+on public.visa_case_travel for all
+to authenticated
+using (
+  exists (
+    select 1 from public.visa_cases vc
+    join public.job_offers jo on jo.id = vc.job_offer_id
+    where vc.id = visa_case_travel.visa_case_id
+    and jo.assigned_salesperson_id = auth.uid()
+  )
+)
+with check (
+  exists (
+    select 1 from public.visa_cases vc
+    join public.job_offers jo on jo.id = vc.job_offer_id
+    where vc.id = visa_case_travel.visa_case_id
+    and jo.assigned_salesperson_id = auth.uid()
+  )
+);
+
+create policy "read travel through case access"
+on public.visa_case_travel for select
+to authenticated
+using (
+  exists (
+    select 1 from public.visa_cases vc
+    where vc.id = visa_case_travel.visa_case_id
+    and (
+      public.is_admin()
+      or vc.lawyer_id = auth.uid()
+      or vc.agent_id = auth.uid()
+      or vc.employer_id = any(public.current_employer_ids())
+    )
+  )
+);
 
 -- =========================
 -- STORAGE BUCKETS

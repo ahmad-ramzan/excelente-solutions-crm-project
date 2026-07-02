@@ -5,20 +5,36 @@ import { revalidatePath } from 'next/cache';
 
 export async function updateVisaStatus(formData: FormData) {
   const supabase = await createClient();
-  
+
   const visaCaseId = formData.get('visaCaseId') as string;
   const newStatus = formData.get('status') as string;
   const remarks = formData.get('remarks') as string;
+  const applicationReference = (formData.get('applicationReference') as string) || null;
+  const embassyAppointmentAt = (formData.get('embassyAppointmentAt') as string) || null;
+  const expectedDecisionDate = (formData.get('expectedDecisionDate') as string) || null;
+  const legalNotes = (formData.get('legalNotes') as string) || null;
+  const rejectionReason = (formData.get('rejectionReason') as string) || null;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
+  const { data: vc } = await supabase
+    .from('visa_cases')
+    .select('agent_id, candidate_id, selection_id, candidates(first_name, last_name)')
+    .eq('id', visaCaseId)
+    .single();
+
   // Update case status
   const { error: updateError } = await supabase
     .from('visa_cases')
-    .update({ 
-      status: newStatus, 
+    .update({
+      status: newStatus,
       remarks,
+      application_reference: applicationReference,
+      embassy_appointment_at: embassyAppointmentAt,
+      expected_decision_date: expectedDecisionDate,
+      legal_notes: legalNotes,
+      rejection_reason: newStatus === 'rejected' ? rejectionReason : null,
       ...(newStatus === 'submitted' ? { submitted_at: new Date().toISOString() } : {}),
       ...(newStatus === 'approved' ? { approved_at: new Date().toISOString() } : {}),
       ...(newStatus === 'closed' || newStatus === 'rejected' ? { closed_at: new Date().toISOString() } : {}),
@@ -40,19 +56,63 @@ export async function updateVisaStatus(formData: FormData) {
       changed_by: user.id
     });
 
-  // If approved, update candidate status as well
-  if (newStatus === 'approved') {
-    // get candidate id
-    const { data: vc } = await supabase.from('visa_cases').select('candidate_id, selection_id').eq('id', visaCaseId).single();
-    if (vc) {
-      await supabase.from('candidates').update({ status: 'approved' }).eq('id', vc.candidate_id);
-      await supabase.from('job_offer_selections').update({ status: 'approved' }).eq('id', vc.selection_id);
-    }
+  const candidate: any = vc?.candidates;
+  const candidateName = candidate ? `${candidate.first_name} ${candidate.last_name}` : 'a candidate';
+
+  // Missing/additional documents needed — notify agent and all admins
+  if (vc && (newStatus === 'documents_requested' || newStatus === 'additional_documents_requested')) {
+    const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin').eq('status', 'active');
+    const recipients = [vc.agent_id, ...(admins || []).map(a => a.id)];
+
+    await supabase.from('notifications').insert(
+      recipients.map(recipientId => ({
+        recipient_id: recipientId,
+        actor_id: user.id,
+        type: 'document_requested' as const,
+        title: 'Documents needed',
+        body: remarks
+          ? `${candidateName}'s visa case needs documents: ${remarks}`
+          : `${candidateName}'s visa case needs additional documents.`,
+        entity_table: 'visa_cases',
+        entity_id: visaCaseId,
+      }))
+    );
+  }
+
+  // If approved, update candidate status, selection status, and notify agent + employer
+  if (newStatus === 'approved' && vc) {
+    await supabase.from('candidates').update({ status: 'approved' }).eq('id', vc.candidate_id);
+
+    const { data: selection } = await supabase
+      .from('job_offer_selections')
+      .update({ status: 'approved' })
+      .eq('id', vc.selection_id)
+      .select('employer_id')
+      .single();
+
+    const { data: employerUsers } = selection
+      ? await supabase.from('employer_users').select('profile_id').eq('employer_id', selection.employer_id)
+      : { data: [] as { profile_id: string }[] };
+
+    const recipients = [vc.agent_id, ...(employerUsers || []).map(eu => eu.profile_id)];
+
+    await supabase.from('notifications').insert(
+      recipients.map(recipientId => ({
+        recipient_id: recipientId,
+        actor_id: user.id,
+        type: 'visa_approved' as const,
+        title: 'Visa approved',
+        body: `${candidateName}'s visa has been approved.`,
+        entity_table: 'visa_cases',
+        entity_id: visaCaseId,
+      }))
+    );
   }
 
   revalidatePath(`/dashboard/lawyer/cases/${visaCaseId}`);
   revalidatePath('/dashboard/lawyer/cases');
-  
+  revalidatePath('/dashboard/admin/visas');
+
   return { success: true };
 }
 
@@ -154,7 +214,10 @@ export async function uploadVisaDocument(formData: FormData) {
     return { error: 'Failed to save document metadata' };
   }
 
-  revalidatePath(`/dashboard/lawyer/cases/${visaCaseId}`);
-  
+  if (visaCaseId) {
+    revalidatePath(`/dashboard/lawyer/cases/${visaCaseId}`);
+  }
+  revalidatePath('/dashboard/agent/candidates');
+
   return { success: true };
 }
