@@ -16,7 +16,7 @@ export default async function SalespersonDashboard() {
     .eq('assigned_salesperson_id', user.id)
     .order('created_at', { ascending: false });
 
-  const employersList = dbEmployers || [];
+  const employersList: any[] = dbEmployers || [];
   const employerIds = employersList.map(e => e.id);
 
   // Fetch Job Offers for these employers

@@ -13,7 +13,7 @@ export default function HomePage() {
         <div className="hero-copy">
           <div className="eyebrow">Workforce solutions across borders</div>
           <h1>
-            The right people, placed <em>precisely</em> where the work is.
+            The right people, placed <em>precisely</em> where needed.
           </h1>
           <p className="lede">
             For over three decades, Excelente Solutions has connected vetted candidates with employers
@@ -185,7 +185,7 @@ export default function HomePage() {
         <div className="rows">
           <div className="row">
             <div className="k">Office</div>
-            <div className="v">Excelente Solutions, Athens · Warsaw · Moscow</div>
+            <div className="v">Excelente Solutions, 5 continents, 1 platform</div>
           </div>
           <div className="row">
             <div className="k">Email</div>
