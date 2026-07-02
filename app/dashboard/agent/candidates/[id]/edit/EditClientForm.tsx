@@ -1,10 +1,22 @@
 'use client';
 
-import { createCandidate } from '@/app/actions/candidate-actions';
+import { updateCandidate } from '@/app/actions/candidate-actions';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-export default function ClientForm({ countries, positions }: { countries: any[], positions: any[] }) {
+export default function EditClientForm({ 
+  countries, 
+  positions, 
+  candidate,
+  privateDetails,
+  candidatePositions
+}: { 
+  countries: any[], 
+  positions: any[],
+  candidate: any,
+  privateDetails: any,
+  candidatePositions: any[]
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -15,23 +27,25 @@ export default function ClientForm({ countries, positions }: { countries: any[],
     setError('');
 
     const formData = new FormData(e.currentTarget);
-    const positions = formData.getAll('positions');
+    const selectedPositions = formData.getAll('positions');
     
-    if (positions.length > 3) {
+    if (selectedPositions.length > 3) {
       setError('Candidate can apply for a maximum of 3 positions.');
       setLoading(false);
       return;
     }
 
-    const res = await createCandidate(formData);
+    const res = await updateCandidate(formData, candidate.id);
 
     if (res.error) {
       setError(res.error);
       setLoading(false);
     } else {
-      router.push('/dashboard/agent/candidates');
+      router.push(`/dashboard/agent/candidates/${candidate.public_code}`);
     }
   };
+  
+  const selectedPositionIds = candidatePositions.map(cp => cp.position_id);
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
@@ -48,20 +62,20 @@ export default function ClientForm({ countries, positions }: { countries: any[],
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', marginBottom: '24px' }}>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>First name</label>
-          <input name="firstName" required type="text" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
+          <input name="firstName" defaultValue={candidate.first_name} required type="text" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
         </div>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Last name</label>
-          <input name="lastName" required type="text" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
+          <input name="lastName" defaultValue={candidate.last_name} required type="text" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
         </div>
 
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Date of birth</label>
-          <input name="dateOfBirth" type="date" required style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
+          <input name="dateOfBirth" defaultValue={privateDetails?.date_of_birth} type="date" required style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
         </div>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Gender</label>
-          <select name="gender" required style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)', appearance: 'none' }}>
+          <select name="gender" defaultValue={candidate.gender} required style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)', appearance: 'none' }}>
             <option value="Male">Male</option>
             <option value="Female">Female</option>
           </select>
@@ -83,15 +97,15 @@ export default function ClientForm({ countries, positions }: { countries: any[],
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '24px' }}>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Phone</label>
-          <input name="phone" type="text" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
+          <input name="phone" defaultValue={privateDetails?.contact_phone} type="text" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
         </div>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Email</label>
-          <input name="email" type="email" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
+          <input name="email" defaultValue={privateDetails?.contact_email} type="email" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
         </div>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Address</label>
-          <input name="address" type="text" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
+          <input name="address" defaultValue={privateDetails?.emergency_contact} type="text" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
         </div>
       </div>
 
@@ -108,22 +122,22 @@ export default function ClientForm({ countries, positions }: { countries: any[],
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Destination country</label>
-          <select name="countryId" required style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)', appearance: 'none' }}>
+          <select name="countryId" defaultValue={candidate.country_id} required style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)', appearance: 'none' }}>
             <option value="">Select country</option>
             {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>City of visa application</label>
-          <input name="city" type="text" defaultValue="Lahore" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
+          <input name="city" defaultValue={candidate.city || "Lahore"} type="text" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
         </div>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Passport number</label>
-          <input name="passportNumber" required type="text" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
+          <input name="passportNumber" defaultValue={privateDetails?.passport_number} required type="text" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
         </div>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Passport expiry</label>
-          <input name="passportExpiry" required type="date" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
+          <input name="passportExpiry" defaultValue={privateDetails?.passport_expiry} required type="date" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
         </div>
       </div>
 
@@ -139,12 +153,12 @@ export default function ClientForm({ countries, positions }: { countries: any[],
 
       <div style={{ marginBottom: '8px' }}>
         <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Select positions (Ctrl/Cmd to select multiple)</label>
-        <select name="positions" required multiple style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)', minHeight: '120px' }}>
+        <select name="positions" defaultValue={selectedPositionIds} required multiple style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)', minHeight: '120px' }}>
           {positions.map(p => <option key={p.id} value={p.id} style={{ padding: '4px' }}>{p.name}</option>)}
         </select>
       </div>
       <p style={{ fontSize: '11.5px', color: 'var(--slate)', margin: 0, marginBottom: '24px' }}>
-        Positions are managed by the admin and reused across the system. A candidate can apply for several.
+        Positions are managed by the admin and reused across the system. A candidate can apply for up to 3.
       </p>
 
       <div style={{ height: '1px', background: 'var(--line)', margin: '32px 0' }}></div>
@@ -159,11 +173,11 @@ export default function ClientForm({ countries, positions }: { countries: any[],
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '40px' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Candidate photo</label>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Candidate photo (Leave empty to keep existing)</label>
           <input name="photo" type="file" accept="image/jpeg,image/png" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px dashed var(--line)', background: 'var(--paper)' }} />
         </div>
         <div>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>CV</label>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>CV (Leave empty to keep existing)</label>
           <input name="cv" type="file" accept="application/pdf,image/jpeg" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px dashed var(--line)', background: 'var(--paper)' }} />
         </div>
       </div>
@@ -173,7 +187,7 @@ export default function ClientForm({ countries, positions }: { countries: any[],
           Cancel
         </button>
         <button type="submit" disabled={loading} className="btn" style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', border: 'none', color: '#fff', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, opacity: loading ? 0.7 : 1 }}>
-          {loading ? 'Saving...' : 'Save candidate'}
+          {loading ? 'Saving...' : 'Update candidate'}
         </button>
       </div>
     </form>

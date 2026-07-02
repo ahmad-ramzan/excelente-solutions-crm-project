@@ -3,6 +3,8 @@ import AppTopbar from '../../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
 import { notFound } from 'next/navigation';
 import ClientAgentDocumentUpload from './ClientAgentDocumentUpload';
+import Link from 'next/link';
+import DeleteCandidateButton from './DeleteCandidateButton';
 
 export default async function CandidateDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -105,6 +107,13 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                     </a>
                   </div>
                 )}
+
+                <div className="pact" style={{ marginTop: '8px' }}>
+                  <Link href={`/dashboard/agent/candidates/${cndId}/edit`} style={{ textDecoration: 'none', width: '100%' }}>
+                    <button className="btn" style={{ width: '100%', justifyContent: 'center', background: '#fff', border: '1px solid var(--line)', color: 'var(--ink)' }}>Edit candidate</button>
+                  </Link>
+                  <DeleteCandidateButton candidateId={cand.id} />
+                </div>
               </div>
             </div>
 

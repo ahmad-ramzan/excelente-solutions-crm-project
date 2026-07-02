@@ -78,10 +78,11 @@ export default async function EmployerSelectionsPage() {
                 <tbody>
                   {selections.map((s) => {
                     const candidate = s.candidates;
-                    if (!candidate) return null;
+                    const cand = Array.isArray(candidate) ? candidate[0] : candidate;
+                    if (!cand) return null;
                     
-                    const fullName = `${candidate.first_name} ${candidate.last_name}`;
-                    const initials = `${candidate.first_name?.[0] || ''}${candidate.last_name?.[0] || ''}`.toUpperCase();
+                    const fullName = `${cand.first_name} ${cand.last_name}`;
+                    const initials = `${cand.first_name?.[0] || ''}${cand.last_name?.[0] || ''}`.toUpperCase();
                     
                     // @ts-ignore
                     const countryName = s.job_offers?.countries?.name || 'Unknown';
@@ -91,7 +92,7 @@ export default async function EmployerSelectionsPage() {
                     const employerName = s.employers?.name || 'Unknown';
                     
                     // @ts-ignore
-                    const positions = candidate.candidate_positions?.map(cp => cp.positions?.name).filter(Boolean) || [];
+                    const positions = cand.candidate_positions?.map(cp => cp.positions?.name).filter(Boolean) || [];
 
                     let statusColor = '#3b82f6';
                     let statusBg = '#eff6ff';
@@ -113,7 +114,7 @@ export default async function EmployerSelectionsPage() {
                             <div>
                               <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{fullName}</div>
                               <div style={{ color: 'var(--muted)', fontSize: '11.5px', fontFamily: 'var(--font-mono)' }}>
-                                {candidate.public_code}
+                                {cand.public_code}
                               </div>
                             </div>
                           </div>
@@ -141,7 +142,7 @@ export default async function EmployerSelectionsPage() {
                            </span>
                         </td>
                         <td style={{ padding: '16px 22px', textAlign: 'right', borderTopRightRadius: '13px', borderBottomRightRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderRight: '1px solid var(--line)' }}>
-                          <Link href={`/dashboard/employer/candidates/${candidate.public_code}`}>
+                          <Link href={`/dashboard/employer/candidates/${cand.public_code}`}>
                             <button className="ico-btn" style={{ fontSize: '14px', border: '1px solid var(--line-2)', borderRadius: '6px', width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', background: 'transparent', cursor: 'pointer' }}>
                               →
                             </button>

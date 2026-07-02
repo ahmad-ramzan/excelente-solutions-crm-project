@@ -94,7 +94,7 @@ export default async function EmployerNewJobOfferPage() {
               employerId={employer.id}
               employerName={employer.name}
               countryId={employer.country_id}
-              countryName={employer.countries?.name || 'Unknown'}
+              countryName={(employer.countries as any)?.[0]?.name || (employer.countries as any)?.name || 'Unknown'}
               positions={positions || []}
             />
 
