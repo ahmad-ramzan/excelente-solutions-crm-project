@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
 export async function updateVisaStatus(formData: FormData) {
@@ -79,24 +80,37 @@ export async function updateVisaStatus(formData: FormData) {
     );
   }
 
-  // If approved, update candidate status, selection status, and notify agent + employer
-  if (newStatus === 'approved' && vc) {
-    await supabase.from('candidates').update({ status: 'approved' }).eq('id', vc.candidate_id);
+  // Use admin client for cross-table status updates — the lawyer's RLS
+  // only allows SELECT on candidates/selections/slots, so these updates
+  // must bypass RLS via the service-role client.
+  const adminSupabase = createAdminClient();
 
-    const { data: selection } = await supabase
+  // If approved, update candidate status, selection status, slot status, and notify
+  if (newStatus === 'approved' && vc) {
+    await adminSupabase.from('candidates').update({ status: 'approved' }).eq('id', vc.candidate_id);
+
+    const { data: selection } = await adminSupabase
       .from('job_offer_selections')
       .update({ status: 'approved' })
       .eq('id', vc.selection_id)
-      .select('employer_id')
+      .select('employer_id, slot_id')
       .single();
 
+    // Also mark the slot as 'filled' now that the visa is approved
+    if (selection?.slot_id) {
+      await adminSupabase
+        .from('job_offer_slots')
+        .update({ status: 'filled', filled_at: new Date().toISOString() })
+        .eq('id', selection.slot_id);
+    }
+
     const { data: employerUsers } = selection
-      ? await supabase.from('employer_users').select('profile_id').eq('employer_id', selection.employer_id)
+      ? await adminSupabase.from('employer_users').select('profile_id').eq('employer_id', selection.employer_id)
       : { data: [] as { profile_id: string }[] };
 
     const recipients = [vc.agent_id, ...(employerUsers || []).map(eu => eu.profile_id)];
 
-    await supabase.from('notifications').insert(
+    await adminSupabase.from('notifications').insert(
       recipients.map(recipientId => ({
         recipient_id: recipientId,
         actor_id: user.id,
@@ -109,9 +123,35 @@ export async function updateVisaStatus(formData: FormData) {
     );
   }
 
+  // If rejected, update candidate and selection statuses too
+  if (newStatus === 'rejected' && vc) {
+    await adminSupabase.from('candidates').update({ status: 'rejected' }).eq('id', vc.candidate_id);
+
+    const { data: selection } = await adminSupabase
+      .from('job_offer_selections')
+      .update({ status: 'rejected' })
+      .eq('id', vc.selection_id)
+      .select('employer_id, slot_id')
+      .single();
+
+    // Free the slot back to 'vacant' so it can be filled by another candidate
+    if (selection?.slot_id) {
+      await adminSupabase
+        .from('job_offer_slots')
+        .update({ status: 'vacant', candidate_id: null, reserved_at: null, filled_at: null })
+        .eq('id', selection.slot_id);
+    }
+  }
+
   revalidatePath(`/dashboard/lawyer/cases/${visaCaseId}`);
   revalidatePath('/dashboard/lawyer/cases');
+  revalidatePath('/dashboard/lawyer');
   revalidatePath('/dashboard/admin/visas');
+  revalidatePath('/dashboard/agent');
+  revalidatePath('/dashboard/agent/candidates');
+  revalidatePath('/dashboard/employer');
+  revalidatePath('/dashboard/employer/selections');
+  revalidatePath('/dashboard/employer/candidates');
 
   return { success: true };
 }
