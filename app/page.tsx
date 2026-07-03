@@ -2,6 +2,7 @@ import Link from 'next/link';
 import PublicNav from './components/PublicNav';
 import Footer from './components/Footer';
 import FlowerLogo from './components/FlowerLogo';
+import SectionPhoto from './components/SectionPhoto';
 
 export default function HomePage() {
   return (
@@ -17,15 +18,14 @@ export default function HomePage() {
           </h1>
           <p className="lede">
             For over three decades, Excelente Solutions has connected vetted candidates with employers
-            across Russia, Greece, Poland and Romania — handling recruitment, documentation and visa
-            processing end to end.
+            globally — handling recruitment, documentation and visa processing end to end.
           </p>
           <div className="cta">
             <Link href="/register">
-              <button className="btn btn-gold">Get started</button>
+              <button className="btn btn-gold">Register</button>
             </Link>
             <Link href="/login">
-              <button className="btn btn-ghost">Employer login</button>
+              <button className="btn btn-ghost">Log in</button>
             </Link>
           </div>
           <div className="since">
@@ -52,7 +52,7 @@ export default function HomePage() {
           <div className="hv-card">
             <FlowerLogo size={172} className="hv-logo" />
             <div className="hv-name">Excelente Solutions</div>
-            <div className="hv-sub">Recruitment · Since 1991</div>
+            <div className="hv-sub">International Recruitment &amp; Workforce Solutions · Since 1991</div>
           </div>
           <div className="hv-chip hv-c1">
             <span className="d" style={{ background: 'var(--blue)' }} />
@@ -69,13 +69,135 @@ export default function HomePage() {
         </div>
       </section>
 
+      <SectionPhoto
+        src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80"
+        alt="A diverse team collaborating in a modern workplace"
+      />
+
+      {/* ===== FEATURES ===== */}
+      <div className="feats">
+        <div className="feat">
+          <div className="ic">⬡</div>
+          <h3>Affordable staffing</h3>
+          <p>
+            Excelente Solutions delivers low-cost, reliable international staff to employers, while
+            ensuring 100% legal entry through valid work visas arranged by us.
+          </p>
+        </div>
+        <div className="feat">
+          <div className="ic">⚖</div>
+          <h3>Legal &amp; compliant</h3>
+          <p>
+            Valid work visas secured, with full immigration &amp; labor compliance. Ethical, transparent
+            recruitment — no shortcuts, no risk.
+          </p>
+        </div>
+        <div className="feat">
+          <div className="ic">✦</div>
+          <h3>Why us</h3>
+          <p>
+            Lower staffing costs, reduced hiring risk and fast, reliable placement — a smarter way to
+            build your workforce.
+          </p>
+        </div>
+      </div>
+
+      <SectionPhoto
+        src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=1600&q=80"
+        alt="Two professionals shaking hands over an agreement"
+      />
+
+      {/* ===== LEGAL & COMPLIANT ===== */}
+      <section className="why" id="legal">
+        <div className="why-in">
+          <div>
+            <div className="eyebrow">Legal &amp; compliant</div>
+            <h2>Fully Legal. Fully Compliant.</h2>
+          </div>
+          <div className="ptlist">
+            <div className="pt">
+              <span className="dot">✓</span>
+              <div>
+                <strong>Valid work visas secured</strong>
+              </div>
+            </div>
+            <div className="pt">
+              <span className="dot">✓</span>
+              <div>
+                <strong>Immigration &amp; labor compliance</strong>
+              </div>
+            </div>
+            <div className="pt">
+              <span className="dot">✓</span>
+              <div>
+                <strong>Ethical, transparent recruitment</strong>
+              </div>
+            </div>
+            <div className="pt">
+              <span className="dot">✓</span>
+              <div>
+                <strong>No shortcuts. No risk.</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== WHY ===== */}
+      <section className="why" id="why-us">
+        <div className="why-in">
+          <div>
+            <div className="eyebrow">Why us</div>
+            <h2>Why Excelente Solutions?</h2>
+          </div>
+          <div className="ptlist">
+            <div className="pt">
+              <span className="dot">✓</span>
+              <div>
+                <strong>Lower staffing costs</strong>
+              </div>
+            </div>
+            <div className="pt">
+              <span className="dot">✓</span>
+              <div>
+                <strong>Reduced hiring risk</strong>
+              </div>
+            </div>
+            <div className="pt">
+              <span className="dot">✓</span>
+              <div>
+                <strong>Fast, reliable placement</strong>
+              </div>
+            </div>
+            <div className="pt">
+              <span className="dot">✓</span>
+              <div>
+                <strong>Complete peace of mind</strong>
+              </div>
+            </div>
+            <div className="pt">
+              <span className="dot">✓</span>
+              <div>
+                <strong>A smarter way to build your workforce</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <SectionPhoto
+        src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1600&q=80"
+        alt="A professional team reviewing documents at a desk"
+      />
+
       {/* ===== HOW IT WORKS ===== */}
       <section className="band" id="how-it-works">
         <div className="band-in">
           <h2>How it works</h2>
           <p className="sub">
-            One transparent pipeline from requirement to approved visa — every party sees exactly what
-            they need, and nothing they don't.
+            <strong>End-to-End Recruitment &amp; Visas.</strong> We manage the entire process—candidate
+            selection, documentation, and work visa approvals—so employers receive work-ready staff
+            without administrative burden or compliance risk.
           </p>
           <div className="steps">
             <div className="step">
@@ -102,73 +224,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== FEATURES ===== */}
-      <div className="feats">
-        <div className="feat">
-          <div className="ic">⬡</div>
-          <h3>Affordable staffing</h3>
-          <p>
-            Transparent, flat-fee recruitment with no hidden margins — predictable cost per placement,
-            agreed up front.
-          </p>
-        </div>
-        <div className="feat">
-          <div className="ic">⚖</div>
-          <h3>Legal &amp; compliant</h3>
-          <p>
-            Country-licensed lawyers handle every visa application, so documentation is correct and
-            defensible from day one.
-          </p>
-        </div>
-        <div className="feat">
-          <div className="ic">✦</div>
-          <h3>Why us</h3>
-          <p>
-            Three decades of placements, dedicated salespeople per employer, and a single system
-            tracking every candidate&apos;s status.
-          </p>
-        </div>
-      </div>
-
-      {/* ===== WHY ===== */}
-      <section className="why" id="why-us">
-        <div className="why-in">
-          <div>
-            <div className="eyebrow">Why Excelente</div>
-            <h2>Built around trust, not paperwork.</h2>
-          </div>
-          <div className="ptlist">
-            <div className="pt">
-              <span className="dot">✓</span>
-              <div>
-                <strong>Country-locked visibility</strong>
-                <span>Employers only ever see candidates cleared for their own market.</span>
-              </div>
-            </div>
-            <div className="pt">
-              <span className="dot">✓</span>
-              <div>
-                <strong>Contact details stay private</strong>
-                <span>Personal contact information is visible to administrators only.</span>
-              </div>
-            </div>
-            <div className="pt">
-              <span className="dot">✓</span>
-              <div>
-                <strong>One candidate, one assignment</strong>
-                <span>Selected candidates are reserved instantly and hidden from others.</span>
-              </div>
-            </div>
-            <div className="pt">
-              <span className="dot">✓</span>
-              <div>
-                <strong>Documented end to end</strong>
-                <span>CVs, passports, health certificates and visas tracked in one place.</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <SectionPhoto
+        src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80"
+        alt="A global network of connections across the world"
+      />
 
       {/* ===== CONTACT ===== */}
       <section className="contact" id="contact">
@@ -178,9 +237,14 @@ export default function HomePage() {
           <p className="lede">
             Tell us your country and headcount — we&apos;ll match candidates within days.
           </p>
-          <Link href="/register">
-            <button className="btn btn-gold">Create an account</button>
-          </Link>
+          <div className="cta">
+            <Link href="/register">
+              <button className="btn btn-gold">Register</button>
+            </Link>
+            <Link href="/login">
+              <button className="btn btn-ghost">Log in</button>
+            </Link>
+          </div>
         </div>
         <div className="rows">
           <div className="row">
@@ -189,11 +253,11 @@ export default function HomePage() {
           </div>
           <div className="row">
             <div className="k">Email</div>
-            <div className="v">hello@excelente-solutions.com</div>
+            <div className="v">office@excelente.my</div>
           </div>
           <div className="row">
-            <div className="k">Phone</div>
-            <div className="v">+30 21 0000 1991</div>
+            <div className="k">Tel. &amp; WhatsApp</div>
+            <div className="v">+60 11 1542 2207</div>
           </div>
           <div className="row">
             <div className="k">Hours</div>

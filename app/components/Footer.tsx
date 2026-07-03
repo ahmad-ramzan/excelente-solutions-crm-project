@@ -6,10 +6,10 @@ export default function Footer() {
     <footer className="foot">
       <div className="fl">
         <Link href="/">
-          <Logo variant="dark" />
+          <Logo variant="dark" subtext="Legal Workforce · Cost-Efficient · Fully Compliant" />
         </Link>
       </div>
-      <div>© 1991–2026 Excelente Solutions. International Recruitment &amp; Workforce Solutions.</div>
+      <div>© 1991–2026 Excelente Solutions. Legal Workforce · Cost-Efficient · Fully Compliant.</div>
     </footer>
   );
 }

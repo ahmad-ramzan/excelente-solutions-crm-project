@@ -2762,3 +2762,23 @@ hr.soft {
   border-radius: 50%;
   animation: btnspin 0.6s linear infinite;
 }
+
+/* ── Section photography bands ─────────────────────────────── */
+.sec-photo {
+  position: relative;
+  width: min(1100px, 92%);
+  margin: 10px auto 0;
+  height: 300px;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 50px rgba(20, 30, 60, 0.14);
+}
+.sec-photo img {
+  object-fit: cover;
+}
+@media (max-width: 640px) {
+  .sec-photo {
+    height: 200px;
+    border-radius: 14px;
+  }
+}

@@ -71,16 +71,6 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleLogin}>
-           <div className="field">
-            <label htmlFor="loginRole">I am signing in as</label>
-            <select id="loginRole" name="loginRole" className="input" defaultValue="Employer">
-              <option>Admin</option>
-              <option>Salesperson</option>
-              <option>Agent</option>
-              <option>Employer</option>
-              <option>Lawyer</option>
-            </select>
-          </div>
           <div className="field">
             <label htmlFor="email">Email address</label>
             <input

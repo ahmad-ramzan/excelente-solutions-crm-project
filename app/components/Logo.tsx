@@ -8,7 +8,7 @@ interface LogoProps {
 
 export default function Logo({
   variant = 'light',
-  subtext = 'International Recruitment · Since 1991',
+  subtext = 'International Recruitment & Workforce Solutions · Since 1991',
   size = 34,
 }: LogoProps) {
   const nameColor = variant === 'dark' ? '#fff' : 'inherit';
