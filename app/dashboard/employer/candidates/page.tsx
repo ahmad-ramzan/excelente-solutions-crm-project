@@ -11,7 +11,7 @@ export default async function EmployerCandidatesPage({ searchParams }: { searchP
   if (!user) return <div style={{ padding: 40 }}>Not logged in</div>;
 
   // 1. Find the employer record for this user
-  const { data: employerUsers, error: euError } = await supabase
+  const { data: employerUsers } = await supabase
     .from('employer_users')
     .select('employer_id')
     .eq('profile_id', user.id)
@@ -53,7 +53,7 @@ export default async function EmployerCandidatesPage({ searchParams }: { searchP
   const countryCode = Array.isArray(countries) ? countries[0]?.code : countries?.code || 'N/A';
 
   // 3. Build query for available candidates in this country
-  let query = supabase
+  const query = supabase
     .from('candidate_public_view')
     .select('*')
     .eq('status', 'available')

@@ -86,7 +86,7 @@ export default function ClientDocumentUpload({
           className="btn" 
           style={{ background: 'var(--ink)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.7 : 1 }}
         >
-          {isSubmitting ? 'Uploading...' : 'Upload Document'}
+          {isSubmitting ? <><span className="btn-spinner" />Uploading...</> : 'Upload Document'}
         </button>
       </div>
     </form>

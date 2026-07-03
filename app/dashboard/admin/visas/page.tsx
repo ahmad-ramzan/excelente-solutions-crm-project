@@ -44,7 +44,7 @@ export default async function VisaProcessesPage() {
     
     let statusColor = 'var(--slate)';
     let statusBg = 'var(--line-2)';
-    let statusLabel = vc.status.replace(/_/g, ' ').toUpperCase();
+    const statusLabel = vc.status.replace(/_/g, ' ').toUpperCase();
     
     if (vc.status === 'approved') {
       statusColor = '#008a3d';

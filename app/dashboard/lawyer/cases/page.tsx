@@ -30,7 +30,7 @@ export default async function LawyerCasesPage() {
 
   // Get agent profiles
   const agentIds = Array.from(new Set((dbCases || []).map(c => c.agent_id).filter(Boolean)));
-  let agentsMap: Record<string, string> = {};
+  const agentsMap: Record<string, string> = {};
   if (agentIds.length > 0) {
     const { data: agentsData } = await supabase
       .from('profiles')

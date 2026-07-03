@@ -53,7 +53,7 @@ export default function AssignSalespersonCell({
         className="btn"
         style={{ background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', opacity: loading ? 0.7 : 1 }}
       >
-        {loading ? 'Saving…' : 'Save'}
+        {loading ? <><span className="btn-spinner" />Saving…</> : 'Save'}
       </button>
       {error && <div style={{ color: '#b91c1c', fontSize: '11px' }}>{error}</div>}
     </div>

@@ -32,7 +32,7 @@ export default function SelectCandidateButton({ jobOfferId, candidateId }: { job
         className="btn"
         style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', border: 'none', color: '#fff', padding: '8px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', opacity: loading ? 0.7 : 1 }}
       >
-        {loading ? 'Placing…' : 'Place here'}
+        {loading ? <><span className="btn-spinner" />Placing…</> : 'Place here'}
       </button>
       {error && (
         <div style={{ color: '#b91c1c', fontSize: '12px', marginTop: '6px', maxWidth: '220px' }}>{error}</div>

@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import Logo from './Logo';
 import { roleConfig, type Role } from '../lib/mock-data';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import FlowerLogo from '../components/FlowerLogo';
 
 type RoleOpt = 'Employer' | 'Agent' | 'Salesperson' | 'Lawyer';
@@ -18,7 +17,6 @@ export default function RegisterPage() {
   const [selected, setSelected] = useState<RoleOpt>('Employer');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   async function handleRegister(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -160,7 +158,7 @@ export default function RegisterPage() {
             disabled={loading}
             style={{ width: '100%', justifyContent: 'center', padding: '13px', marginTop: 8 }}
           >
-            {loading ? 'Creating account...' : 'Create account'}
+            {loading ? <><span className="btn-spinner" />Creating account...</> : 'Create account'}
           </button>
         </form>
 

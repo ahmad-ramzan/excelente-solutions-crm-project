@@ -58,7 +58,6 @@ export default async function LawyerCaseDetailPage({ params }: { params: Promise
   const c = caseData.candidates as any;
   const candidateName = `${c?.first_name} ${c?.last_name}`;
   const employerName = (caseData.employers as any)?.name;
-  const countryName = (caseData.countries as any)?.name;
   const privateDetails = Array.isArray(c?.candidate_private_details) ? c.candidate_private_details[0] : c?.candidate_private_details;
   const passportNumber = privateDetails?.passport_number;
 

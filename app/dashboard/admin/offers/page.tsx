@@ -24,7 +24,7 @@ export default async function JobOffersPage() {
 
   // Get filled counts
   const offerIds = (offers || []).map((o: any) => o.id);
-  let filledMap: Record<string, number> = {};
+  const filledMap: Record<string, number> = {};
   if (offerIds.length > 0) {
     const { data: selections } = await supabase
       .from('job_offer_selections')

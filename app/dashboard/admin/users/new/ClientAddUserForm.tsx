@@ -93,7 +93,7 @@ export default function ClientAddUserForm() {
           className="btn"
           style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', border: 'none', color: '#fff', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, opacity: loading ? 0.7 : 1 }}
         >
-          {loading ? 'Creating...' : 'Create user'}
+          {loading ? <><span className="btn-spinner" />Creating...</> : 'Create user'}
         </button>
       </div>
     </form>

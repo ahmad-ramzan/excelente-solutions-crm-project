@@ -3,11 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import FlowerLogo from '../components/FlowerLogo';
-import { type Role } from '../lib/mock-data';
-import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -132,7 +129,7 @@ export default function LoginPage() {
             disabled={loading}
             style={{ width: '100%', justifyContent: 'center', padding: '13px' }}
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? <><span className="btn-spinner" />Signing in...</> : 'Sign in'}
           </button>
         </form>
 

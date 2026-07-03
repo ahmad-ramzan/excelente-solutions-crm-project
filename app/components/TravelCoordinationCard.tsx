@@ -82,7 +82,7 @@ export default function TravelCoordinationCard({
             className="btn btn-gold"
             style={{ width: '100%', justifyContent: 'center', opacity: isSubmitting ? 0.7 : 1 }}
           >
-            {isSubmitting ? 'Saving…' : 'Save travel details'}
+            {isSubmitting ? <><span className="btn-spinner" />Saving…</> : 'Save travel details'}
           </button>
         </form>
       </div>

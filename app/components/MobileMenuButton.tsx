@@ -6,10 +6,16 @@ import { usePathname } from 'next/navigation';
 export default function MobileMenuButton() {
   const pathname = usePathname();
 
+  const closeSidebar = useCallback(() => {
+    document.querySelector('.app')?.classList.remove('sidebar-open');
+    document.querySelector('.sidebar-overlay')?.classList.remove('visible');
+    document.body.style.overflow = '';
+  }, []);
+
   // Close sidebar on route change
   useEffect(() => {
     closeSidebar();
-  }, [pathname]);
+  }, [pathname, closeSidebar]);
 
   // Close on escape key
   useEffect(() => {
@@ -18,13 +24,7 @@ export default function MobileMenuButton() {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
-
-  const closeSidebar = useCallback(() => {
-    document.querySelector('.app')?.classList.remove('sidebar-open');
-    document.querySelector('.sidebar-overlay')?.classList.remove('visible');
-    document.body.style.overflow = '';
-  }, []);
+  }, [closeSidebar]);
 
   const toggleSidebar = useCallback(() => {
     const app = document.querySelector('.app');

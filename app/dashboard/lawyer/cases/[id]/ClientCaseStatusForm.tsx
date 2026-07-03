@@ -167,7 +167,7 @@ export default function ClientCaseStatusForm({
           className="btn" 
           style={{ background: 'var(--brand)', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.7 : 1 }}
         >
-          {isSubmitting ? 'Saving...' : 'Update Status'}
+          {isSubmitting ? <><span className="btn-spinner" />Saving...</> : 'Update Status'}
         </button>
       </div>
     </form>

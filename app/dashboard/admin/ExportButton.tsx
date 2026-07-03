@@ -43,7 +43,7 @@ export default function ExportButton() {
   return (
     <div>
       <button className="btn btn-ghost btn-sm" onClick={handleExport} disabled={loading}>
-        {loading ? 'Exporting…' : 'Export'}
+        {loading ? <><span className="btn-spinner" />Exporting…</> : 'Export'}
       </button>
       {error && (
         <div style={{ color: '#b91c1c', fontSize: '12px', marginTop: '6px' }}>{error}</div>

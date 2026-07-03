@@ -30,7 +30,7 @@ export default function DeleteCandidateButton({ candidateId }: { candidateId: st
       className="btn btn-ghost" 
       style={{ width: '100%', justifyContent: 'center', color: 'var(--red)', marginTop: '8px' }}
     >
-      {loading ? 'Deleting...' : 'Delete candidate'}
+      {loading ? <><span className="btn-spinner" />Deleting...</> : 'Delete candidate'}
     </button>
   );
 }

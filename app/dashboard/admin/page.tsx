@@ -3,7 +3,6 @@ import AppTopbar from '../../components/AppTopbar';
 import StatusBadge from '../../components/StatusBadge';
 import { createClient } from '@/utils/supabase/server';
 import { getDashboardStats } from '@/app/lib/queries';
-import Link from 'next/link';
 import ExportButton from './ExportButton';
 
 export default async function AdminDashboard() {
@@ -34,7 +33,7 @@ export default async function AdminDashboard() {
 
   // Fetch Agent Names for candidates
   const agentIds = Array.from(new Set(candidates.map(c => c.agent_id).filter(Boolean)));
-  let agentMap: Record<string, string> = {};
+  const agentMap: Record<string, string> = {};
   if (agentIds.length > 0) {
     const { data: agents } = await supabase.from('profiles').select('id, full_name').in('id', agentIds);
     agents?.forEach(a => agentMap[a.id] = a.full_name);

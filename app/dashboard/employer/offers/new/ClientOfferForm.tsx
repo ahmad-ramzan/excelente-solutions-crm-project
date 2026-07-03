@@ -119,7 +119,7 @@ export default function ClientOfferForm({
           Cancel
         </button>
         <button type="submit" disabled={isSubmitting} className="btn" style={{ background: '#6366f1', border: 'none', color: '#fff', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.7 : 1 }}>
-          {isSubmitting ? 'Creating...' : 'Create Job Offer'}
+          {isSubmitting ? <><span className="btn-spinner" />Creating...</> : 'Create Job Offer'}
         </button>
       </div>
 

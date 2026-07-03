@@ -110,7 +110,7 @@ export default function ClientAddEmployerForm({ countries }: { countries: { id: 
           className="btn"
           style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', border: 'none', color: '#fff', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, opacity: loading ? 0.7 : 1 }}
         >
-          {loading ? 'Saving...' : 'Save employer'}
+          {loading ? <><span className="btn-spinner" />Saving...</> : 'Save employer'}
         </button>
       </div>
     </form>

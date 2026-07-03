@@ -29,7 +29,7 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
   
   // Try to get employer name via selections for selected/visa_processing/approved candidates
   const selectedCandidateIds = (dbCandidates || []).filter((c: any) => c.status !== 'available').map((c: any) => c.id);
-  let employerMap: Record<string, string> = {};
+  const employerMap: Record<string, string> = {};
   if (selectedCandidateIds.length > 0) {
     const { data: selections } = await supabase
       .from('job_offer_selections')
@@ -113,7 +113,7 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
                   </tr>
                 </thead>
                 <tbody>
-                  {candidates.map((c, i) => (
+                  {candidates.map((c) => (
                     <tr key={c.id} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: '13px' }}>
                       <td style={{ padding: '16px 22px', borderTopLeftRadius: '13px', borderBottomLeftRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)' }}>
                         <div className="cell-name">

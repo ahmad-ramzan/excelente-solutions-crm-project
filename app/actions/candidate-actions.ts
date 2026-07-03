@@ -12,7 +12,6 @@ export async function createCandidate(formData: FormData) {
   const dateOfBirth = formData.get('dateOfBirth') as string;
   const phone = formData.get('phone') as string;
   const email = formData.get('email') as string;
-  const address = formData.get('address') as string;
   
   const countryId = formData.get('countryId') as string;
   const city = formData.get('city') as string;
@@ -98,7 +97,6 @@ export async function createCandidate(formData: FormData) {
       
     if (uploadError) {
       console.error(`Error uploading ${docType}:`, uploadError);
-      require('fs').appendFileSync('upload-debug.log', JSON.stringify({ type: 'upload_error', docType, error: uploadError }) + '\\n');
       return;
     }
 
@@ -113,7 +111,7 @@ export async function createCandidate(formData: FormData) {
       uploaded_by: user.id
     });
     if (dbInsertError) {
-      require('fs').appendFileSync('upload-debug.log', JSON.stringify({ type: 'db_insert_error', docType, error: dbInsertError }) + '\\n');
+      console.error(`Error saving ${docType} record:`, dbInsertError);
     }
   };
 
@@ -162,7 +160,6 @@ export async function updateCandidate(formData: FormData, candidateId: string) {
   const dateOfBirth = formData.get('dateOfBirth') as string;
   const phone = formData.get('phone') as string;
   const email = formData.get('email') as string;
-  const address = formData.get('address') as string;
   const countryId = formData.get('countryId') as string;
   const city = formData.get('city') as string;
   const passportNumber = formData.get('passportNumber') as string;
