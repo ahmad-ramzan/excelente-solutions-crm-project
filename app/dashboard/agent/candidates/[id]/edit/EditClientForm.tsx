@@ -59,7 +59,7 @@ export default function EditClientForm({
         <h2 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Personal information</h2>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', marginBottom: '24px' }}>
+      <div className="resp-grid-2">
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>First name</label>
           <input name="firstName" defaultValue={candidate.first_name} required type="text" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
@@ -94,7 +94,7 @@ export default function EditClientForm({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '24px' }}>
+      <div className="resp-grid-3">
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Phone</label>
           <input name="phone" defaultValue={privateDetails?.contact_phone} type="text" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
@@ -119,7 +119,7 @@ export default function EditClientForm({
         <h2 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Visa & passport</h2>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+      <div className="resp-grid-2">
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Destination country</label>
           <select name="countryId" defaultValue={candidate.country_id} required style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)', appearance: 'none' }}>
@@ -171,7 +171,7 @@ export default function EditClientForm({
         <h2 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Documents</h2>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '40px' }}>
+      <div className="resp-grid-2" style={{ marginBottom: '40px' }}>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Candidate photo (Leave empty to keep existing)</label>
           <input name="photo" type="file" accept="image/jpeg,image/png" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px dashed var(--line)', background: 'var(--paper)' }} />

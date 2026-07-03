@@ -131,7 +131,7 @@ export default async function EmployerDashboard() {
           </div>
 
           {/* Stats Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
+          <div className="resp-grid-4">
             <div className="stat" style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', border: 'none', color: '#fff', padding: '24px', borderRadius: '12px' }}>
               <div className="lab" style={{ color: 'rgba(255,255,255,0.9)', marginBottom: '12px' }}>Total Job Offers</div>
               <div className="v" style={{ color: '#fff' }}>{stats.total_offers}</div>
@@ -156,7 +156,7 @@ export default async function EmployerDashboard() {
           </div>
 
           {/* Main Content Area */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '24px' }}>
+          <div className="content-with-sidebar">
             {/* Left Column: Candidates */}
             <div className="card">
               <div className="card-h">
@@ -166,6 +166,7 @@ export default async function EmployerDashboard() {
                 </Link>
               </div>
               <div className="card-b" style={{ padding: '0 22px' }}>
+              <div className="responsive-table-wrap">
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
@@ -228,6 +229,7 @@ export default async function EmployerDashboard() {
                     )}
                   </tbody>
                 </table>
+              </div>
               </div>
             </div>
 

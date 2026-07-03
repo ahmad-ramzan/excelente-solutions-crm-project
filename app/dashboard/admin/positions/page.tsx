@@ -29,14 +29,8 @@ export default async function PositionsPage() {
             </div>
           </div>
 
-          <div 
-            style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', 
-              gap: '20px', 
-              marginTop: '22px' 
-            }}
-          >
+          <div className="resp-grid-cards" style={{ marginTop: '22px' }}>
+
             {positions?.map((pos) => (
               <div 
                 key={pos.id} 

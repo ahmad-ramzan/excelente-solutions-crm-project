@@ -96,7 +96,7 @@ export default async function SalespersonDashboard() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '40px' }}>
+          <div className="resp-grid-auto">
             {/* My employers */}
             <div className="stat" style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', border: 'none', color: '#fff' }}>
               <div className="lab" style={{ color: 'rgba(255,255,255,0.9)' }}>My employers</div>

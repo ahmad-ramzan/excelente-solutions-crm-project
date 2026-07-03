@@ -64,7 +64,7 @@ export default function ClientAddEmployerForm({ countries }: { countries: { id: 
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <div className="resp-grid-2" style={{ marginBottom: '16px' }}>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Email</label>
           <input

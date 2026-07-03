@@ -64,6 +64,7 @@ export default async function EmployerSelectionsPage() {
 
           <div className="card" style={{ border: 'none', background: 'transparent' }}>
             <div className="card-b" style={{ padding: 0 }}>
+            <div className="responsive-table-wrap">
               <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
                 <thead>
                   <tr>
@@ -160,6 +161,7 @@ export default async function EmployerSelectionsPage() {
                   )}
                 </tbody>
               </table>
+            </div>
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { signOut } from '@/app/dashboard/actions';
 import NotificationBell from './NotificationBell';
+import MobileMenuButton from './MobileMenuButton';
 
 interface AppTopbarProps {
   section: string;
@@ -39,11 +40,15 @@ export default async function AppTopbar({ section }: AppTopbarProps) {
 
   return (
     <div className="topbar">
-      <div className="crumb">
-        Excelente Solutions{' '}
-        <span style={{ margin: '0 6px', color: 'var(--line)' }}>/</span>
-        <b>{section}</b>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <MobileMenuButton />
+        <div className="crumb">
+          Excelente Solutions{' '}
+          <span style={{ margin: '0 6px', color: 'var(--line)' }}>/</span>
+          <b>{section}</b>
+        </div>
       </div>
+
       <div className="tb-r">
         {searchTarget ? (
           <form action={searchTarget} method="GET" className="search">

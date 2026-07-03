@@ -92,7 +92,7 @@ export default async function LawyerCaseDetailPage({ params }: { params: Promise
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px' }}>
+          <div className="content-with-sidebar" style={{ gridTemplateColumns: '1fr 340px' }}>
             
             {/* Left Column */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -103,7 +103,7 @@ export default async function LawyerCaseDetailPage({ params }: { params: Promise
                   <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Candidate Details</h3>
                 </div>
                 <div className="card-b">
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div className="resp-grid-2" style={{ marginBottom: 0 }}>
                     <div>
                       <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>Full Name</div>
                       <div style={{ fontSize: '14.5px', color: 'var(--ink)' }}>{candidateName}</div>

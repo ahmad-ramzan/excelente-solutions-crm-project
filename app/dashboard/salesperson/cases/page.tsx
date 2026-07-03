@@ -54,7 +54,7 @@ export default async function SalespersonCasesPage({ searchParams }: { searchPar
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 360px' : '1fr', gap: '24px' }}>
+          <div className={selected ? 'content-with-sidebar' : ''} style={!selected ? { display: 'block' } : undefined}>
             <div className="card" style={{ border: 'none', background: 'transparent' }}>
               <div className="card-b" style={{ padding: 0 }}>
                 <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>

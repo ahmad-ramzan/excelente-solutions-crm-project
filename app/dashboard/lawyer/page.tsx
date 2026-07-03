@@ -86,7 +86,7 @@ export default async function LawyerDashboard() {
           </div>
 
           {/* Stats Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
+          <div className="resp-grid-4">
             <div className="stat" style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', border: 'none', color: '#fff', padding: '24px', borderRadius: '12px' }}>
               <div className="lab" style={{ color: 'rgba(255,255,255,0.9)', marginBottom: '12px' }}>Pending cases</div>
               <div className="v" style={{ color: '#fff' }}>{pending}</div>

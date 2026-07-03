@@ -166,7 +166,7 @@ export default async function EmployerCandidatesPage({ searchParams }: { searchP
           </div>
 
           {/* Candidate Cards Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
+          <div className="resp-grid-cards">
             {candidates.map((c) => {
               const isAvailable = c.status === 'AVAILABLE';
 
@@ -201,7 +201,7 @@ export default async function EmployerCandidatesPage({ searchParams }: { searchP
 
                     {/* Actions */}
                     {isAvailable ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div className="resp-grid-2" style={{ marginBottom: 0 }}>
                         <Link href={`/dashboard/employer/candidates/${c.public_code}`}>
                           <button className="btn" style={{ width: '100%', background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)', padding: '10px 0', borderRadius: '8px', fontSize: '13.5px', fontWeight: 600, cursor: 'pointer' }}>
                             View
