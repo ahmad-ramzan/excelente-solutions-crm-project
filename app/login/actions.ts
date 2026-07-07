@@ -86,6 +86,11 @@ export async function signup(formData: FormData) {
   if (roleEnum === 'employer') {
     const companyName = formData.get('companyName') as string
     const country = formData.get('country') as string
+    const outletName = formData.get('outletName') as string
+    const address = formData.get('address') as string
+    const city = formData.get('city') as string
+    const zipCode = formData.get('zipCode') as string
+    const position = formData.get('position') as string
 
     if (!companyName || !country) {
       return { error: 'Company name and country are required for employer accounts' }
@@ -93,16 +98,49 @@ export async function signup(formData: FormData) {
 
     metadata.company_name = companyName
     metadata.country_name = country
+    if (outletName) metadata.outlet_name = outletName
+    if (address) metadata.address = address
+    if (city) metadata.city = city
+    if (zipCode) metadata.zip_code = zipCode
+    if (position) metadata.position = position
   }
 
-  if (roleEnum === 'lawyer') {
+  if (roleEnum === 'lawyer' || roleEnum === 'agent') {
     const country = formData.get('country') as string
+    const companyName = formData.get('companyName') as string
+    const address = formData.get('address') as string
+    const city = formData.get('city') as string
+    const zipCode = formData.get('zipCode') as string
+    const position = formData.get('position') as string
 
     if (!country) {
-      return { error: 'Country is required for lawyer accounts' }
+      return { error: `Country is required for ${roleEnum} accounts` }
     }
 
     metadata.country_name = country
+    if (companyName) metadata.company_name = companyName
+    if (address) metadata.address = address
+    if (city) metadata.city = city
+    if (zipCode) metadata.zip_code = zipCode
+    if (position) metadata.position = position
+  }
+
+  if (roleEnum === 'salesperson') {
+    const country = formData.get('country') as string
+    const address = formData.get('address') as string
+    const city = formData.get('city') as string
+    const zipCode = formData.get('zipCode') as string
+    const taxId = formData.get('taxId') as string
+
+    if (!country) {
+      return { error: 'Country is required for salesperson accounts' }
+    }
+
+    metadata.country_name = country
+    if (address) metadata.address = address
+    if (city) metadata.city = city
+    if (zipCode) metadata.zip_code = zipCode
+    if (taxId) metadata.tax_id = taxId
   }
 
   const { data, error } = await supabase.auth.signUp({

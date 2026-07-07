@@ -94,6 +94,14 @@ export default async function SalespersonDashboard() {
               <h1>Sales overview</h1>
               <p className="ph-sub">Your employers, their orders and how recruitment is tracking.</p>
             </div>
+            <div className="ph-act">
+              <Link href="/dashboard/salesperson/employers">
+                <button className="btn" style={{ background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)' }}>VIEW EMPLOYER STATUS</button>
+              </Link>
+              <Link href="/dashboard/salesperson/employers/new">
+                <button className="btn btn-gold">REGISTER EMPLOYER</button>
+              </Link>
+            </div>
           </div>
 
           <div className="resp-grid-auto">
