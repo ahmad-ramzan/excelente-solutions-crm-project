@@ -120,12 +120,17 @@ export default function EditClientForm({
       </div>
 
       <div className="resp-grid-2">
-        <div>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Destination country</label>
-          <select name="countryId" defaultValue={candidate.country_id} required style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)', appearance: 'none' }}>
-            <option value="">Select country</option>
-            {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Destination Country (Select multiple or Any)</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', color: 'var(--ink)', cursor: 'pointer' }}>
+              <input type="checkbox" name="openToAllCountries" defaultChecked={candidate.open_to_all_countries} style={{ width: '16px', height: '16px' }} />
+              Open to Any Country
+            </label>
+            <select name="countries" multiple defaultValue={candidate.country_ids || []} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)', minHeight: '100px' }}>
+              {countries.map(c => <option key={c.id} value={c.id} style={{ padding: '4px' }}>{c.name}</option>)}
+            </select>
+          </div>
         </div>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>City of visa application</label>
@@ -138,6 +143,14 @@ export default function EditClientForm({
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Passport expiry</label>
           <input name="passportExpiry" defaultValue={privateDetails?.passport_expiry} required type="date" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Available From</label>
+          <input name="availableFrom" defaultValue={candidate.available_from} type="date" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Available Until</label>
+          <input name="availableUntil" defaultValue={candidate.available_until} type="date" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
         </div>
       </div>
 

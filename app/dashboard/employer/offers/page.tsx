@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 import SelectCandidateButton from './SelectCandidateButton';
 
-export default async function EmployerJobOffersPage({ searchParams }: { searchParams: Promise<{ select?: string }> }) {
+export default async function EmployerJobOffersPage({ searchParams }: { searchParams: Promise<{ select?: string, filter?: string }> }) {
   const supabase = await createClient();
   const params = await searchParams;
 
@@ -37,21 +37,32 @@ export default async function EmployerJobOffersPage({ searchParams }: { searchPa
     .order('created_at', { ascending: false });
 
   const offers = offersData || [];
-
-  // Get filled counts for all offers
   const offerIds = offers.map(o => o.id);
-  const filledCounts: Record<string, number> = {};
+
+  // 4. Fetch all slots for these offers
+  let slots: any[] = [];
   if (offerIds.length > 0) {
-    const { data: selections } = await supabase
-      .from('job_offer_selections')
-      .select('job_offer_id, status')
+    const { data: slotsData } = await supabase
+      .from('job_offer_slots')
+      .select('*, candidate:candidates(id, first_name, last_name, public_code), job_offer:job_offers!inner(id, positions(name))')
       .in('job_offer_id', offerIds)
-      .in('status', ['selected', 'visa_processing', 'approved']);
-      
-    selections?.forEach(s => {
-      if (!filledCounts[s.job_offer_id]) filledCounts[s.job_offer_id] = 0;
-      filledCounts[s.job_offer_id]++;
-    });
+      .order('created_at', { ascending: true });
+    
+    slots = slotsData || [];
+  }
+
+  // 5. Partition slots
+  const occupiedSlots = slots.filter(s => s.candidate_id != null);
+  const vacantSlots = slots.filter(s => s.candidate_id == null);
+
+  // Apply filters if any
+  let displayOccupied = occupiedSlots;
+  let displayVacant = vacantSlots;
+  
+  if (params.filter === 'selected') {
+    displayVacant = [];
+  } else if (params.filter === 'vacant') {
+    displayOccupied = [];
   }
 
   // If arriving from "Select" on a candidate card, look them up and find offers with a vacant slot
@@ -71,6 +82,14 @@ export default async function EmployerJobOffersPage({ searchParams }: { searchPa
         name: `${candidateRow.first_name} ${candidateRow.last_name}`,
         positions: candidateRow.positions || [],
       };
+      
+      // Calculate filled counts for the selector dropdown
+      const filledCounts: Record<string, number> = {};
+      occupiedSlots.forEach(s => {
+        if (!filledCounts[s.job_offer_id]) filledCounts[s.job_offer_id] = 0;
+        filledCounts[s.job_offer_id]++;
+      });
+
       eligibleOffers = offers.filter(
         (o) => o.status === 'open' && (filledCounts[o.id] || 0) < o.staff_needed
       );
@@ -81,16 +100,16 @@ export default async function EmployerJobOffersPage({ searchParams }: { searchPa
     <>
       <AppSidebar role="employer" />
       <div className="main">
-        <AppTopbar section="My Job Offers" />
+        <AppTopbar section="Vacancy Overview" />
         <div className="wrap">
           <div className="page-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <h1>Job Offers</h1>
-              <p className="ph-sub">{offers.length} recruitment requirements — click an offer to manage its position slots.</p>
+              <h1>Vacancy Overview</h1>
+              <p className="ph-sub">Manage your occupied and vacant position slots.</p>
             </div>
             <Link href="/dashboard/employer/offers/new">
-              <button className="btn" style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', color: '#fff', fontSize: '13px', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer' }}>
-                + New Job Offer
+              <button className="btn btn-gold" style={{ fontSize: '13px', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
+                + ADD VACANCY
               </button>
             </Link>
           </div>
@@ -113,7 +132,7 @@ export default async function EmployerJobOffersPage({ searchParams }: { searchPa
                   {eligibleOffers.map((o) => (
                     <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#fff', borderRadius: '10px', border: '1px solid var(--line)' }}>
                       <div style={{ fontSize: '13.5px', color: 'var(--ink)' }}>
-                        <b>{o.positions?.name || 'Various'}</b> · {o.countries?.name || 'Unknown'} · {(filledCounts[o.id] || 0)}/{o.staff_needed} filled
+                        <b>{o.positions?.name || 'Various'}</b> · {o.countries?.name || 'Unknown'}
                       </div>
                       <SelectCandidateButton jobOfferId={o.id} candidateId={selectingCandidate.id} />
                     </div>
@@ -123,84 +142,97 @@ export default async function EmployerJobOffersPage({ searchParams }: { searchPa
             </div>
           )}
 
-          <div className="card" style={{ border: 'none', background: 'transparent', marginTop: '24px' }}>
-            <div className="card-b" style={{ padding: 0 }}>
-              <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
-                <thead>
-                  <tr>
-                    <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)' }}>ORDER</th>
-                    <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)' }}>COUNTRY</th>
-                    <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)' }}>POSITION</th>
-                    <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)' }}>SLOTS FILLED</th>
-                    <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)' }}>STATUS</th>
-                    <th style={{ padding: '0 22px 12px', borderBottom: '1px solid var(--line-2)' }}></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {offers.map((o) => {
-                    const cCode = o.countries?.code || 'XX';
-                    const countryName = o.countries?.name || 'Unknown';
-                    const positionName = o.positions?.name || 'Various';
-                    const filled = filledCounts[o.id] || 0;
-                    
-                    const progress = o.staff_needed > 0 ? Math.round((filled / o.staff_needed) * 100) : 0;
-                    const isComplete = filled >= o.staff_needed && o.staff_needed > 0;
-                    
-                    let statusColor = '#008a3d';
-                    let statusBg = '#dcf4e6';
-                    if (o.status === 'open') { statusColor = '#3b82f6'; statusBg = '#eff6ff'; }
-                    else if (o.status === 'draft') { statusColor = '#475569'; statusBg = '#f1f5f9'; }
+          {/* OCCUPIED POSITIONS SECTION */}
+          {displayOccupied.length > 0 && (
+            <div style={{ marginTop: '32px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--ink)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', background: 'var(--green)' }}></span>
+                Occupied Positions
+              </h2>
+              <div className="resp-grid-cards">
+                {displayOccupied.map(slot => {
+                  const candidate = slot.candidate;
+                  const initials = `${candidate?.first_name?.[0] || ''}${candidate?.last_name?.[0] || ''}`.toUpperCase();
+                  const positionName = slot.job_offer?.positions?.name || 'Unknown Position';
 
-                    return (
-                      <tr key={o.id} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: '13px' }}>
-                        <td style={{ padding: '16px 22px', borderTopLeftRadius: '13px', borderBottomLeftRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)', color: 'var(--slate)', fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
-                          JO-{o.id.substring(0,6).toUpperCase()}
-                        </td>
-                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
-                          <span style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '13px' }}>{countryName}</span> 
-                          <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 5px', fontSize: '10px', border: 'none', marginLeft: '6px' }}>{cCode.substring(0,3).toUpperCase()}</span>
-                        </td>
-                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--slate)' }}>
-                          {positionName}
-                        </td>
-                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
-                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                             <div style={{ width: '40px', height: '6px', background: 'var(--line-2)', borderRadius: '999px', overflow: 'hidden' }}>
-                               <div style={{ width: `${Math.min(100, progress)}%`, height: '100%', background: isComplete ? 'var(--green)' : 'var(--brand)', borderRadius: '999px' }}></div>
-                             </div>
-                             <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--ink)' }}>{filled}/{o.staff_needed}</span>
-                           </div>
-                        </td>
-                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
-                           <span className="tag" style={{ background: statusBg, color: statusColor, border: 'none' }}>
-                             • {o.status.toUpperCase()}
-                           </span>
-                        </td>
-                        <td style={{ padding: '16px 22px', textAlign: 'right', borderTopRightRadius: '13px', borderBottomRightRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderRight: '1px solid var(--line)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
-                            <Link href={`/dashboard/employer/offers/${o.id}`}>
-                              <button className="ico-btn" style={{ fontSize: '14px', border: '1px solid var(--line-2)', borderRadius: '6px', width: '28px', height: '28px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', background: 'transparent', cursor: 'pointer' }}>
-                                →
-                              </button>
-                            </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {offers.length === 0 && (
-                    <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
-                        No job offers found. Create your first job offer!
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                  return (
+                    <div key={slot.id} className="card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div style={{ width: '56px', height: '56px', borderRadius: '12px', background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 700, flexShrink: 0 }}>
+                        {initials}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '15px' }}>{candidate?.first_name} {candidate?.last_name}</div>
+                        <div style={{ color: 'var(--slate)', fontSize: '13px', marginTop: '4px' }}>{positionName} · Slot {slot.slot_no}</div>
+                      </div>
+                      <Link href={`/dashboard/employer/candidates/${candidate?.public_code}`}>
+                        <button className="btn btn-outline" style={{ padding: '6px 16px', fontSize: '12px' }}>View Details</button>
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* VACANT POSITIONS SECTION */}
+          {displayVacant.length > 0 && (
+            <div style={{ marginTop: '48px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', background: 'var(--slate)' }}></span>
+                  Vacant Positions
+                </h2>
+                <Link href="/dashboard/employer/candidates">
+                  <button className="btn btn-outline" style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 600, color: 'var(--brand)' }}>
+                    SELECT CANDIDATES
+                  </button>
+                </Link>
+              </div>
+              
+              <div className="resp-grid-cards">
+                {displayVacant.map(slot => {
+                  const positionName = slot.job_offer?.positions?.name || 'Unknown Position';
+
+                  return (
+                    <div key={slot.id} className="card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', borderStyle: 'dashed', borderColor: 'var(--line-2)', background: 'var(--paper)' }}>
+                      <div style={{ width: '56px', height: '56px', borderRadius: '12px', background: '#f1f5f9', color: 'var(--slate)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, color: 'var(--slate)', fontSize: '15px' }}>{positionName}</div>
+                        <div style={{ color: 'var(--muted)', fontSize: '13px', marginTop: '4px' }}>Slot {slot.slot_no} · Vacant</div>
+                      </div>
+                      <Link href="/dashboard/employer/candidates">
+                        <button className="btn" style={{ padding: '6px 16px', fontSize: '12px', background: 'var(--brand)', color: '#fff', border: 'none' }}>Fill Slot</button>
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                <Link href="/dashboard/employer/candidates">
+                  <button className="btn btn-outline" style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 600, color: 'var(--brand)' }}>
+                    SELECT CANDIDATES
+                  </button>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {slots.length === 0 && (
+             <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--card)', borderRadius: '16px', border: '1px solid var(--line)', marginTop: '24px' }}>
+               <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>No positions found</h3>
+               <p style={{ color: 'var(--slate)', marginBottom: '24px' }}>You haven't generated any job positions yet.</p>
+               <Link href="/dashboard/employer/offers/new">
+                 <button className="btn btn-gold" style={{ padding: '10px 24px', fontWeight: 600 }}>ADD VACANCY</button>
+               </Link>
+             </div>
+          )}
+
         </div>
       </div>
     </>
   );
 }
+

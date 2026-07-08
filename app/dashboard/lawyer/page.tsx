@@ -85,6 +85,25 @@ export default async function LawyerDashboard() {
             </div>
           </div>
 
+          {/* Quick Actions */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '32px' }}>
+            <Link href="/dashboard/lawyer/profile" style={{ display: 'block' }}>
+              <div className="btn btn-outline" style={{ width: '100%', justifyContent: 'center', fontWeight: 600, padding: '12px', color: 'var(--ink)' }}>
+                PROFILE
+              </div>
+            </Link>
+            <Link href="/dashboard/lawyer/search" style={{ display: 'block' }}>
+              <div className="btn btn-gold" style={{ width: '100%', justifyContent: 'center', fontWeight: 600, padding: '12px' }}>
+                SEARCH CANDIDATE BY ID
+              </div>
+            </Link>
+            <Link href="/dashboard/lawyer/cases" style={{ display: 'block' }}>
+              <div className="btn btn-outline" style={{ width: '100%', justifyContent: 'center', fontWeight: 600, padding: '12px', color: 'var(--ink)' }}>
+                VIEW CANDIDATES UNDER PROCESS
+              </div>
+            </Link>
+          </div>
+
           {/* Stats Grid */}
           <div className="resp-grid-4">
             <div className="stat" style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', border: 'none', color: '#fff', padding: '24px', borderRadius: '12px' }}>

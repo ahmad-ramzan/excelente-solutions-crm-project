@@ -14,13 +14,16 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
   if (!user) return null;
 
   // Fetch Candidate
-  const { data: cand } = await supabase
+  const { data: cand, error: candErr } = await supabase
     .from('candidate_public_view')
     .select('*')
     .eq('public_code', cndId)
     .eq('agent_id', user.id)
     .single();
 
+  if (candErr) {
+    console.error('Error fetching cand:', candErr);
+  }
   if (!cand) notFound();
 
   // Fetch Private Details
@@ -182,7 +185,7 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                     </div>
                     <div className="r">
                       <div className="k">Destination</div>
-                      <div className="v">{cand.country_name} <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{cand.country_code}</span></div>
+                      <div className="v">{cand.open_to_all_countries ? 'Any Country' : (cand.country_names?.join(', ') || 'Unassigned')} <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{cand.open_to_all_countries ? 'ANY' : (cand.country_names ? `${cand.country_names.length} selected` : 'N/A')}</span></div>
                     </div>
                     <div className="r">
                       <div className="k">City of visa application</div>

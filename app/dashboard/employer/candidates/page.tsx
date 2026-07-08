@@ -57,7 +57,6 @@ export default async function EmployerCandidatesPage({ searchParams }: { searchP
     .from('candidate_public_view')
     .select('*')
     .eq('status', 'available')
-    .eq('country_name', countryName)
     .order('created_at', { ascending: false });
 
   const { data: dbCandidates } = await query;

@@ -46,8 +46,8 @@ export default async function AgentDashboard() {
       initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
       name: `${c.first_name} ${c.last_name}`,
       nationality: c.nationality,
-      country: c.country_name || 'Unassigned',
-      countryCode: c.country_code || 'N/A',
+      country: c.open_to_all_countries ? 'Any Country' : (c.country_names?.join(', ') || 'Unassigned'),
+      countryCode: c.open_to_all_countries ? 'ANY' : (c.country_names ? `${c.country_names.length} selected` : 'N/A'),
       positions: c.positions || [],
       employer: employerMap[c.id] || 'Not Assigned',
       status: c.status.replace(/_/g, ' ').toUpperCase(),
@@ -104,6 +104,30 @@ export default async function AgentDashboard() {
               <button className="btn" style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', color: '#fff', fontSize: '13px', border: 'none', padding: '8px 20px', borderRadius: '8px', fontWeight: 600, flexShrink: 0, cursor: 'pointer' }}>
                 Review
               </button>
+            </Link>
+          </div>
+
+          {/* Quick Actions */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '32px' }}>
+            <Link href="/dashboard/agent/profile" style={{ display: 'block' }}>
+              <div className="btn btn-outline" style={{ width: '100%', justifyContent: 'center', fontWeight: 600, padding: '12px', color: 'var(--ink)' }}>
+                PROFILE
+              </div>
+            </Link>
+            <Link href="/dashboard/agent/vacancies" style={{ display: 'block' }}>
+              <div className="btn btn-outline" style={{ width: '100%', justifyContent: 'center', fontWeight: 600, padding: '12px', color: 'var(--ink)' }}>
+                VIEW VACANCIES
+              </div>
+            </Link>
+            <Link href="/dashboard/agent/selected" style={{ display: 'block' }}>
+              <div className="btn btn-outline" style={{ width: '100%', justifyContent: 'center', fontWeight: 600, padding: '12px', color: 'var(--ink)' }}>
+                VIEW SELECTED CANDIDATES
+              </div>
+            </Link>
+            <Link href="/dashboard/agent/candidates/new" style={{ display: 'block' }}>
+              <div className="btn btn-gold" style={{ width: '100%', justifyContent: 'center', fontWeight: 600, padding: '12px' }}>
+                UPLOAD RESUME
+              </div>
             </Link>
           </div>
 

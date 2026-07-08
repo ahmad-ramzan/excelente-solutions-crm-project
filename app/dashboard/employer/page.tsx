@@ -61,7 +61,6 @@ export default async function EmployerDashboard() {
     .from('candidate_public_view')
     .select('*')
     .eq('status', 'available')
-    .eq('country_name', countryName) // the view returns country_name
     .order('created_at', { ascending: false })
     .limit(5);
 
@@ -166,70 +165,70 @@ export default async function EmployerDashboard() {
                 </Link>
               </div>
               <div className="card-b" style={{ padding: '0 22px' }}>
-              <div className="responsive-table-wrap">
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ padding: '16px 0', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)', textAlign: 'left' }}>CANDIDATE</th>
-                      <th style={{ padding: '16px 0', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)', textAlign: 'left' }}>POSITIONS</th>
-                      <th style={{ padding: '16px 0', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)', textAlign: 'left' }}>STATUS</th>
-                      <th style={{ padding: '16px 0', borderBottom: '1px solid var(--line-2)' }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {candidates.map((c, i) => (
-                      <tr key={c.id} style={{ borderBottom: i === candidates.length - 1 ? 'none' : '1px solid var(--line)' }}>
-                        <td style={{ padding: '16px 0' }}>
-                          <div className="cell-name">
-                            <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)', width: '38px', height: '38px', borderRadius: '10px', fontSize: '13px' }}>
-                              {c.initials}
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{c.name}</div>
-                              <div style={{ color: 'var(--muted)', fontSize: '11.5px', fontFamily: 'var(--font-mono)' }}>
-                                {c.public_code}
+                <div className="responsive-table-wrap">
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ padding: '16px 0', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)', textAlign: 'left' }}>CANDIDATE</th>
+                        <th style={{ padding: '16px 0', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)', textAlign: 'left' }}>POSITIONS</th>
+                        <th style={{ padding: '16px 0', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)', textAlign: 'left' }}>STATUS</th>
+                        <th style={{ padding: '16px 0', borderBottom: '1px solid var(--line-2)' }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {candidates.map((c, i) => (
+                        <tr key={c.id} style={{ borderBottom: i === candidates.length - 1 ? 'none' : '1px solid var(--line)' }}>
+                          <td style={{ padding: '16px 0' }}>
+                            <div className="cell-name">
+                              <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)', width: '38px', height: '38px', borderRadius: '10px', fontSize: '13px' }}>
+                                {c.initials}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{c.name}</div>
+                                <div style={{ color: 'var(--muted)', fontSize: '11.5px', fontFamily: 'var(--font-mono)' }}>
+                                  {c.public_code}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td style={{ padding: '16px 0' }}>
-                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                            {c.positions.map((p: string) => (
-                              <span key={p} style={{ fontSize: '12px', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--line-2)', background: 'var(--paper)', color: 'var(--slate)' }}>
-                                {p}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td style={{ padding: '16px 0' }}>
-                          <span className="tag" style={{ background: c.statusBg, color: c.statusColor, border: 'none' }}>
-                            • {c.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '16px 0', textAlign: 'right' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                            <Link href={`/dashboard/employer/candidates/${c.public_code}`}>
-                              <span style={{ color: 'var(--ink)', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer', marginRight: '8px' }}>View</span>
-                            </Link>
-                            <Link href={`/dashboard/employer/offers?select=${c.public_code}`}>
-                              <button className="btn" style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '6px 16px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}>
-                                Select
-                              </button>
-                            </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {candidates.length === 0 && (
-                      <tr>
-                        <td colSpan={4} style={{ padding: '24px 0', textAlign: 'center', color: 'var(--muted)' }}>
-                          No available candidates in {countryName} at the moment.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                          </td>
+                          <td style={{ padding: '16px 0' }}>
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                              {c.positions.map((p: string) => (
+                                <span key={p} style={{ fontSize: '12px', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--line-2)', background: 'var(--paper)', color: 'var(--slate)' }}>
+                                  {p}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td style={{ padding: '16px 0' }}>
+                            <span className="tag" style={{ background: c.statusBg, color: c.statusColor, border: 'none' }}>
+                              • {c.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '16px 0', textAlign: 'right' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                              <Link href={`/dashboard/employer/candidates/${c.public_code}`}>
+                                <span style={{ color: 'var(--ink)', fontWeight: 600, fontSize: '13.5px', cursor: 'pointer', marginRight: '8px' }}>View</span>
+                              </Link>
+                              <Link href={`/dashboard/employer/offers?select=${c.public_code}`}>
+                                <button className="btn" style={{ background: '#3b82f6', color: '#fff', border: 'none', padding: '6px 16px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                                  Select
+                                </button>
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {candidates.length === 0 && (
+                        <tr>
+                          <td colSpan={4} style={{ padding: '24px 0', textAlign: 'center', color: 'var(--muted)' }}>
+                            No available candidates in {countryName} at the moment.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 

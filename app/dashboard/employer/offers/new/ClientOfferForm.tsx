@@ -2,7 +2,20 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createJobOffer } from '@/app/actions/employer-actions';
+import { createMultipleJobOffers } from '@/app/actions/employer-actions';
+
+interface Vacancy {
+  id: number;
+  positionId: string;
+  staffNeeded: string;
+  salaryAmount: string;
+  startDate: string;
+  endDate: string;
+  cityOfEmployment: string;
+  flightTicket: string;
+  pickup: string;
+  accommodation: string;
+}
 
 export default function ClientOfferForm({ 
   employerId, 
@@ -21,14 +34,63 @@ export default function ClientOfferForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(formData: FormData) {
+  const [vacancies, setVacancies] = useState<Vacancy[]>([{
+    id: Date.now(),
+    positionId: '',
+    staffNeeded: '1',
+    salaryAmount: '',
+    startDate: '',
+    endDate: '',
+    cityOfEmployment: '',
+    flightTicket: 'false',
+    pickup: 'false',
+    accommodation: 'false'
+  }]);
+
+  const addVacancy = () => {
+    setVacancies([...vacancies, {
+      id: Date.now(),
+      positionId: '',
+      staffNeeded: '1',
+      salaryAmount: '',
+      startDate: '',
+      endDate: '',
+      cityOfEmployment: '',
+      flightTicket: 'false',
+      pickup: 'false',
+      accommodation: 'false'
+    }]);
+  };
+
+  const removeVacancy = (id: number) => {
+    if (vacancies.length > 1) {
+      setVacancies(vacancies.filter(v => v.id !== id));
+    }
+  };
+
+  const updateVacancy = (id: number, field: keyof Vacancy, value: string) => {
+    setVacancies(vacancies.map(v => v.id === id ? { ...v, [field]: value } : v));
+  };
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
-    formData.append('employerId', employerId);
-    formData.append('countryId', countryId);
+    // Validate that all positions are selected
+    if (vacancies.some(v => !v.positionId)) {
+      setError("Please select a position for all vacancies.");
+      setIsSubmitting(false);
+      return;
+    }
 
-    const result = await createJobOffer(formData);
+    const payload = vacancies.map(v => ({
+      ...v,
+      employerId,
+      countryId
+    }));
+
+    const result = await createMultipleJobOffers(payload);
     
     if (result.error) {
       setError(result.error);
@@ -39,87 +101,115 @@ export default function ClientOfferForm({
   }
 
   return (
-    <form action={handleSubmit} className="card" style={{ padding: '32px 40px', background: 'var(--card)', borderRadius: '16px', border: 'none', boxShadow: '0 4px 24px rgba(0,0,0,0.02)' }}>
+    <form onSubmit={handleSubmit} className="card" style={{ padding: '32px 40px', background: 'var(--card)', borderRadius: '16px', border: 'none', boxShadow: '0 4px 24px rgba(0,0,0,0.02)' }}>
       {error && (
         <div style={{ padding: '12px', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '24px', fontSize: '14px' }}>
           {error}
         </div>
       )}
       
-      {/* Section 1 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <div style={{ width: '24px', height: '24px', background: 'var(--ink)', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>
-          1
-        </div>
-        <h2 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Employer & requirement</h2>
-      </div>
-
-      <div className="resp-grid-2">
-        <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Employer</label>
-          <input type="text" readOnly value={`${employerName} (${countryName})`} style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#f8fafc', fontSize: '14px', color: 'var(--slate)', cursor: 'not-allowed' }} />
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Country</label>
-          <input type="text" readOnly value={countryName} style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#f8fafc', fontSize: '14px', color: 'var(--slate)', cursor: 'not-allowed' }} />
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Position</label>
-          <select name="positionId" required style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '14px', color: 'var(--ink)', appearance: 'none', backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2212%22%20height%3D%228%22%20viewBox%3D%220%200%2012%208%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M1%201.5L6%206.5L11%201.5%22%20stroke%3D%22%23111827%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 16px center' }}>
-            <option value="">Select a position...</option>
-            {positions.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Staff needed</label>
-          <input type="number" name="staffNeeded" required min="1" defaultValue="1" style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '14px', color: 'var(--ink)' }} />
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Salary amount (Optional)</label>
-          <input type="number" name="salaryAmount" min="0" step="0.01" placeholder="0.00" style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '14px', color: 'var(--ink)' }} />
+      <div style={{ marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Employer Info</h2>
+        <div style={{ display: 'flex', gap: '16px', marginTop: '12px' }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Employer</label>
+            <input type="text" readOnly value={`${employerName}`} style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#f8fafc', fontSize: '14px', color: 'var(--slate)', cursor: 'not-allowed' }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Destination Country</label>
+            <input type="text" readOnly value={countryName} style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#f8fafc', fontSize: '14px', color: 'var(--slate)', cursor: 'not-allowed' }} />
+          </div>
         </div>
       </div>
 
       <div style={{ height: '1px', background: 'var(--line)', margin: '32px 0' }}></div>
 
-      {/* Section 2 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <div style={{ width: '24px', height: '24px', background: 'var(--ink)', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>
-          2
-        </div>
-        <h2 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Contract terms</h2>
-      </div>
+      {vacancies.map((vacancy, index) => (
+        <div key={vacancy.id} style={{ marginBottom: '40px', padding: '24px', border: '1px solid var(--line-2)', borderRadius: '12px', position: 'relative' }}>
+          
+          {vacancies.length > 1 && (
+            <button type="button" onClick={() => removeVacancy(vacancy.id)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+              Remove
+            </button>
+          )}
 
-      <div className="resp-grid-2">
-        <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Start date</label>
-          <div style={{ position: 'relative' }}>
-            <input type="date" name="startDate" style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '14px', color: 'var(--ink)' }} />
-          </div>
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>End date</label>
-          <div style={{ position: 'relative' }}>
-            <input type="date" name="endDate" style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '14px', color: 'var(--ink)' }} />
-          </div>
-        </div>
-      </div>
+          <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--ink)', marginBottom: '24px' }}>Vacancy Position {index + 1}</h3>
 
-      <div style={{ marginBottom: '40px' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-          <input type="checkbox" name="contractSigned" defaultChecked style={{ width: '16px', height: '16px', accentColor: '#36b9ff' }} />
-          <span style={{ fontSize: '13.5px', color: 'var(--slate)' }}>Contract signed with employer</span>
-        </label>
+          <div className="resp-grid-2">
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Position</label>
+              <select required value={vacancy.positionId} onChange={(e) => updateVacancy(vacancy.id, 'positionId', e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '14px', color: 'var(--ink)' }}>
+                <option value="">Select a position...</option>
+                {positions.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>City of Employment</label>
+              <input type="text" value={vacancy.cityOfEmployment} onChange={(e) => updateVacancy(vacancy.id, 'cityOfEmployment', e.target.value)} placeholder="e.g. Athens" style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '14px', color: 'var(--ink)' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Number of staff needed</label>
+              <input type="number" required min="1" value={vacancy.staffNeeded} onChange={(e) => updateVacancy(vacancy.id, 'staffNeeded', e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '14px', color: 'var(--ink)' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Net Salary per month</label>
+              <input type="number" min="0" step="0.01" placeholder="0.00" value={vacancy.salaryAmount} onChange={(e) => updateVacancy(vacancy.id, 'salaryAmount', e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '14px', color: 'var(--ink)' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Start Date Of Employment</label>
+              <input type="date" value={vacancy.startDate} onChange={(e) => updateVacancy(vacancy.id, 'startDate', e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '14px', color: 'var(--ink)' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>End Date Of Employment</label>
+              <input type="date" value={vacancy.endDate} onChange={(e) => updateVacancy(vacancy.id, 'endDate', e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '14px', color: 'var(--ink)' }} />
+            </div>
+          </div>
+
+          <div style={{ marginTop: '24px', display: 'flex', gap: '24px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Flight ticket</label>
+              <select value={vacancy.flightTicket} onChange={(e) => updateVacancy(vacancy.id, 'flightTicket', e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff' }}>
+                <option value="true">YES</option>
+                <option value="false">NO</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Pickup at airport</label>
+              <select value={vacancy.pickup} onChange={(e) => updateVacancy(vacancy.id, 'pickup', e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff' }}>
+                <option value="true">YES</option>
+                <option value="false">NO</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Accommodation</label>
+              <select value={vacancy.accommodation} onChange={(e) => updateVacancy(vacancy.id, 'accommodation', e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff' }}>
+                <option value="true">YES</option>
+                <option value="false">NO</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ marginTop: '24px', padding: '16px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed var(--line)' }}>
+            <p style={{ fontSize: '13px', color: 'var(--slate)', margin: '0 0 12px 0' }}>File attachments will be supported via Supabase Storage in the next update. (Workplace photos, Flight PDF, etc.)</p>
+          </div>
+
+        </div>
+      ))}
+
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '40px' }}>
+        <button type="button" onClick={addVacancy} className="btn btn-outline" style={{ border: '2px dashed var(--line-2)', width: '100%', padding: '16px', color: 'var(--brand)', fontWeight: 600, borderRadius: '12px' }}>
+          + GENERATE JOB POSITION
+        </button>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
         <button type="button" onClick={() => router.back()} className="btn" style={{ background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
           Cancel
         </button>
-        <button type="submit" disabled={isSubmitting} className="btn" style={{ background: '#6366f1', border: 'none', color: '#fff', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.7 : 1 }}>
-          {isSubmitting ? <><span className="btn-spinner" />Creating...</> : 'Create Job Offer'}
+        <button type="submit" disabled={isSubmitting} className="btn btn-gold" style={{ border: 'none', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.7 : 1 }}>
+          {isSubmitting ? <><span className="btn-spinner" />Submitting...</> : 'Save All Vacancies'}
         </button>
       </div>
 

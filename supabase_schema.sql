@@ -8,93 +8,113 @@ create extension if not exists "pgcrypto";
 -- ENUMS
 -- =========================
 
-create type app_role as enum (
-  'admin',
-  'salesperson',
-  'agent',
-  'employer',
-  'lawyer'
-);
+DO $$ BEGIN
+  create type app_role as enum (
+    'admin',
+    'salesperson',
+    'agent',
+    'employer',
+    'lawyer'
+  );
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-create type account_status as enum (
-  'pending',
-  'active',
-  'suspended',
-  'rejected'
-);
+DO $$ BEGIN
+  create type account_status as enum (
+    'pending',
+    'active',
+    'suspended',
+    'rejected'
+  );
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-create type candidate_status as enum (
-  'available',
-  'selected',
-  'visa_processing',
-  'approved',
-  'rejected',
-  'archived'
-);
+DO $$ BEGIN
+  create type candidate_status as enum (
+    'available',
+    'selected',
+    'visa_processing',
+    'approved',
+    'rejected',
+    'archived'
+  );
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-create type job_offer_status as enum (
-  'draft',
-  'open',
-  'completed',
-  'closed',
-  'cancelled'
-);
+DO $$ BEGIN
+  create type job_offer_status as enum (
+    'draft',
+    'open',
+    'completed',
+    'closed',
+    'cancelled'
+  );
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-create type slot_status as enum (
-  'vacant',
-  'reserved',
-  'filled',
-  'cancelled'
-);
+DO $$ BEGIN
+  create type slot_status as enum (
+    'vacant',
+    'reserved',
+    'filled',
+    'cancelled'
+  );
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-create type visa_status as enum (
-  'pending',
-  'documents_requested',
-  'documents_received',
-  'documents_under_review',
-  'ready_for_submission',
-  'submitted',
-  'appointment_scheduled',
-  'biometrics_required',
-  'under_immigration_review',
-  'additional_documents_requested',
-  'on_hold',
-  'approved',
-  'rejected',
-  'closed'
-);
+DO $$ BEGIN
+  create type visa_status as enum (
+    'pending',
+    'documents_requested',
+    'documents_received',
+    'documents_under_review',
+    'ready_for_submission',
+    'submitted',
+    'appointment_scheduled',
+    'biometrics_required',
+    'under_immigration_review',
+    'additional_documents_requested',
+    'on_hold',
+    'approved',
+    'rejected',
+    'closed'
+  );
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-create type document_type as enum (
-  'cv',
-  'passport_scan',
-  'health_certificate',
-  'experience_letter',
-  'police_clearance',
-  'education_document',
-  'visa_application_slip',
-  'approved_visa',
-  'contract',
-  'photo',
-  'other'
-);
+DO $$ BEGIN
+  create type document_type as enum (
+    'cv',
+    'passport_scan',
+    'health_certificate',
+    'experience_letter',
+    'police_clearance',
+    'education_document',
+    'visa_application_slip',
+    'approved_visa',
+    'contract',
+    'photo',
+    'travel_insurance',
+    'flight_ticket',
+    'other'
+  );
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-create type document_status as enum (
-  'pending',
-  'uploaded',
-  'verified',
-  'rejected',
-  'expired'
-);
+DO $$ BEGIN
+  create type document_status as enum (
+    'pending',
+    'uploaded',
+    'verified',
+    'rejected',
+    'expired'
+  );
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-create type notification_type as enum (
-  'candidate_selected',
-  'document_requested',
-  'visa_approved',
-  'visa_updated',
-  'job_offer_created',
-  'order_milestone',
-  'system'
-);
+DO $$ BEGIN
+  create type notification_type as enum (
+    'candidate_selected',
+    'document_requested',
+    'visa_approved',
+    'visa_updated',
+    'job_offer_created',
+    'order_milestone',
+    'system'
+  );
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 -- =========================
 -- SEQUENCES FOR PUBLIC CODES
@@ -109,7 +129,7 @@ create sequence if not exists visa_case_code_seq start 501;
 -- CORE TABLES
 -- =========================
 
-create table public.countries (
+create table if not exists public.countries (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
   code char(2) not null unique,
@@ -117,14 +137,14 @@ create table public.countries (
   created_at timestamptz not null default now()
 );
 
-create table public.positions (
+create table if not exists public.positions (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
   is_active boolean not null default true,
   created_at timestamptz not null default now()
 );
 
-create table public.profiles (
+create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null unique,
   full_name text not null,
@@ -137,7 +157,7 @@ create table public.profiles (
   updated_at timestamptz not null default now()
 );
 
-create table public.employers (
+create table if not exists public.employers (
   id uuid primary key default gen_random_uuid(),
   public_code text not null unique default ('EMP-' || nextval('employer_code_seq')::text),
   name text not null,
@@ -153,7 +173,7 @@ create table public.employers (
   updated_at timestamptz not null default now()
 );
 
-create table public.employer_users (
+create table if not exists public.employer_users (
   id uuid primary key default gen_random_uuid(),
   employer_id uuid not null references public.employers(id) on delete cascade,
   profile_id uuid not null references public.profiles(id) on delete cascade,
@@ -163,7 +183,57 @@ create table public.employer_users (
   unique (employer_id, profile_id)
 );
 
-create table public.lawyer_countries (
+create table if not exists public.agencies (
+  id uuid primary key default gen_random_uuid(),
+  public_code text not null unique default ('AGN-' || nextval('employer_code_seq')::text),
+  name text not null,
+  country_id uuid not null references public.countries(id),
+  contact_name text,
+  email text,
+  phone text,
+  address text,
+  status account_status not null default 'active',
+  created_by uuid references public.profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.agency_users (
+  id uuid primary key default gen_random_uuid(),
+  agency_id uuid not null references public.agencies(id) on delete cascade,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  job_title text,
+  is_primary boolean not null default false,
+  created_at timestamptz not null default now(),
+  unique (agency_id, profile_id)
+);
+
+create table if not exists public.law_firms (
+  id uuid primary key default gen_random_uuid(),
+  public_code text not null unique default ('LWF-' || nextval('employer_code_seq')::text),
+  name text not null,
+  country_id uuid not null references public.countries(id),
+  contact_name text,
+  email text,
+  phone text,
+  address text,
+  status account_status not null default 'active',
+  created_by uuid references public.profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.law_firm_users (
+  id uuid primary key default gen_random_uuid(),
+  law_firm_id uuid not null references public.law_firms(id) on delete cascade,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  job_title text,
+  is_primary boolean not null default false,
+  created_at timestamptz not null default now(),
+  unique (law_firm_id, profile_id)
+);
+
+create table if not exists public.lawyer_countries (
   id uuid primary key default gen_random_uuid(),
   lawyer_id uuid not null references public.profiles(id) on delete cascade,
   country_id uuid not null references public.countries(id) on delete cascade,
@@ -172,11 +242,25 @@ create table public.lawyer_countries (
   unique (lawyer_id, country_id)
 );
 
+create table if not exists public.salesperson_profiles (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  address text,
+  city text,
+  zip_code text,
+  country_id uuid not null references public.countries(id),
+  phone text,
+  tax_id text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique(profile_id)
+);
+
 -- =========================
 -- CANDIDATES
 -- =========================
 
-create table public.candidates (
+create table if not exists public.candidates (
   id uuid primary key default gen_random_uuid(),
   public_code text not null unique default ('CND-' || nextval('candidate_code_seq')::text),
 
@@ -185,9 +269,14 @@ create table public.candidates (
   gender text,
   nationality text,
   city text,
+  
+  photo_url text,
+  available_from date,
+  available_until date,
+  languages text[],
+  work_experience_files text[],
 
-  -- Destination/cleared country
-  country_id uuid not null references public.countries(id),
+  open_to_all_countries boolean not null default false,
 
   agent_id uuid not null references public.profiles(id),
   status candidate_status not null default 'available',
@@ -197,8 +286,26 @@ create table public.candidates (
   updated_at timestamptz not null default now()
 );
 
+ALTER TABLE public.candidates ADD COLUMN IF NOT EXISTS photo_url text;
+ALTER TABLE public.candidates ADD COLUMN IF NOT EXISTS available_from date;
+ALTER TABLE public.candidates ADD COLUMN IF NOT EXISTS available_until date;
+ALTER TABLE public.candidates ADD COLUMN IF NOT EXISTS languages text[];
+ALTER TABLE public.candidates ADD COLUMN IF NOT EXISTS work_experience_files text[];
+ALTER TABLE public.candidates ADD COLUMN IF NOT EXISTS open_to_all_countries boolean not null default false;
+
+-- Clean up old country_id column that is now replaced by candidate_countries
+ALTER TABLE public.candidates DROP COLUMN IF EXISTS country_id CASCADE;
+
+create table if not exists public.candidate_countries (
+  id uuid primary key default gen_random_uuid(),
+  candidate_id uuid not null references public.candidates(id) on delete cascade,
+  country_id uuid not null references public.countries(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (candidate_id, country_id)
+);
+
 -- Private info separated so employers cannot directly access it
-create table public.candidate_private_details (
+create table if not exists public.candidate_private_details (
   candidate_id uuid primary key references public.candidates(id) on delete cascade,
   date_of_birth date,
   passport_number text,
@@ -210,7 +317,7 @@ create table public.candidate_private_details (
   updated_at timestamptz not null default now()
 );
 
-create table public.candidate_positions (
+create table if not exists public.candidate_positions (
   id uuid primary key default gen_random_uuid(),
   candidate_id uuid not null references public.candidates(id) on delete cascade,
   position_id uuid not null references public.positions(id) on delete cascade,
@@ -218,7 +325,7 @@ create table public.candidate_positions (
   unique (candidate_id, position_id)
 );
 
-create table public.candidate_documents (
+create table if not exists public.candidate_documents (
   id uuid primary key default gen_random_uuid(),
   candidate_id uuid not null references public.candidates(id) on delete cascade,
   type document_type not null,
@@ -242,7 +349,7 @@ create table public.candidate_documents (
 -- JOB OFFERS / ORDERS
 -- =========================
 
-create table public.job_offers (
+create table if not exists public.job_offers (
   id uuid primary key default gen_random_uuid(),
   public_code text not null unique default ('JO-' || nextval('job_offer_code_seq')::text),
 
@@ -258,6 +365,18 @@ create table public.job_offers (
   salary_amount numeric(12,2),
   salary_currency char(3) default 'USD',
 
+  city_of_employment text,
+  flight_ticket_provided boolean not null default false,
+  pickup_at_airport boolean not null default false,
+  accommodation_provided boolean not null default false,
+
+  accommodation_photos text[],
+  work_video text,
+  workplace_photos text[],
+  flight_ticket_pdf text,
+  contract_with_excelente text,
+  additional_pdfs text[],
+
   contract_signed boolean not null default false,
   contract_file_path text,
 
@@ -269,7 +388,7 @@ create table public.job_offers (
   updated_at timestamptz not null default now()
 );
 
-create table public.job_offer_slots (
+create table if not exists public.job_offer_slots (
   id uuid primary key default gen_random_uuid(),
   job_offer_id uuid not null references public.job_offers(id) on delete cascade,
   slot_no int not null,
@@ -282,11 +401,11 @@ create table public.job_offer_slots (
 );
 
 -- One candidate cannot be actively reserved/filled in more than one slot
-create unique index unique_active_candidate_assignment
+create unique index if not exists unique_active_candidate_assignment
 on public.job_offer_slots(candidate_id)
 where candidate_id is not null and status in ('reserved', 'filled');
 
-create table public.job_offer_selections (
+create table if not exists public.job_offer_selections (
   id uuid primary key default gen_random_uuid(),
   job_offer_id uuid not null references public.job_offers(id) on delete cascade,
   slot_id uuid not null references public.job_offer_slots(id) on delete cascade,
@@ -303,7 +422,7 @@ create table public.job_offer_selections (
 -- VISA CASES
 -- =========================
 
-create table public.visa_cases (
+create table if not exists public.visa_cases (
   id uuid primary key default gen_random_uuid(),
   public_code text not null unique default ('VP-' || nextval('visa_case_code_seq')::text),
 
@@ -331,7 +450,7 @@ create table public.visa_cases (
   updated_at timestamptz not null default now()
 );
 
-create table public.visa_case_events (
+create table if not exists public.visa_case_events (
   id uuid primary key default gen_random_uuid(),
   visa_case_id uuid not null references public.visa_cases(id) on delete cascade,
   status visa_status not null,
@@ -340,7 +459,7 @@ create table public.visa_case_events (
   created_at timestamptz not null default now()
 );
 
-create table public.country_document_requirements (
+create table if not exists public.country_document_requirements (
   id uuid primary key default gen_random_uuid(),
   country_id uuid not null references public.countries(id) on delete cascade,
   type document_type not null,
@@ -354,7 +473,7 @@ create table public.country_document_requirements (
 -- NOTIFICATIONS
 -- =========================
 
-create table public.notifications (
+create table if not exists public.notifications (
   id uuid primary key default gen_random_uuid(),
   recipient_id uuid not null references public.profiles(id) on delete cascade,
   actor_id uuid references public.profiles(id),
@@ -371,7 +490,7 @@ create table public.notifications (
 -- AUDIT LOGS
 -- =========================
 
-create table public.audit_logs (
+create table if not exists public.audit_logs (
   id uuid primary key default gen_random_uuid(),
   actor_id uuid references public.profiles(id),
   action text not null,
@@ -396,27 +515,27 @@ begin
 end;
 $$;
 
-create trigger profiles_updated_at
+create or replace trigger profiles_updated_at
 before update on public.profiles
 for each row execute function public.set_updated_at();
 
-create trigger employers_updated_at
+create or replace trigger employers_updated_at
 before update on public.employers
 for each row execute function public.set_updated_at();
 
-create trigger candidates_updated_at
+create or replace trigger candidates_updated_at
 before update on public.candidates
 for each row execute function public.set_updated_at();
 
-create trigger candidate_private_details_updated_at
+create or replace trigger candidate_private_details_updated_at
 before update on public.candidate_private_details
 for each row execute function public.set_updated_at();
 
-create trigger candidate_documents_updated_at
+create or replace trigger candidate_documents_updated_at
 before update on public.candidate_documents
 for each row execute function public.set_updated_at();
 
-create trigger job_offers_updated_at
+create or replace trigger job_offers_updated_at
 before update on public.job_offers
 for each row execute function public.set_updated_at();
 
@@ -442,7 +561,7 @@ begin
 end;
 $$;
 
-create trigger create_slots_after_job_offer_insert
+create or replace trigger create_slots_after_job_offer_insert
 after insert on public.job_offers
 for each row execute function public.create_job_offer_slots();
 
@@ -508,7 +627,7 @@ $$;
 
 drop trigger if exists on_auth_user_created on auth.users;
 
-create trigger on_auth_user_created
+create or replace trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_user();
 
@@ -533,7 +652,7 @@ $$;
 
 drop trigger if exists on_auth_user_email_confirmed on auth.users;
 
-create trigger on_auth_user_email_confirmed
+create or replace trigger on_auth_user_email_confirmed
 after update on auth.users
 for each row execute function public.handle_email_confirmed();
 
@@ -746,7 +865,8 @@ $$;
 -- USEFUL VIEWS
 -- =========================
 
-create or replace view public.job_offer_progress as
+drop view if exists public.job_offer_progress;
+create view public.job_offer_progress as
 select
   jo.id,
   jo.public_code,
@@ -771,8 +891,9 @@ join public.positions p on p.id = jo.position_id
 left join public.job_offer_slots s on s.job_offer_id = jo.id
 group by jo.id, e.name, c.name, c.code, p.name;
 
-create or replace view public.candidate_public_view as
-select
+drop view if exists public.candidate_public_view;
+create view public.candidate_public_view as
+select 
   cand.id,
   cand.public_code,
   cand.first_name,
@@ -780,37 +901,42 @@ select
   cand.gender,
   cand.nationality,
   cand.city,
-  cand.country_id,
-  c.name as country_name,
-  c.code as country_code,
+  cand.photo_url,
+  cand.available_from,
+  cand.available_until,
+  cand.languages,
+  cand.open_to_all_countries,
+  array_agg(distinct c.id) filter (where c.id is not null) as country_ids,
+  array_agg(distinct c.name) filter (where c.name is not null) as country_names,
   cand.status,
   cand.agent_id,
-  array_agg(p.name order by p.name) filter (where p.id is not null) as positions,
+  array_agg(distinct p.name) filter (where p.name is not null) as positions,
   cand.created_at
 from public.candidates cand
-join public.countries c on c.id = cand.country_id
+left join public.candidate_countries cc on cc.candidate_id = cand.id
+left join public.countries c on c.id = cc.country_id
 left join public.candidate_positions cp on cp.candidate_id = cand.id
 left join public.positions p on p.id = cp.position_id
-group by cand.id, c.name, c.code;
+group by cand.id;
 
 -- =========================
 -- INDEXES
 -- =========================
 
-create index idx_profiles_role on public.profiles(role);
-create index idx_profiles_status on public.profiles(status);
-create index idx_employers_country on public.employers(country_id);
-create index idx_employers_salesperson on public.employers(assigned_salesperson_id);
-create index idx_candidates_agent on public.candidates(agent_id);
-create index idx_candidates_country_status on public.candidates(country_id, status);
-create index idx_candidate_positions_candidate on public.candidate_positions(candidate_id);
-create index idx_job_offers_employer on public.job_offers(employer_id);
-create index idx_job_offers_country_position on public.job_offers(country_id, position_id);
-create index idx_job_offer_slots_offer_status on public.job_offer_slots(job_offer_id, status);
-create index idx_visa_cases_lawyer on public.visa_cases(lawyer_id);
-create index idx_visa_cases_agent on public.visa_cases(agent_id);
-create index idx_visa_cases_candidate on public.visa_cases(candidate_id);
-create index idx_notifications_recipient_read on public.notifications(recipient_id, read_at);
+create index if not exists idx_profiles_role on public.profiles(role);
+create index if not exists idx_profiles_status on public.profiles(status);
+create index if not exists idx_employers_country on public.employers(country_id);
+create index if not exists idx_employers_salesperson on public.employers(assigned_salesperson_id);
+create index if not exists idx_candidates_agent on public.candidates(agent_id);
+create index if not exists idx_candidates_status on public.candidates(status);
+create index if not exists idx_candidate_positions_candidate on public.candidate_positions(candidate_id);
+create index if not exists idx_job_offers_employer on public.job_offers(employer_id);
+create index if not exists idx_job_offers_country_position on public.job_offers(country_id, position_id);
+create index if not exists idx_job_offer_slots_offer_status on public.job_offer_slots(job_offer_id, status);
+create index if not exists idx_visa_cases_lawyer on public.visa_cases(lawyer_id);
+create index if not exists idx_visa_cases_agent on public.visa_cases(agent_id);
+create index if not exists idx_visa_cases_candidate on public.visa_cases(candidate_id);
+create index if not exists idx_notifications_recipient_read on public.notifications(recipient_id, read_at);
 
 -- =========================
 -- ROW LEVEL SECURITY
@@ -836,120 +962,147 @@ alter table public.notifications enable row level security;
 alter table public.audit_logs enable row level security;
 
 -- Countries / positions readable by all authenticated users
+drop policy if exists "countries readable" on public.countries;
 create policy "countries readable"
-on public.countries for select
+  on public.countries for select
 to authenticated
 using (true);
 
+drop policy if exists "positions readable" on public.positions;
 create policy "positions readable"
-on public.positions for select
+  on public.positions for select
 to authenticated
 using (true);
 
+drop policy if exists "admin manages countries" on public.countries;
 create policy "admin manages countries"
-on public.countries for all
+  on public.countries for all
 to authenticated
 using (public.is_admin())
 with check (public.is_admin());
 
+drop policy if exists "admin manages positions" on public.positions;
 create policy "admin manages positions"
-on public.positions for all
+  on public.positions for all
 to authenticated
 using (public.is_admin())
 with check (public.is_admin());
 
 -- Profiles
+drop policy if exists "users read own profile or admin reads all" on public.profiles;
 create policy "users read own profile or admin reads all"
-on public.profiles for select
+  on public.profiles for select
 to authenticated
 using (id = auth.uid() or public.is_admin());
 
+drop policy if exists "users update own profile or admin" on public.profiles;
 create policy "users update own profile or admin"
-on public.profiles for update
+  on public.profiles for update
 to authenticated
 using (id = auth.uid() or public.is_admin())
 with check (id = auth.uid() or public.is_admin());
 
+drop policy if exists "users can insert own profile" on public.profiles;
 create policy "users can insert own profile"
-on public.profiles for insert
+  on public.profiles for insert
 to authenticated
 with check (id = auth.uid());
 
 -- Employers
+drop policy if exists "admin manages employers" on public.employers;
 create policy "admin manages employers"
-on public.employers for all
+  on public.employers for all
 to authenticated
 using (public.is_admin())
 with check (public.is_admin());
 
+drop policy if exists "salesperson reads assigned employers" on public.employers;
 create policy "salesperson reads assigned employers"
-on public.employers for select
+  on public.employers for select
 to authenticated
 using (assigned_salesperson_id = auth.uid());
 
+drop policy if exists "employer users read own employer" on public.employers;
 create policy "employer users read own employer"
-on public.employers for select
+  on public.employers for select
 to authenticated
 using (id = any(public.current_employer_ids()));
 
+drop policy if exists "salesperson creates employers" on public.employers;
 create policy "salesperson creates employers"
-on public.employers for insert
+  on public.employers for insert
 to authenticated
 with check (
   public.current_user_role() in ('admin', 'salesperson')
 );
 
 -- Employer users
+drop policy if exists "admin manages employer users" on public.employer_users;
 create policy "admin manages employer users"
-on public.employer_users for all
+  on public.employer_users for all
 to authenticated
 using (public.is_admin())
 with check (public.is_admin());
 
+drop policy if exists "employer users read own mapping" on public.employer_users;
 create policy "employer users read own mapping"
-on public.employer_users for select
+  on public.employer_users for select
 to authenticated
 using (profile_id = auth.uid());
 
 -- Lawyer countries
+drop policy if exists "admin manages lawyer countries" on public.lawyer_countries;
 create policy "admin manages lawyer countries"
-on public.lawyer_countries for all
+  on public.lawyer_countries for all
 to authenticated
 using (public.is_admin())
 with check (public.is_admin());
 
+drop policy if exists "lawyers read own countries" on public.lawyer_countries;
 create policy "lawyers read own countries"
-on public.lawyer_countries for select
+  on public.lawyer_countries for select
 to authenticated
 using (lawyer_id = auth.uid());
 
 -- Candidates basic data
+drop policy if exists "admin reads all candidates" on public.candidates;
 create policy "admin reads all candidates"
-on public.candidates for select
+  on public.candidates for select
 to authenticated
 using (public.is_admin());
 
+drop policy if exists "agents manage own candidates" on public.candidates;
 create policy "agents manage own candidates"
-on public.candidates for all
+  on public.candidates for all
 to authenticated
 using (agent_id = auth.uid())
 with check (agent_id = auth.uid());
 
+drop policy if exists "employers read available candidates in their country" on public.candidates;
 create policy "employers read available candidates in their country"
-on public.candidates for select
+  on public.candidates for select
 to authenticated
 using (
   public.current_user_role() = 'employer'
-  and country_id in (
-    select e.country_id
-    from public.employers e
-    where e.id = any(public.current_employer_ids())
-  )
   and status = 'available'
+  and (
+    open_to_all_countries = true
+    or
+    id in (
+      select cc.candidate_id from public.candidate_countries cc
+      where cc.country_id in (
+        select e.country_id
+        from public.employers e
+        join public.employer_users eu on eu.employer_id = e.id
+        where eu.profile_id = auth.uid()
+      )
+    )
+  )
 );
 
+drop policy if exists "employers read selected candidates for own job offers" on public.candidates;
 create policy "employers read selected candidates for own job offers"
-on public.candidates for select
+  on public.candidates for select
 to authenticated
 using (
   public.current_user_role() = 'employer'
@@ -962,8 +1115,9 @@ using (
   )
 );
 
+drop policy if exists "lawyers read assigned visa candidates" on public.candidates;
 create policy "lawyers read assigned visa candidates"
-on public.candidates for select
+  on public.candidates for select
 to authenticated
 using (
   exists (
@@ -975,13 +1129,15 @@ using (
 );
 
 -- Candidate private details
+drop policy if exists "admin reads private candidate details" on public.candidate_private_details;
 create policy "admin reads private candidate details"
-on public.candidate_private_details for select
+  on public.candidate_private_details for select
 to authenticated
 using (public.is_admin());
 
+drop policy if exists "agent reads private details for own candidates" on public.candidate_private_details;
 create policy "agent reads private details for own candidates"
-on public.candidate_private_details for select
+  on public.candidate_private_details for select
 to authenticated
 using (
   exists (
@@ -991,8 +1147,9 @@ using (
   )
 );
 
+drop policy if exists "lawyer reads private details for assigned visa cases" on public.candidate_private_details;
 create policy "lawyer reads private details for assigned visa cases"
-on public.candidate_private_details for select
+  on public.candidate_private_details for select
 to authenticated
 using (
   exists (
@@ -1002,8 +1159,9 @@ using (
   )
 );
 
+drop policy if exists "agents manage private details for own candidates" on public.candidate_private_details;
 create policy "agents manage private details for own candidates"
-on public.candidate_private_details for all
+  on public.candidate_private_details for all
 to authenticated
 using (
   exists (
@@ -1020,8 +1178,9 @@ with check (
   )
 );
 
+drop policy if exists "employers read passport details for visible candidates" on public.candidate_private_details;
 create policy "employers read passport details for visible candidates"
-on public.candidate_private_details for select
+  on public.candidate_private_details for select
 to authenticated
 using (
   exists (
@@ -1031,9 +1190,16 @@ using (
     and (
       (
         c.status = 'available'
-        and c.country_id in (
-          select e.country_id from public.employers e
-          where e.id = any(public.current_employer_ids())
+        and (
+          c.open_to_all_countries = true
+          or
+          c.id in (
+            select cc.candidate_id from public.candidate_countries cc
+            where cc.country_id in (
+              select e.country_id from public.employers e
+              where e.id = any(public.current_employer_ids())
+            )
+          )
         )
       )
       or exists (
@@ -1048,8 +1214,9 @@ using (
 );
 
 -- Candidate positions
+drop policy if exists "candidate positions visible with candidate" on public.candidate_positions;
 create policy "candidate positions visible with candidate"
-on public.candidate_positions for select
+  on public.candidate_positions for select
 to authenticated
 using (
   exists (
@@ -1058,8 +1225,9 @@ using (
   )
 );
 
+drop policy if exists "agents manage own candidate positions" on public.candidate_positions;
 create policy "agents manage own candidate positions"
-on public.candidate_positions for all
+  on public.candidate_positions for all
 to authenticated
 using (
   exists (
@@ -1077,13 +1245,15 @@ with check (
 );
 
 -- Documents
+drop policy if exists "admin reads all candidate documents" on public.candidate_documents;
 create policy "admin reads all candidate documents"
-on public.candidate_documents for select
+  on public.candidate_documents for select
 to authenticated
 using (public.is_admin());
 
+drop policy if exists "agents manage own candidate documents" on public.candidate_documents;
 create policy "agents manage own candidate documents"
-on public.candidate_documents for all
+  on public.candidate_documents for all
 to authenticated
 using (
   exists (
@@ -1100,8 +1270,9 @@ with check (
   )
 );
 
+drop policy if exists "lawyers read assigned candidate documents" on public.candidate_documents;
 create policy "lawyers read assigned candidate documents"
-on public.candidate_documents for select
+  on public.candidate_documents for select
 to authenticated
 using (
   exists (
@@ -1111,8 +1282,9 @@ using (
   )
 );
 
+drop policy if exists "lawyers upload documents for assigned cases" on public.candidate_documents;
 create policy "lawyers upload documents for assigned cases"
-on public.candidate_documents for insert
+  on public.candidate_documents for insert
 to authenticated
 with check (
   exists (
@@ -1122,8 +1294,9 @@ with check (
   )
 );
 
+drop policy if exists "employers read documents for visible candidates" on public.candidate_documents;
 create policy "employers read documents for visible candidates"
-on public.candidate_documents for select
+  on public.candidate_documents for select
 to authenticated
 using (
   exists (
@@ -1133,9 +1306,15 @@ using (
     and (
       (
         c.status = 'available'
-        and c.country_id in (
-          select e.country_id from public.employers e
-          where e.id = any(public.current_employer_ids())
+        and (
+          c.open_to_all_countries = true
+          or c.id in (
+            select cc.candidate_id from public.candidate_countries cc
+            where cc.country_id in (
+              select e.country_id from public.employers e
+              where e.id = any(public.current_employer_ids())
+            )
+          )
         )
       )
       or exists (
@@ -1150,31 +1329,36 @@ using (
 );
 
 -- Job offers
+drop policy if exists "admin reads all job offers" on public.job_offers;
 create policy "admin reads all job offers"
-on public.job_offers for select
+  on public.job_offers for select
 to authenticated
 using (public.is_admin());
 
+drop policy if exists "salesperson reads assigned job offers" on public.job_offers;
 create policy "salesperson reads assigned job offers"
-on public.job_offers for select
+  on public.job_offers for select
 to authenticated
 using (assigned_salesperson_id = auth.uid() or created_by = auth.uid());
 
+drop policy if exists "employers read own job offers" on public.job_offers;
 create policy "employers read own job offers"
-on public.job_offers for select
+  on public.job_offers for select
 to authenticated
 using (employer_id = any(public.current_employer_ids()));
 
+drop policy if exists "admin sales employer create job offers" on public.job_offers;
 create policy "admin sales employer create job offers"
-on public.job_offers for insert
+  on public.job_offers for insert
 to authenticated
 with check (
   public.current_user_role() in ('admin', 'salesperson')
   or employer_id = any(public.current_employer_ids())
 );
 
+drop policy if exists "admin sales employer update job offers" on public.job_offers;
 create policy "admin sales employer update job offers"
-on public.job_offers for update
+  on public.job_offers for update
 to authenticated
 using (
   public.is_admin()
@@ -1188,8 +1372,9 @@ with check (
 );
 
 -- Job offer slots
+drop policy if exists "read slots with allowed job offer" on public.job_offer_slots;
 create policy "read slots with allowed job offer"
-on public.job_offer_slots for select
+  on public.job_offer_slots for select
 to authenticated
 using (
   exists (
@@ -1204,8 +1389,9 @@ using (
 );
 
 -- Selections
+drop policy if exists "read selections by related parties" on public.job_offer_selections;
 create policy "read selections by related parties"
-on public.job_offer_selections for select
+  on public.job_offer_selections for select
 to authenticated
 using (
   public.is_admin()
@@ -1219,35 +1405,41 @@ using (
 );
 
 -- Visa cases
+drop policy if exists "admin reads all visa cases" on public.visa_cases;
 create policy "admin reads all visa cases"
-on public.visa_cases for select
+  on public.visa_cases for select
 to authenticated
 using (public.is_admin());
 
+drop policy if exists "lawyer reads assigned visa cases" on public.visa_cases;
 create policy "lawyer reads assigned visa cases"
-on public.visa_cases for select
+  on public.visa_cases for select
 to authenticated
 using (lawyer_id = auth.uid());
 
+drop policy if exists "agent reads own candidate visa cases" on public.visa_cases;
 create policy "agent reads own candidate visa cases"
-on public.visa_cases for select
+  on public.visa_cases for select
 to authenticated
 using (agent_id = auth.uid());
 
+drop policy if exists "employer reads own visa cases" on public.visa_cases;
 create policy "employer reads own visa cases"
-on public.visa_cases for select
+  on public.visa_cases for select
 to authenticated
 using (employer_id = any(public.current_employer_ids()));
 
+drop policy if exists "lawyer updates assigned visa cases" on public.visa_cases;
 create policy "lawyer updates assigned visa cases"
-on public.visa_cases for update
+  on public.visa_cases for update
 to authenticated
 using (lawyer_id = auth.uid() or public.is_admin())
 with check (lawyer_id = auth.uid() or public.is_admin());
 
 -- Visa events
+drop policy if exists "read visa events through case access" on public.visa_case_events;
 create policy "read visa events through case access"
-on public.visa_case_events for select
+  on public.visa_case_events for select
 to authenticated
 using (
   exists (
@@ -1262,8 +1454,9 @@ using (
   )
 );
 
+drop policy if exists "lawyer inserts visa events" on public.visa_case_events;
 create policy "lawyer inserts visa events"
-on public.visa_case_events for insert
+  on public.visa_case_events for insert
 to authenticated
 with check (
   exists (
@@ -1274,37 +1467,43 @@ with check (
 );
 
 -- Country document requirements
+drop policy if exists "read document requirements" on public.country_document_requirements;
 create policy "read document requirements"
-on public.country_document_requirements for select
+  on public.country_document_requirements for select
 to authenticated
 using (true);
 
+drop policy if exists "admin manages document requirements" on public.country_document_requirements;
 create policy "admin manages document requirements"
-on public.country_document_requirements for all
+  on public.country_document_requirements for all
 to authenticated
 using (public.is_admin())
 with check (public.is_admin());
 
 -- Notifications
+drop policy if exists "users read own notifications" on public.notifications;
 create policy "users read own notifications"
-on public.notifications for select
+  on public.notifications for select
 to authenticated
 using (recipient_id = auth.uid());
 
+drop policy if exists "users update own notifications" on public.notifications;
 create policy "users update own notifications"
-on public.notifications for update
+  on public.notifications for update
 to authenticated
 using (recipient_id = auth.uid())
 with check (recipient_id = auth.uid());
 
+drop policy if exists "system/admin creates notifications" on public.notifications;
 create policy "system/admin creates notifications"
-on public.notifications for insert
+  on public.notifications for insert
 to authenticated
 with check (public.is_admin() or actor_id = auth.uid());
 
 -- Audit logs
+drop policy if exists "admin reads audit logs" on public.audit_logs;
 create policy "admin reads audit logs"
-on public.audit_logs for select
+  on public.audit_logs for select
 to authenticated
 using (public.is_admin());
 
@@ -1312,7 +1511,7 @@ using (public.is_admin());
 -- TRAVEL COORDINATION
 -- =========================
 
-create table public.visa_case_travel (
+create table if not exists public.visa_case_travel (
   id uuid primary key default gen_random_uuid(),
   visa_case_id uuid not null unique references public.visa_cases(id) on delete cascade,
   ticket_booked boolean not null default false,
@@ -1325,20 +1524,22 @@ create table public.visa_case_travel (
   updated_at timestamptz not null default now()
 );
 
-create trigger visa_case_travel_updated_at
+create or replace trigger visa_case_travel_updated_at
 before update on public.visa_case_travel
 for each row execute function public.set_updated_at();
 
 alter table public.visa_case_travel enable row level security;
 
+drop policy if exists "admin manages travel coordination" on public.visa_case_travel;
 create policy "admin manages travel coordination"
-on public.visa_case_travel for all
+  on public.visa_case_travel for all
 to authenticated
 using (public.is_admin())
 with check (public.is_admin());
 
+drop policy if exists "salesperson manages travel for own job offers" on public.visa_case_travel;
 create policy "salesperson manages travel for own job offers"
-on public.visa_case_travel for all
+  on public.visa_case_travel for all
 to authenticated
 using (
   exists (
@@ -1357,8 +1558,9 @@ with check (
   )
 );
 
+drop policy if exists "read travel through case access" on public.visa_case_travel;
 create policy "read travel through case access"
-on public.visa_case_travel for select
+  on public.visa_case_travel for select
 to authenticated
 using (
   exists (

@@ -34,6 +34,14 @@ export default async function EditCandidatePage({ params }: { params: Promise<{ 
     .select('position_id')
     .eq('candidate_id', candidate.id);
 
+  // Fetch Candidate Countries
+  const { data: candidateCountries } = await supabase
+    .from('candidate_countries')
+    .select('country_id')
+    .eq('candidate_id', candidate.id);
+  
+  candidate.country_ids = candidateCountries?.map(cc => cc.country_id) || [];
+
   // Fetch list of active countries
   const { data: dbCountries } = await supabase
     .from('countries')

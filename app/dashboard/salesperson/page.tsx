@@ -95,6 +95,9 @@ export default async function SalespersonDashboard() {
               <p className="ph-sub">Your employers, their orders and how recruitment is tracking.</p>
             </div>
             <div className="ph-act">
+              <Link href="/dashboard/salesperson/profile">
+                <button className="btn btn-outline" style={{ border: '1px solid var(--line-2)', color: 'var(--ink)' }}>PROFILE</button>
+              </Link>
               <Link href="/dashboard/salesperson/employers">
                 <button className="btn" style={{ background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)' }}>VIEW EMPLOYER STATUS</button>
               </Link>
