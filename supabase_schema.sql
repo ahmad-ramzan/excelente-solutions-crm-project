@@ -736,10 +736,17 @@ begin
 
   select agent_id
   into v_agent_id
-  from public.candidates
-  where id = p_candidate_id
-  and status = 'available'
-  and country_id = v_country_id;
+  from public.candidates c
+  where c.id = p_candidate_id
+  and c.status = 'available'
+  and (
+    c.open_to_all_countries = true
+    or exists (
+      select 1 from public.candidate_countries cc
+      where cc.candidate_id = c.id
+      and cc.country_id = v_country_id
+    )
+  );
 
   if v_agent_id is null then
     raise exception 'Candidate is not available for this country';
@@ -866,7 +873,7 @@ $$;
 -- =========================
 
 drop view if exists public.job_offer_progress;
-create view public.job_offer_progress as
+create view public.job_offer_progress with (security_invoker = true) as
 select
   jo.id,
   jo.public_code,
@@ -892,7 +899,7 @@ left join public.job_offer_slots s on s.job_offer_id = jo.id
 group by jo.id, e.name, c.name, c.code, p.name;
 
 drop view if exists public.candidate_public_view;
-create view public.candidate_public_view as
+create view public.candidate_public_view with (security_invoker = true) as
 select 
   cand.id,
   cand.public_code,

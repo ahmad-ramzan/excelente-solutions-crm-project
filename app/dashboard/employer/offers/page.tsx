@@ -72,7 +72,7 @@ export default async function EmployerJobOffersPage({ searchParams }: { searchPa
   if (params.select) {
     const { data: candidateRow } = await supabase
       .from('candidate_public_view')
-      .select('id, first_name, last_name, positions')
+      .select('id, first_name, last_name, positions, open_to_all_countries, country_ids')
       .eq('public_code', params.select)
       .single();
 
@@ -91,7 +91,14 @@ export default async function EmployerJobOffersPage({ searchParams }: { searchPa
       });
 
       eligibleOffers = offers.filter(
-        (o) => o.status === 'open' && (filledCounts[o.id] || 0) < o.staff_needed
+        (o) => {
+          const hasVacant = o.status === 'open' && (filledCounts[o.id] || 0) < o.staff_needed;
+          if (!hasVacant) return false;
+          
+          if (candidateRow.open_to_all_countries) return true;
+          const candidateCountries = candidateRow.country_ids || [];
+          return candidateCountries.includes(o.country_id);
+        }
       );
     }
   }
@@ -125,7 +132,7 @@ export default async function EmployerJobOffersPage({ searchParams }: { searchPa
 
               {eligibleOffers.length === 0 ? (
                 <div style={{ color: 'var(--slate)', fontSize: '13.5px' }}>
-                  No open job offers with a vacant slot right now. Create one first.
+                  No open job offers with a vacant slot in the candidate's requested countries right now.
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -134,7 +141,7 @@ export default async function EmployerJobOffersPage({ searchParams }: { searchPa
                       <div style={{ fontSize: '13.5px', color: 'var(--ink)' }}>
                         <b>{o.positions?.name || 'Various'}</b> · {o.countries?.name || 'Unknown'}
                       </div>
-                      <SelectCandidateButton jobOfferId={o.id} candidateId={selectingCandidate.id} />
+                      <SelectCandidateButton jobOfferId={o.id} candidateId={selectingCandidate!.id} />
                     </div>
                   ))}
                 </div>
