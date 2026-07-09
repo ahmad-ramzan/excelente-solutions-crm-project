@@ -1,11 +1,13 @@
 import AppSidebar from '../../components/AppSidebar';
 import AppTopbar from '../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { getDashboardStats } from '@/app/lib/queries';
 import Link from 'next/link';
 
 export default async function AgentDashboard() {
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -20,15 +22,33 @@ export default async function AgentDashboard() {
     .order('created_at', { ascending: false })
     .limit(5);
 
-  const selectedIds = (dbCandidates || []).filter(c => c.status !== 'available').map(c => c.id);
+  const candidateIds = (dbCandidates || []).map(c => c.id);
+  const countryMap: Record<string, { names: string[]; codes: string[] }> = {};
+  if (candidateIds.length > 0) {
+    const { data: candidateCountries } = await adminClient
+      .from('candidate_countries')
+      .select('candidate_id, countries(name, code)')
+      .in('candidate_id', candidateIds);
+
+    (candidateCountries || []).forEach((row: any) => {
+      const country = Array.isArray(row.countries) ? row.countries[0] : row.countries;
+      if (!country) return;
+      if (!countryMap[row.candidate_id]) countryMap[row.candidate_id] = { names: [], codes: [] };
+      if (country.name) countryMap[row.candidate_id].names.push(country.name);
+      if (country.code) countryMap[row.candidate_id].codes.push(country.code);
+    });
+  }
+
   const employerMap: Record<string, string> = {};
-  if (selectedIds.length > 0) {
-    const { data: selections } = await supabase
+  if (candidateIds.length > 0) {
+    const { data: selections } = await adminClient
       .from('job_offer_selections')
       .select('candidate_id, employers(name)')
-      .in('candidate_id', selectedIds);
-    selections?.forEach(s => {
-      employerMap[s.candidate_id] = (s.employers as any)?.name || 'Unknown';
+      .in('candidate_id', candidateIds);
+
+    selections?.forEach((s: any) => {
+      const employer = Array.isArray(s.employers) ? s.employers[0] : s.employers;
+      employerMap[s.candidate_id] = employer?.name || 'Unknown';
     });
   }
 
@@ -40,14 +60,17 @@ export default async function AgentDashboard() {
     else if (c.status === 'visa_processing') { bg = '#e0e7ff'; color = '#3730a3'; }
     else if (c.status === 'approved') { bg = '#dbeafe'; color = '#1e40af'; }
 
+    const assignedCountries = countryMap[c.id]?.names || [];
+    const assignedCountryCodes = countryMap[c.id]?.codes || [];
+
     return {
       id: c.id,
       public_code: c.public_code,
       initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
       name: `${c.first_name} ${c.last_name}`,
       nationality: c.nationality,
-      country: c.open_to_all_countries ? 'Any Country' : (c.country_names?.join(', ') || 'Unassigned'),
-      countryCode: c.open_to_all_countries ? 'ANY' : (c.country_names ? `${c.country_names.length} selected` : 'N/A'),
+      country: c.open_to_all_countries ? 'Any Country' : (assignedCountries.join(', ') || 'Unassigned'),
+      countryCode: c.open_to_all_countries ? 'ANY' : (assignedCountryCodes.length === 1 ? assignedCountryCodes[0] : (assignedCountries.length ? `${assignedCountries.length} selected` : 'N/A')),
       positions: c.positions || [],
       employer: employerMap[c.id] || 'Not Assigned',
       status: c.status.replace(/_/g, ' ').toUpperCase(),

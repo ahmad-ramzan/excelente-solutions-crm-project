@@ -1,10 +1,12 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
 export async function updateLawFirmProfile(formData: FormData) {
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
@@ -21,7 +23,7 @@ export async function updateLawFirmProfile(formData: FormData) {
   }
 
   // Verify this user actually belongs to this law firm
-  const { data: lfUser } = await supabase
+  const { data: lfUser } = await adminClient
     .from('law_firm_users')
     .select('id')
     .eq('law_firm_id', lawFirmId)
@@ -32,7 +34,7 @@ export async function updateLawFirmProfile(formData: FormData) {
     return { error: 'Unauthorized to edit this Law Firm profile.' };
   }
 
-  const { error } = await supabase
+  const { error } = await adminClient
     .from('law_firms')
     .update({
       name,

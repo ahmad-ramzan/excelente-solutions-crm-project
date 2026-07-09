@@ -1,6 +1,7 @@
 import AppSidebar from '../../../../components/AppSidebar';
 import AppTopbar from '../../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { notFound } from 'next/navigation';
 import ClientAgentDocumentUpload from './ClientAgentDocumentUpload';
 import Link from 'next/link';
@@ -8,6 +9,7 @@ import DeleteCandidateButton from './DeleteCandidateButton';
 
 export default async function CandidateDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
+  const adminClient = createAdminClient();
   const cndId = (await params).id;
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -40,12 +42,37 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
     .eq('candidate_id', cand.id)
     .order('created_at', { ascending: false });
 
-  // Fetch Visa Case to see assigned slot and lawyer docs
+  const { data: candidateCountries } = await adminClient
+    .from('candidate_countries')
+    .select('countries(name, code)')
+    .eq('candidate_id', cand.id)
+    .order('created_at', { ascending: true });
+
+  const countryNames = (candidateCountries || [])
+    .map((row: any) => (Array.isArray(row.countries) ? row.countries[0] : row.countries)?.name)
+    .filter(Boolean);
+  const countryCodes = (candidateCountries || [])
+    .map((row: any) => (Array.isArray(row.countries) ? row.countries[0] : row.countries)?.code)
+    .filter(Boolean);
+
+  const { data: selection } = await adminClient
+    .from('job_offer_selections')
+    .select('job_offers(title), employers(name)')
+    .eq('candidate_id', cand.id)
+    .order('selected_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const selectedOffer = Array.isArray((selection as any)?.job_offers) ? (selection as any)?.job_offers?.[0] : (selection as any)?.job_offers;
+  const selectedEmployer = Array.isArray((selection as any)?.employers) ? (selection as any)?.employers?.[0] : (selection as any)?.employers;
+  const destinationLabel = cand.open_to_all_countries ? 'Any Country' : (countryNames.join(', ') || 'Unassigned');
+  const destinationCode = cand.open_to_all_countries ? 'ANY' : (countryCodes.length === 1 ? countryCodes[0] : (countryNames.length ? `${countryNames.length} selected` : 'N/A'));
+
   const { data: visa } = await supabase
     .from('visa_cases')
-    .select('id, job_offer_selections(job_offers(title, employers(name)))')
+    .select('id')
     .eq('candidate_id', cand.id)
-    .single();
+    .maybeSingle();
 
   const initials = `${cand.first_name?.[0] || ''}${cand.last_name?.[0] || ''}`.toUpperCase();
   const name = `${cand.first_name} ${cand.last_name}`;
@@ -185,18 +212,17 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                     </div>
                     <div className="r">
                       <div className="k">Destination</div>
-                      <div className="v">{cand.open_to_all_countries ? 'Any Country' : (cand.country_names?.join(', ') || 'Unassigned')} <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{cand.open_to_all_countries ? 'ANY' : (cand.country_names ? `${cand.country_names.length} selected` : 'N/A')}</span></div>
+                      <div className="v">{destinationLabel} <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{destinationCode}</span></div>
                     </div>
                     <div className="r">
                       <div className="k">City of visa application</div>
                       <div className="v">{cand.city || '--'}</div>
                     </div>
-                    {visa && (
+                    {selection && (
                       <div className="r">
                         <div className="k">Assigned slot</div>
                         <div className="v">
-                          {/* We use [0] because Supabase returns nested relations as arrays by default unless using !inner or specific single modifiers */}
-                          {(visa.job_offer_selections as any)?.[0]?.job_offers?.[0]?.title || 'Slot'} - {(visa.job_offer_selections as any)?.[0]?.job_offers?.[0]?.employers?.[0]?.name || 'Unknown'}
+                          {selectedOffer?.title || 'Slot'} - {selectedEmployer?.name || 'Unknown'}
                         </div>
                       </div>
                     )}

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
+import { autoProvisionEntityForActiveUser as provisionEntityForActiveUser } from '@/app/lib/provisioning';
 import { revalidatePath } from 'next/cache';
 
 const CREATABLE_ROLES = ['admin', 'salesperson', 'agent', 'employer', 'lawyer'];
@@ -130,6 +131,10 @@ export async function updateUserStatus(userId: string, newStatus: string) {
 
   if (error) return { error: error.message };
 
+  if (newStatus === 'active') {
+    await autoProvisionEntityForActiveUser(userId);
+  }
+
   revalidatePath('/dashboard/admin/users');
   return { success: true };
 }
@@ -146,6 +151,14 @@ export async function updateUserRoleStatus(userId: string, formData: FormData) {
 
   if (error) return { error: error.message };
 
+  if (status === 'active') {
+    await autoProvisionEntityForActiveUser(userId);
+  }
+
   revalidatePath('/dashboard/admin/users');
   return { success: true };
+}
+
+export async function autoProvisionEntityForActiveUser(userId: string) {
+  await provisionEntityForActiveUser(userId);
 }

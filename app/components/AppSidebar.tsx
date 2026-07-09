@@ -90,7 +90,7 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
           { icon: '🏢', label: 'Profile', href: '/dashboard/employer/profile' },
           { icon: '🔍', label: 'Select Candidates', href: '/dashboard/employer/candidates' },
           { icon: '📋', label: 'Vacancy Overview', href: '/dashboard/employer/offers' },
-          { icon: '○', label: 'Vacant Positions', href: '/dashboard/employer/vacancies' },
+          // { icon: '○', label: 'Vacant Positions', href: '/dashboard/employer/vacancies' },
           { icon: '✓', label: 'Selected Positions', href: '/dashboard/employer/selected' },
           { icon: '+', label: 'Add Vacancy', href: '/dashboard/employer/offers/new' },
         ],
@@ -131,7 +131,7 @@ export default function AppSidebar({ role }: { role: Role }) {
       if (user) {
         const fullName = user.user_metadata?.full_name || user.email;
         setUserName(fullName);
-        setUserInitials((fullName.substring(0,2) || 'XX').toUpperCase());
+        setUserInitials((fullName.substring(0, 2) || 'XX').toUpperCase());
       }
     }
     loadUser();
@@ -202,7 +202,7 @@ export default function AppSidebar({ role }: { role: Role }) {
             <div className="rl">{config.role}</div>
           </div>
         </div>
-        <button 
+        <button
           onClick={handleSignOut}
           style={{ background: 'transparent', border: 'none', color: 'var(--slate)', cursor: 'pointer', padding: '4px' }}
           title="Sign out"

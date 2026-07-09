@@ -1,10 +1,12 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
 export async function createCandidate(formData: FormData) {
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
   const firstName = formData.get('firstName') as string;
   const lastName = formData.get('lastName') as string;
@@ -81,7 +83,11 @@ export async function createCandidate(formData: FormData) {
       position_id: posId
     }));
 
-    await supabase.from('candidate_positions').insert(positionInserts);
+    const { error: positionError } = await adminClient.from('candidate_positions').insert(positionInserts);
+    if (positionError) {
+      console.error('Candidate positions insert error:', positionError);
+      return { error: 'Failed to save candidate positions' };
+    }
   }
 
   // Insert candidate_countries
@@ -90,7 +96,11 @@ export async function createCandidate(formData: FormData) {
       candidate_id: candidate.id,
       country_id: cId
     }));
-    await supabase.from('candidate_countries').insert(countryInserts);
+    const { error: countryError } = await adminClient.from('candidate_countries').insert(countryInserts);
+    if (countryError) {
+      console.error('Candidate countries insert error:', countryError);
+      return { error: 'Failed to save candidate countries' };
+    }
   }
 
   // Handle files
@@ -118,7 +128,7 @@ export async function createCandidate(formData: FormData) {
     photoUrl = await uploadToStorage(photo, 'photos');
   }
 
-  let workExpPaths: string[] = [];
+  const workExpPaths: string[] = [];
   if (workExperienceFiles && workExperienceFiles.length > 0) {
     for (const f of workExperienceFiles) {
       const p = await uploadToStorage(f, 'work-experience');
@@ -183,6 +193,7 @@ export async function deleteCandidate(candidateId: string) {
 
 export async function updateCandidate(formData: FormData, candidateId: string) {
   const supabase = await createClient();
+  const adminClient = createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -192,7 +203,6 @@ export async function updateCandidate(formData: FormData, candidateId: string) {
   const dateOfBirth = formData.get('dateOfBirth') as string;
   const phone = formData.get('phone') as string;
   const email = formData.get('email') as string;
-  const countryId = formData.get('countryId') as string;
   const city = formData.get('city') as string;
   const passportNumber = formData.get('passportNumber') as string;
   const passportExpiry = formData.get('passportExpiry') as string;
@@ -245,24 +255,42 @@ export async function updateCandidate(formData: FormData, candidateId: string) {
   }
 
   if (positions) {
-    await supabase.from('candidate_positions').delete().eq('candidate_id', candidateId);
+    const { error: deletePositionsError } = await adminClient.from('candidate_positions').delete().eq('candidate_id', candidateId);
+    if (deletePositionsError) {
+      console.error('Candidate positions delete error:', deletePositionsError);
+      return { error: 'Failed to update candidate positions' };
+    }
+
     if (positions.length > 0) {
       const positionInserts = positions.map(posId => ({
         candidate_id: candidateId,
         position_id: posId
       }));
-      await supabase.from('candidate_positions').insert(positionInserts);
+      const { error: positionError } = await adminClient.from('candidate_positions').insert(positionInserts);
+      if (positionError) {
+        console.error('Candidate positions insert error:', positionError);
+        return { error: 'Failed to update candidate positions' };
+      }
     }
   }
 
   // Update candidate_countries
-  await supabase.from('candidate_countries').delete().eq('candidate_id', candidateId);
+  const { error: deleteCountriesError } = await adminClient.from('candidate_countries').delete().eq('candidate_id', candidateId);
+  if (deleteCountriesError) {
+    console.error('Candidate countries delete error:', deleteCountriesError);
+    return { error: 'Failed to update candidate countries' };
+  }
+
   if (!isAnyCountry && selectedCountries && selectedCountries.length > 0) {
     const countryInserts = selectedCountries.map(cId => ({
       candidate_id: candidateId,
       country_id: cId
     }));
-    await supabase.from('candidate_countries').insert(countryInserts);
+    const { error: countryError } = await adminClient.from('candidate_countries').insert(countryInserts);
+    if (countryError) {
+      console.error('Candidate countries insert error:', countryError);
+      return { error: 'Failed to update candidate countries' };
+    }
   }
 
   const photo = formData.get('photo') as File;

@@ -1,20 +1,35 @@
 import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
+import { autoProvisionEntityForActiveUser } from '@/app/lib/provisioning';
 import LawFirmProfileForm from './LawFirmProfileForm';
 
 export default async function LawFirmProfilePage() {
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
   // 1. Find the law firm record for this user
-  const { data: lfUser } = await supabase
+  let { data: lfUser } = await adminClient
     .from('law_firm_users')
     .select('law_firm_id')
     .eq('profile_id', user.id)
-    .single();
+    .maybeSingle();
+
+  if (!lfUser) {
+    await autoProvisionEntityForActiveUser(user.id);
+
+    const { data: repairedLfUser } = await adminClient
+      .from('law_firm_users')
+      .select('law_firm_id')
+      .eq('profile_id', user.id)
+      .maybeSingle();
+
+    lfUser = repairedLfUser;
+  }
 
   if (!lfUser) {
       return (
@@ -34,11 +49,11 @@ export default async function LawFirmProfilePage() {
   }
 
   // 2. Fetch law firm details
-  const { data: lawFirm } = await supabase
+  const { data: lawFirm } = await adminClient
     .from('law_firms')
     .select('id, name, contact_name, email, phone, address, country_id, countries(name)')
     .eq('id', lfUser.law_firm_id)
-    .single();
+    .maybeSingle();
 
   if (!lawFirm) return null;
 

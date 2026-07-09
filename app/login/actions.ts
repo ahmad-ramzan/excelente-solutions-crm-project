@@ -67,6 +67,7 @@ export async function signup(formData: FormData) {
   const password = formData.get('password') as string
   const fullName = formData.get('fullname') as string
   const role = formData.get('role') as string
+  const phone = formData.get('phone') as string
 
   if (!email || !password || !fullName || !role) {
     return { error: 'All fields are required' }
@@ -82,6 +83,8 @@ export async function signup(formData: FormData) {
     full_name: fullName,
     role: roleEnum,
   }
+
+  if (phone) metadata.phone = phone
 
   if (roleEnum === 'employer') {
     const companyName = formData.get('companyName') as string
@@ -154,6 +157,29 @@ export async function signup(formData: FormData) {
   if (error) {
     console.error('Signup error:', error)
     return { error: error.message || 'Failed to create account. Please try again.' }
+  }
+
+  // Auto-activate the user and provision their entity immediately
+  if (data.user) {
+    const { createAdminClient } = await import('@/utils/supabase/admin');
+    const adminClient = createAdminClient();
+    
+    // Wait for the trigger to create the profile row
+    let profileReady = false;
+    for (let i = 0; i < 5; i++) {
+       const { data: p } = await adminClient.from('profiles').select('id').eq('id', data.user.id).single();
+       if (p) {
+           profileReady = true;
+           break;
+       }
+       await new Promise(r => setTimeout(r, 500));
+    }
+    
+    if (profileReady) {
+       await adminClient.from('profiles').update({ status: 'active' }).eq('id', data.user.id);
+       const { autoProvisionEntityForActiveUser } = await import('@/app/actions/admin-actions');
+       await autoProvisionEntityForActiveUser(data.user.id);
+    }
   }
 
   revalidatePath('/', 'layout')

@@ -1,10 +1,12 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
 export async function updateAgencyProfile(formData: FormData) {
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
   const agencyId = formData.get('agencyId') as string;
   const name = formData.get('name') as string;
@@ -17,7 +19,7 @@ export async function updateAgencyProfile(formData: FormData) {
   if (!user) throw new Error('Not authenticated');
 
   // Verify the user actually belongs to this agency
-  const { data: agencyUser } = await supabase
+  const { data: agencyUser } = await adminClient
     .from('agency_users')
     .select('id')
     .eq('profile_id', user.id)
@@ -28,7 +30,7 @@ export async function updateAgencyProfile(formData: FormData) {
     return { error: 'Unauthorized to edit this agency profile' };
   }
 
-  const { error } = await supabase
+  const { error } = await adminClient
     .from('agencies')
     .update({
       name,
