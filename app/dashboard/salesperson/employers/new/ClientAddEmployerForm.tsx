@@ -30,12 +30,22 @@ export default function ClientAddEmployerForm({ countries }: { countries: { id: 
       {error && <div style={{ color: 'var(--red)', fontSize: '13px', padding: '10px', background: '#fee2e2', borderRadius: '6px' }}>{error}</div>}
 
       <div>
-        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Company name</label>
+        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Name of Company</label>
         <input
           name="name"
           type="text"
           required
           placeholder="e.g. Petrov Construction LLC"
+          style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }}
+        />
+      </div>
+
+      <div>
+        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Name of outlet</label>
+        <input
+          name="outletName"
+          type="text"
+          placeholder="Outlet, branch or location name"
           style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }}
         />
       </div>
@@ -54,12 +64,43 @@ export default function ClientAddEmployerForm({ countries }: { countries: { id: 
         </select>
       </div>
 
+      <div className="resp-grid-2" style={{ marginBottom: 0 }}>
+        <div>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>City</label>
+          <input
+            name="city"
+            type="text"
+            placeholder="Company city"
+            style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }}
+          />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>ZIP code</label>
+          <input
+            name="zipCode"
+            type="text"
+            placeholder="Postal code"
+            style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }}
+          />
+        </div>
+      </div>
+
       <div>
-        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Contact name</label>
+        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Name of responsible person</label>
         <input
           name="contactName"
           type="text"
           placeholder="Primary contact at the company"
+          style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }}
+        />
+      </div>
+
+      <div>
+        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Position of responsible person</label>
+        <input
+          name="contactPosition"
+          type="text"
+          placeholder="e.g. HR Manager"
           style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }}
         />
       </div>
@@ -75,7 +116,7 @@ export default function ClientAddEmployerForm({ countries }: { countries: { id: 
           />
         </div>
         <div>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Phone</label>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Tel./WhatsApp</label>
           <input
             name="phone"
             type="text"

@@ -72,7 +72,7 @@ export default function ClientOfferForm({
     setVacancies(vacancies.map(v => v.id === id ? { ...v, [field]: value } : v));
   };
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
@@ -90,7 +90,10 @@ export default function ClientOfferForm({
       countryId
     }));
 
-    const result = await createMultipleJobOffers(payload);
+    const formData = new FormData(e.currentTarget);
+    formData.set('offers', JSON.stringify(payload));
+
+    const result = await createMultipleJobOffers(formData);
     
     if (result.error) {
       setError(result.error);
@@ -191,8 +194,34 @@ export default function ClientOfferForm({
             </div>
           </div>
 
-          <div style={{ marginTop: '24px', padding: '16px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed var(--line)' }}>
-            <p style={{ fontSize: '13px', color: 'var(--slate)', margin: '0 0 12px 0' }}>File attachments will be supported via Supabase Storage in the next update. (Workplace photos, Flight PDF, etc.)</p>
+          <div style={{ marginTop: '24px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)', marginBottom: '12px' }}>Attachments</h4>
+            <div className="resp-grid-2">
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Upload photos of Accommodation</label>
+                <input name={`accommodationPhotos-${index}`} type="file" accept="image/*" multiple style={{ width: '100%', fontSize: '13px', color: 'var(--slate)' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Upload video of work expected</label>
+                <input name={`workVideo-${index}`} type="file" accept="video/*" style={{ width: '100%', fontSize: '13px', color: 'var(--slate)' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Add Contract with Excelente</label>
+                <input name={`contractWithExcelente-${index}`} type="file" accept="application/pdf" style={{ width: '100%', fontSize: '13px', color: 'var(--slate)' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Add photos of Workplace</label>
+                <input name={`workplacePhotos-${index}`} type="file" accept="image/*" multiple style={{ width: '100%', fontSize: '13px', color: 'var(--slate)' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Add Flight Ticket PDF</label>
+                <input name={`flightTicketPdf-${index}`} type="file" accept="application/pdf" style={{ width: '100%', fontSize: '13px', color: 'var(--slate)' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Add PDF</label>
+                <input name={`additionalPdfs-${index}`} type="file" accept="application/pdf" multiple style={{ width: '100%', fontSize: '13px', color: 'var(--slate)' }} />
+              </div>
+            </div>
           </div>
 
         </div>

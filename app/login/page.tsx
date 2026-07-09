@@ -60,9 +60,6 @@ export default function LoginPage() {
       <div className="auth-form">
         <div className="eyebrow">Welcome back</div>
         <h1>Sign in to your dashboard</h1>
-        <p className="p">
-          Your role decides where you land — admin, salesperson, agent, employer or lawyer.
-        </p>
 
         {error && (
           <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>

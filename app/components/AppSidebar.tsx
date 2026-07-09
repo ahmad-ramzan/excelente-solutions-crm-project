@@ -87,10 +87,12 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
       {
         title: 'Recruit',
         items: [
-          { icon: '🔍', label: 'Browse candidates', href: '/dashboard/employer/candidates' },
-          { icon: '📋', label: 'My Job Offers', href: '/dashboard/employer/offers' },
-          { icon: '+', label: 'New Job Offer', href: '/dashboard/employer/offers/new' },
-          { icon: '✦', label: 'My selections', href: '/dashboard/employer/selections' },
+          { icon: '🏢', label: 'Profile', href: '/dashboard/employer/profile' },
+          { icon: '🔍', label: 'Select Candidates', href: '/dashboard/employer/candidates' },
+          { icon: '📋', label: 'Vacancy Overview', href: '/dashboard/employer/offers' },
+          { icon: '○', label: 'Vacant Positions', href: '/dashboard/employer/vacancies' },
+          { icon: '✓', label: 'Selected Positions', href: '/dashboard/employer/selected' },
+          { icon: '+', label: 'Add Vacancy', href: '/dashboard/employer/offers/new' },
         ],
       },
     ],

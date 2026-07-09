@@ -161,17 +161,26 @@ create table if not exists public.employers (
   id uuid primary key default gen_random_uuid(),
   public_code text not null unique default ('EMP-' || nextval('employer_code_seq')::text),
   name text not null,
+  outlet_name text,
   country_id uuid not null references public.countries(id),
   assigned_salesperson_id uuid references public.profiles(id),
   contact_name text,
+  contact_position text,
   email text,
   phone text,
   address text,
+  city text,
+  zip_code text,
   status account_status not null default 'active',
   created_by uuid references public.profiles(id),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+ALTER TABLE public.employers ADD COLUMN IF NOT EXISTS outlet_name text;
+ALTER TABLE public.employers ADD COLUMN IF NOT EXISTS contact_position text;
+ALTER TABLE public.employers ADD COLUMN IF NOT EXISTS city text;
+ALTER TABLE public.employers ADD COLUMN IF NOT EXISTS zip_code text;
 
 create table if not exists public.employer_users (
   id uuid primary key default gen_random_uuid(),
