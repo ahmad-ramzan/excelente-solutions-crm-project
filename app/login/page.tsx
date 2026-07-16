@@ -1,12 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import FlowerLogo from '../components/FlowerLogo';
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const registered = searchParams.get('registered') === 'true';
+  const confirmed  = searchParams.get('confirmed') === 'true';
 
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -60,6 +64,42 @@ export default function LoginPage() {
       <div className="auth-form">
         <div className="eyebrow">Welcome back</div>
         <h1>Sign in to your dashboard</h1>
+
+        {/* Registration success banner */}
+        {registered && (
+          <div style={{
+            background: '#dcfce7',
+            color: '#166534',
+            padding: '14px 16px',
+            borderRadius: '10px',
+            marginBottom: '20px',
+            fontSize: '14px',
+            lineHeight: '1.5',
+            borderLeft: '4px solid #16a34a',
+          }}>
+            <strong>✅ Account created successfully!</strong>
+            <br />
+            We&apos;ve sent a confirmation email to your address. Please click the link in the email to activate your account, then sign in here.
+          </div>
+        )}
+
+        {/* Email confirmed banner */}
+        {confirmed && !registered && (
+          <div style={{
+            background: '#dbeafe',
+            color: '#1e40af',
+            padding: '14px 16px',
+            borderRadius: '10px',
+            marginBottom: '20px',
+            fontSize: '14px',
+            lineHeight: '1.5',
+            borderLeft: '4px solid #2563eb',
+          }}>
+            <strong>📧 Email confirmed!</strong>
+            <br />
+            Your email address has been verified. You can now sign in below.
+          </div>
+        )}
 
         {error && (
           <div style={{ background: '#fee2e2', color: '#b91c1c', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>

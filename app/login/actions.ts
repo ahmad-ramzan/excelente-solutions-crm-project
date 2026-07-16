@@ -32,7 +32,6 @@ export async function login(formData: FormData) {
     .single()
 
   if (userError || !userData) {
-    // Check what the actual error is, sometimes trigger might fail, or RLS might block
     console.error('Fetch user role error:', userError)
     return { error: 'Failed to fetch user role.' }
   }
@@ -63,14 +62,28 @@ const PUBLIC_SIGNUP_ROLES = ['employer', 'agent', 'salesperson', 'lawyer']
 export async function signup(formData: FormData) {
   const supabase = await createClient()
 
-  const email = formData.get('email') as string
-  const password = formData.get('password') as string
-  const fullName = formData.get('fullname') as string
-  const role = formData.get('role') as string
-  const phone = formData.get('phone') as string
+  const email      = formData.get('email') as string
+  const password   = formData.get('password') as string
+  const confirmPwd = formData.get('confirmPassword') as string
+  const fullName   = formData.get('fullname') as string
+  const role       = formData.get('role') as string
+  const phone      = formData.get('phone') as string
 
+  // ── Backend field validation ──────────────────────────────────────────────
   if (!email || !password || !fullName || !role) {
-    return { error: 'All fields are required' }
+    return { error: 'All required fields must be filled in.' }
+  }
+
+  if (!phone) {
+    return { error: 'Phone / WhatsApp number is required.' }
+  }
+
+  if (password.length < 6) {
+    return { error: 'Password must be at least 6 characters.' }
+  }
+
+  if (password !== confirmPwd) {
+    return { error: 'Passwords do not match.' }
   }
 
   const roleEnum = role.toLowerCase()
@@ -82,75 +95,97 @@ export async function signup(formData: FormData) {
   const metadata: Record<string, string> = {
     full_name: fullName,
     role: roleEnum,
+    phone,
   }
-
-  if (phone) metadata.phone = phone
 
   if (roleEnum === 'employer') {
     const companyName = formData.get('companyName') as string
-    const country = formData.get('country') as string
-    const outletName = formData.get('outletName') as string
-    const address = formData.get('address') as string
-    const city = formData.get('city') as string
-    const zipCode = formData.get('zipCode') as string
-    const position = formData.get('position') as string
+    const country     = formData.get('country') as string
+    const outletName  = formData.get('outletName') as string
+    const address     = formData.get('address') as string
+    const city        = formData.get('city') as string
+    const zipCode     = formData.get('zipCode') as string
+    const position    = formData.get('position') as string
 
-    if (!companyName || !country) {
-      return { error: 'Company name and country are required for employer accounts' }
+    if (!companyName || !country || !outletName || !address || !city || !zipCode || !position) {
+      return { error: 'All employer fields are required.' }
     }
 
     metadata.company_name = companyName
     metadata.country_name = country
-    if (outletName) metadata.outlet_name = outletName
-    if (address) metadata.address = address
-    if (city) metadata.city = city
-    if (zipCode) metadata.zip_code = zipCode
-    if (position) metadata.position = position
+    metadata.outlet_name  = outletName
+    metadata.address      = address
+    metadata.city         = city
+    metadata.zip_code     = zipCode
+    metadata.position     = position
   }
 
-  if (roleEnum === 'lawyer' || roleEnum === 'agent') {
-    const country = formData.get('country') as string
+  if (roleEnum === 'agent') {
+    const country     = formData.get('country') as string
     const companyName = formData.get('companyName') as string
-    const address = formData.get('address') as string
-    const city = formData.get('city') as string
-    const zipCode = formData.get('zipCode') as string
-    const position = formData.get('position') as string
+    const address     = formData.get('address') as string
+    const city        = formData.get('city') as string
+    const zipCode     = formData.get('zipCode') as string
+    const position    = formData.get('position') as string
 
-    if (!country) {
-      return { error: `Country is required for ${roleEnum} accounts` }
+    if (!companyName || !country || !address || !city || !zipCode || !position) {
+      return { error: 'All agent fields are required.' }
     }
 
     metadata.country_name = country
-    if (companyName) metadata.company_name = companyName
-    if (address) metadata.address = address
-    if (city) metadata.city = city
-    if (zipCode) metadata.zip_code = zipCode
-    if (position) metadata.position = position
+    metadata.company_name = companyName
+    metadata.address      = address
+    metadata.city         = city
+    metadata.zip_code     = zipCode
+    metadata.position     = position
+  }
+
+  if (roleEnum === 'lawyer') {
+    const country     = formData.get('country') as string
+    const companyName = formData.get('companyName') as string
+    const address     = formData.get('address') as string
+    const city        = formData.get('city') as string
+    const zipCode     = formData.get('zipCode') as string
+    const position    = formData.get('position') as string
+
+    if (!companyName || !country || !address || !city || !zipCode || !position) {
+      return { error: 'All lawyer fields are required.' }
+    }
+
+    metadata.country_name = country
+    metadata.company_name = companyName
+    metadata.address      = address
+    metadata.city         = city
+    metadata.zip_code     = zipCode
+    metadata.position     = position
   }
 
   if (roleEnum === 'salesperson') {
     const country = formData.get('country') as string
     const address = formData.get('address') as string
-    const city = formData.get('city') as string
+    const city    = formData.get('city') as string
     const zipCode = formData.get('zipCode') as string
-    const taxId = formData.get('taxId') as string
+    const taxId   = formData.get('taxId') as string
 
-    if (!country) {
-      return { error: 'Country is required for salesperson accounts' }
+    if (!country || !address || !city || !zipCode || !taxId) {
+      return { error: 'All salesperson fields are required.' }
     }
 
     metadata.country_name = country
-    if (address) metadata.address = address
-    if (city) metadata.city = city
-    if (zipCode) metadata.zip_code = zipCode
-    if (taxId) metadata.tax_id = taxId
+    metadata.address      = address
+    metadata.city         = city
+    metadata.zip_code     = zipCode
+    metadata.tax_id       = taxId
   }
 
+  // ── Create auth user (email confirmation email sent by Supabase automatically) ──
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: metadata,
+      // emailRedirectTo sets where Supabase sends the user after they click the link
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/login?confirmed=true`,
     },
   })
 
@@ -163,7 +198,7 @@ export async function signup(formData: FormData) {
   if (data.user) {
     const { createAdminClient } = await import('@/utils/supabase/admin');
     const adminClient = createAdminClient();
-    
+
     // Wait for the trigger to create the profile row
     let profileReady = false;
     for (let i = 0; i < 5; i++) {
@@ -174,7 +209,7 @@ export async function signup(formData: FormData) {
        }
        await new Promise(r => setTimeout(r, 500));
     }
-    
+
     if (profileReady) {
        await adminClient.from('profiles').update({ status: 'active' }).eq('id', data.user.id);
        const { autoProvisionEntityForActiveUser } = await import('@/app/actions/admin-actions');
