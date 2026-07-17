@@ -35,7 +35,7 @@ export default function ClientOfferForm({
   const [error, setError] = useState<string | null>(null);
 
   const [vacancies, setVacancies] = useState<Vacancy[]>([{
-    id: Date.now(),
+    id: 1,
     positionId: '',
     staffNeeded: '1',
     salaryAmount: '',

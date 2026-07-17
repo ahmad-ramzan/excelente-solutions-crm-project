@@ -20,7 +20,7 @@ export default async function SelectedCandidatesPage() {
 
   // Fetch their uploaded documents
   const candidateIds = (candidates || []).map(c => c.id);
-  let documentsMap: Record<string, any[]> = {};
+  const documentsMap: Record<string, any[]> = {};
 
   if (candidateIds.length > 0) {
     const { data: docs } = await supabase

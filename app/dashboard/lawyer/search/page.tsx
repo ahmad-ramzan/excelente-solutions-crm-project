@@ -16,7 +16,7 @@ export default async function LawyerSearchPage({
   const query = searchParams?.q?.trim();
 
   let candidateData = null;
-  let visaCase = null;
+  let visaCase: any = null;
   let searchAttempted = false;
 
   if (query) {
@@ -97,7 +97,7 @@ export default async function LawyerSearchPage({
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '24px', marginBottom: '32px' }}>
                 <div style={{ width: '80px', height: '80px', borderRadius: '16px', background: 'var(--brand-soft)', color: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 600, overflow: 'hidden' }}>
                   {candidateData.photo_url ? (
-                    <img src={`https://vrtvqqqjydyhtdcehtqn.supabase.co/storage/v1/object/public/candidate-documents/${candidateData.photo_url}`} alt="Candidate" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${candidateData.photo_url}`} alt="Candidate" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     `${candidateData.first_name[0]}${candidateData.last_name[0]}`
                   )}

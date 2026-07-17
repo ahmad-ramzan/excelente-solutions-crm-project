@@ -48,6 +48,17 @@ const COUNTRIES = [
   'Vatican City','Venezuela','Vietnam','Yemen','Zambia','Zimbabwe',
 ];
 
+function CountrySelect({ id }: { id: string }) {
+  return (
+    <select id={id} name="country" className="input" required defaultValue="">
+      <option value="" disabled>Select country</option>
+      {COUNTRIES.map((c) => (
+        <option key={c} value={c}>{c}</option>
+      ))}
+    </select>
+  );
+}
+
 export default function RegisterPage() {
   const [selected, setSelected] = useState<RoleOpt>('Employer');
   const [error, setError] = useState<string | null>(null);
@@ -103,15 +114,6 @@ export default function RegisterPage() {
       setLoading(false);
     }
   }
-
-  const CountrySelect = ({ id }: { id: string }) => (
-    <select id={id} name="country" className="input" required defaultValue="">
-      <option value="" disabled>Select country</option>
-      {COUNTRIES.map((c) => (
-        <option key={c} value={c}>{c}</option>
-      ))}
-    </select>
-  );
 
   return (
     <div className="auth">

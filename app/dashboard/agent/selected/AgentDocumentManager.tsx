@@ -52,7 +52,7 @@ export default function AgentDocumentManager({ candidateId, existingDocs }: { ca
           {contracts.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
               {contracts.map(c => (
-                <a key={c.id} href={`https://vrtvqqqjydyhtdcehtqn.supabase.co/storage/v1/object/public/candidate-documents/${c.file_path}`} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)', textDecoration: 'underline' }}>
+                <a key={c.id} href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${c.file_path}`} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)', textDecoration: 'underline' }}>
                   📄 {c.file_name || 'Contract'}
                 </a>
               ))}
@@ -88,7 +88,7 @@ function DocUploaderCard({ type, title, doc, loading, onUpload }: { type: string
     <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid var(--line)' }}>
       <div style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '13.5px', marginBottom: '12px' }}>{title}</div>
       {doc ? (
-        <a href={`https://vrtvqqqjydyhtdcehtqn.supabase.co/storage/v1/object/public/candidate-documents/${doc.file_path}`} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)', textDecoration: 'underline', display: 'block', marginBottom: '12px' }}>
+        <a href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${doc.file_path}`} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)', textDecoration: 'underline', display: 'block', marginBottom: '12px' }}>
           📄 {doc.file_name || `${title} Document`}
         </a>
       ) : (
