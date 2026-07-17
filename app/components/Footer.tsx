@@ -9,7 +9,7 @@ export default function Footer() {
           <Logo variant="dark" subtext="Legal Workforce · Cost-Efficient · Fully Compliant" />
         </Link>
       </div>
-      <div>© 1991–2026 Excelente Solutions. Legal Workforce · Cost-Efficient · Fully Compliant.</div>
+      <div>© Since 1991</div>
     </footer>
   );
 }

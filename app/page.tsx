@@ -70,8 +70,8 @@ export default function HomePage() {
       </section>
 
       <SectionPhoto
-        src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80"
-        alt="A diverse team collaborating in a modern workplace"
+        src="/images/warehouse.png"
+        alt="A team of warehouse workers managing logistics and cargo"
       />
 
       {/* ===== FEATURES ===== */}
@@ -103,8 +103,8 @@ export default function HomePage() {
       </div>
 
       <SectionPhoto
-        src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=1600&q=80"
-        alt="Two professionals shaking hands over an agreement"
+        src="/images/construction.png"
+        alt="A team of construction workers and engineers reviewing plans on site"
       />
 
       {/* ===== LEGAL & COMPLIANT ===== */}
@@ -186,8 +186,8 @@ export default function HomePage() {
       </section>
 
       <SectionPhoto
-        src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1600&q=80"
-        alt="A professional team reviewing documents at a desk"
+        src="/images/kitchen.png"
+        alt="A team of professional chefs actively cooking in a commercial kitchen"
       />
 
       {/* ===== HOW IT WORKS ===== */}
@@ -225,8 +225,8 @@ export default function HomePage() {
       </section>
 
       <SectionPhoto
-        src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80"
-        alt="A global network of connections across the world"
+        src="/images/healthcare.png"
+        alt="A team of healthcare professionals and nurses working at a hospital station"
       />
 
       {/* ===== CONTACT ===== */}
