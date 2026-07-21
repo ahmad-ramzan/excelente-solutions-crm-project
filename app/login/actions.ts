@@ -191,7 +191,14 @@ export async function signup(formData: FormData) {
 
   if (error) {
     console.error('Signup error:', error)
-    return { error: error.message || 'Failed to create account. Please try again.' }
+    
+    // Supabase sometimes returns "{}" as a string message for rate limits or undocumented errors.
+    let errorMessage = error.message;
+    if (typeof errorMessage !== 'string' || errorMessage === '{}' || errorMessage.trim() === '') {
+      errorMessage = 'Failed to create account. Please try again.';
+    }
+
+    return { error: errorMessage }
   }
 
   // Auto-activate the user and provision their entity immediately
