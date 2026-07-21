@@ -187,7 +187,7 @@ export async function signup(formData: FormData) {
     password,
     options: {
       data: metadata,
-      emailRedirectTo: `${cleanSiteUrl}/login?confirmed=true`,
+      emailRedirectTo: `${cleanSiteUrl}/auth/callback?next=${encodeURIComponent('/login?confirmed=true')}`,
     },
   })
 
