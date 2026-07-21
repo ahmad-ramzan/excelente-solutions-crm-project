@@ -93,13 +93,19 @@ export default function ClientOfferForm({
     const formData = new FormData(e.currentTarget);
     formData.set('offers', JSON.stringify(payload));
 
-    const result = await createMultipleJobOffers(formData);
-    
-    if (result.error) {
-      setError(result.error);
+    try {
+      const result = await createMultipleJobOffers(formData);
+      
+      if (result.error) {
+        setError(result.error);
+        setIsSubmitting(false);
+      } else {
+        router.push('/dashboard/employer/offers');
+      }
+    } catch (err: any) {
+      console.error('Job offer submission failed:', err);
+      setError(err.message || 'Upload failed. The files may be too large, or your connection dropped. Please reduce the file sizes and try again.');
       setIsSubmitting(false);
-    } else {
-      router.push('/dashboard/employer/offers');
     }
   }
 
