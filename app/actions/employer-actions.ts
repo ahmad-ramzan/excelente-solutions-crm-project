@@ -179,6 +179,19 @@ export async function createMultipleJobOffers(formData: FormData) {
       if (!offer.staffNeeded || parseInt(offer.staffNeeded) <= 0) return { error: `Vacancy ${i + 1}: Number of staff needed must be at least 1.` };
     }
 
+    // Fetch assigned salesperson for this employer if created by employer
+    let defaultSalespersonId = callerProfile?.role === 'salesperson' ? user.id : null;
+    if (offers.length > 0 && offers[0].employerId) {
+      const { data: empRec } = await supabase
+        .from('employers')
+        .select('assigned_salesperson_id')
+        .eq('id', offers[0].employerId)
+        .single();
+      if (empRec?.assigned_salesperson_id) {
+        defaultSalespersonId = empRec.assigned_salesperson_id;
+      }
+    }
+
     const insertData = offers.map(offer => ({
       employer_id: offer.employerId,
       country_id: offer.countryId,
@@ -188,7 +201,7 @@ export async function createMultipleJobOffers(formData: FormData) {
       start_date: offer.startDate || null,
       end_date: offer.endDate || null,
       created_by: user.id,
-      assigned_salesperson_id: callerProfile?.role === 'salesperson' ? user.id : null,
+      assigned_salesperson_id: defaultSalespersonId,
       status: 'open',
     }));
 

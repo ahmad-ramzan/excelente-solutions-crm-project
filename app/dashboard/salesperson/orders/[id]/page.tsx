@@ -2,6 +2,7 @@ import AppSidebar from '../../../../components/AppSidebar';
 import AppTopbar from '../../../../components/AppTopbar';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { notFound } from 'next/navigation';
 
 export default async function SalespersonOfferDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -11,7 +12,9 @@ export default async function SalespersonOfferDetailsPage({ params }: { params: 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: offer } = await supabase
+  const adminClient = createAdminClient();
+
+  const { data: offer } = await adminClient
     .from('job_offers')
     .select('*, countries(name, code), positions(name), employers(name)')
     .eq('id', id)
@@ -20,7 +23,7 @@ export default async function SalespersonOfferDetailsPage({ params }: { params: 
   if (!offer) notFound();
 
   // Verify salesperson access (either offer or employer is assigned to this salesperson)
-  const { data: emp } = await supabase
+  const { data: emp } = await adminClient
     .from('employers')
     .select('assigned_salesperson_id')
     .eq('id', offer.employer_id)
@@ -30,7 +33,7 @@ export default async function SalespersonOfferDetailsPage({ params }: { params: 
     notFound();
   }
 
-  const { data: slotsData } = await supabase
+  const { data: slotsData } = await adminClient
     .from('job_offer_slots')
     .select('*, candidates(first_name, last_name, public_code)')
     .eq('job_offer_id', offer.id)

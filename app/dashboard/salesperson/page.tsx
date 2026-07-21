@@ -1,6 +1,7 @@
 import AppSidebar from '../../components/AppSidebar';
 import AppTopbar from '../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import Link from 'next/link';
 
 export default async function SalespersonDashboard() {
@@ -9,8 +10,10 @@ export default async function SalespersonDashboard() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
+  const adminClient = createAdminClient();
+
   // Fetch Employers for this Salesperson
-  const { data: dbEmployers } = await supabase
+  const { data: dbEmployers } = await adminClient
     .from('employers')
     .select('id, name, country_id, countries(name, code)')
     .eq('assigned_salesperson_id', user.id)
@@ -19,13 +22,21 @@ export default async function SalespersonDashboard() {
   const employersList: any[] = dbEmployers || [];
   const employerIds = employersList.map(e => e.id);
 
-  // Fetch Job Offers for these employers
+  // Fetch Job Offers for these employers or assigned directly to this salesperson
   let offersList: any[] = [];
   if (employerIds.length > 0) {
-    const { data: dbOrders } = await supabase
+    const { data: dbOrders } = await adminClient
       .from('job_offers')
-      .select('id, staff_needed, status, created_at, countries(name, code), employers(name), positions(name)')
-      .in('employer_id', employerIds)
+      .select('id, employer_id, staff_needed, status, created_at, countries(name, code), employers(name), positions(name)')
+      .or(`assigned_salesperson_id.eq.${user.id},employer_id.in.(${employerIds.join(',')})`)
+      .order('created_at', { ascending: false });
+    
+    offersList = dbOrders || [];
+  } else {
+    const { data: dbOrders } = await adminClient
+      .from('job_offers')
+      .select('id, employer_id, staff_needed, status, created_at, countries(name, code), employers(name), positions(name)')
+      .eq('assigned_salesperson_id', user.id)
       .order('created_at', { ascending: false });
     
     offersList = dbOrders || [];
@@ -35,7 +46,7 @@ export default async function SalespersonDashboard() {
   let slotsData: any[] = [];
   if (offersList.length > 0) {
     const offerIds = offersList.map(o => o.id);
-    const { data: sData } = await supabase
+    const { data: sData } = await adminClient
       .from('job_offer_slots')
       .select('job_offer_id, status')
       .in('job_offer_id', offerIds);
