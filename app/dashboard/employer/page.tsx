@@ -77,15 +77,15 @@ export default async function EmployerDashboard() {
     };
   });
 
-  // 5. Fetch latest active job offer
-  const { data: latestOffer } = await supabase
+  // 5. Fetch active job offers
+  const { data: activeOffersData } = await supabase
     .from('job_offers')
     .select('*, countries(name), positions(name)')
     .eq('employer_id', employer.id)
     .in('status', ['draft', 'open'])
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
+    .order('created_at', { ascending: false });
+
+  const activeOffers = activeOffersData || [];
 
   return (
     <>
@@ -232,67 +232,71 @@ export default async function EmployerDashboard() {
               </div>
             </div>
 
-            {/* Right Column: Order summary */}
-            {latestOffer ? (
-              <div className="card" style={{ height: 'fit-content' }}>
-                <div className="card-h">
-                  <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Offer: {latestOffer.positions?.name || 'Various'} × {latestOffer.staff_needed}</h3>
-                  <Link href={`/dashboard/employer/offers/${latestOffer.id}`}>
-                    <span className="lnk" style={{ color: 'var(--brand)', fontWeight: 600, cursor: 'pointer' }}>View slots</span>
-                  </Link>
-                </div>
-                <div className="card-b" style={{ padding: '24px' }}>
+            {/* Right Column: Order summary cards for all active offers */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {activeOffers.length > 0 ? (
+                activeOffers.map((offer) => (
+                  <div key={offer.id} className="card" style={{ height: 'fit-content' }}>
+                    <div className="card-h">
+                      <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Offer: {offer.positions?.name || 'Various'} × {offer.staff_needed}</h3>
+                      <Link href={`/dashboard/employer/offers/${offer.id}`}>
+                        <span className="lnk" style={{ color: 'var(--brand)', fontWeight: 600, cursor: 'pointer' }}>View slots</span>
+                      </Link>
+                    </div>
+                    <div className="card-b" style={{ padding: '24px' }}>
 
-                  {/* Progress bar */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
-                    <span style={{ color: 'var(--slate)', fontSize: '13px', fontWeight: 600 }}>Slots</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, margin: '0 16px' }}>
-                      <div style={{ width: '100%', height: '6px', background: 'var(--line-2)', borderRadius: '999px', overflow: 'hidden' }}>
-                        <div style={{ width: '0%', height: '100%', background: 'var(--brand)', borderRadius: '999px' }}></div>
+                      {/* Progress bar */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+                        <span style={{ color: 'var(--slate)', fontSize: '13px', fontWeight: 600 }}>Slots</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, margin: '0 16px' }}>
+                          <div style={{ width: '100%', height: '6px', background: 'var(--line-2)', borderRadius: '999px', overflow: 'hidden' }}>
+                            <div style={{ width: '0%', height: '100%', background: 'var(--brand)', borderRadius: '999px' }}></div>
+                          </div>
+                        </div>
+                        <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--ink)' }}>{offer.staff_needed}</span>
                       </div>
-                    </div>
-                    <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--ink)' }}>{latestOffer.staff_needed}</span>
-                  </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: 'var(--slate)', fontSize: '13px' }}>Country</span>
-                      <div>
-                        <span style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '13px' }}>{latestOffer.countries?.name}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ color: 'var(--slate)', fontSize: '13px' }}>Country</span>
+                          <div>
+                            <span style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '13px' }}>{offer.countries?.name}</span>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ color: 'var(--slate)', fontSize: '13px' }}>Status</span>
+                          <span className="tag" style={{ background: '#dcf4e6', color: '#008a3d', border: 'none', padding: '2px 8px', fontSize: '11px' }}>
+                            • {offer.status.toUpperCase()}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: 'var(--slate)', fontSize: '13px' }}>Status</span>
-                      <span className="tag" style={{ background: '#dcf4e6', color: '#008a3d', border: 'none', padding: '2px 8px', fontSize: '11px' }}>
-                        • {latestOffer.status.toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
 
-                  <Link href={`/dashboard/employer/offers/${latestOffer.id}`}>
-                    <button className="btn" style={{ width: '100%', background: '#3b82f6', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
-                      Manage offer
-                    </button>
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <div className="card" style={{ height: 'fit-content' }}>
-                <div className="card-h">
-                  <h3 style={{ fontSize: '16px', fontWeight: 600 }}>No Active Offers</h3>
-                </div>
-                <div className="card-b" style={{ padding: '24px', textAlign: 'center', color: 'var(--slate)' }}>
-                  You do not have any active job offers right now.
-                  <div style={{ marginTop: '24px' }}>
-                    <Link href="/dashboard/employer/offers/new">
-                      <button className="btn" style={{ width: '100%', background: '#3b82f6', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
-                        Create new offer
-                      </button>
-                    </Link>
+                      <Link href={`/dashboard/employer/offers/${offer.id}`}>
+                        <button className="btn" style={{ width: '100%', background: '#3b82f6', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                          Manage offer
+                        </button>
+                      </Link>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="card" style={{ height: 'fit-content' }}>
+                  <div className="card-h">
+                    <h3 style={{ fontSize: '16px', fontWeight: 600 }}>No Active Offers</h3>
+                  </div>
+                  <div className="card-b" style={{ padding: '24px', textAlign: 'center', color: 'var(--slate)' }}>
+                    You do not have any active job offers right now.
+                    <div style={{ marginTop: '24px' }}>
+                      <Link href="/dashboard/employer/offers/new">
+                        <button className="btn" style={{ width: '100%', background: '#3b82f6', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                          Create new offer
+                        </button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
