@@ -270,3 +270,75 @@ export async function selectCandidate(jobOfferId: string, candidateId: string) {
   
   return { success: true, selectionId: data };
 }
+
+export async function updateJobOffer(offerId: string, formData: FormData) {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Not authenticated' };
+
+    const positionId = formData.get('positionId') as string;
+    const countryId = formData.get('countryId') as string;
+    const staffNeededStr = formData.get('staffNeeded') as string;
+    const salaryAmount = formData.get('salaryAmount') as string;
+    const startDate = (formData.get('startDate') as string) || null;
+    const endDate = (formData.get('endDate') as string) || null;
+    const status = formData.get('status') as string || 'open';
+
+    if (!positionId || !countryId || !staffNeededStr) {
+      return { error: 'Position, Country, and Staff Needed are required fields.' };
+    }
+
+    const staffNeeded = parseInt(staffNeededStr, 10);
+    if (isNaN(staffNeeded) || staffNeeded <= 0) {
+      return { error: 'Staff needed must be a positive number.' };
+    }
+
+    const { error } = await supabase
+      .from('job_offers')
+      .update({
+        position_id: positionId,
+        country_id: countryId,
+        staff_needed: staffNeeded,
+        salary_amount: salaryAmount ? parseFloat(salaryAmount) : null,
+        start_date: startDate,
+        end_date: endDate,
+        status: status,
+      })
+      .eq('id', offerId);
+
+    if (error) {
+      console.error('Update job offer error:', error);
+      return { error: `Failed to update vacancy: ${error.message}` };
+    }
+
+    // Check existing slots to see if we need to add more vacant slots
+    const { data: existingSlots } = await supabase
+      .from('job_offer_slots')
+      .select('slot_no')
+      .eq('job_offer_id', offerId)
+      .order('slot_no', { ascending: false });
+
+    const currentCount = existingSlots?.length || 0;
+    if (staffNeeded > currentCount) {
+      const newSlots = [];
+      for (let i = currentCount + 1; i <= staffNeeded; i++) {
+        newSlots.push({
+          job_offer_id: offerId,
+          slot_no: i,
+          status: 'vacant',
+        });
+      }
+      await supabase.from('job_offer_slots').insert(newSlots);
+    }
+
+    revalidatePath('/dashboard/employer/offers');
+    revalidatePath(`/dashboard/employer/offers/${offerId}`);
+    revalidatePath('/dashboard/admin/offers');
+    return { success: true };
+  } catch (err: any) {
+    console.error('Unexpected error updating job offer:', err);
+    return { error: err?.message || 'An unexpected error occurred while updating the vacancy.' };
+  }
+}

@@ -87,7 +87,11 @@ export default async function EmployerOfferDetailsPage({ params }: { params: Pro
               </p>
             </div>
             <div className="ph-act">
-              {/* Actions could go here */}
+              <Link href={`/dashboard/employer/offers/${offer.id}/edit`}>
+                <button className="btn btn-gold" style={{ padding: '8px 18px', fontSize: '13px' }}>
+                  ✏️ Edit Vacancy
+                </button>
+              </Link>
             </div>
           </div>
 
