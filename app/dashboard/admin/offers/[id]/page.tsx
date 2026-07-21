@@ -23,9 +23,16 @@ export default async function OfferDetailsPage({ params }: { params: Promise<{ i
     .eq('job_offer_id', offer.id)
     .order('slot_no');
 
-  const slots = slotsData || [];
-  const filled = slots.filter(s => s.status === 'filled' || s.status === 'reserved').length;
-  const vacant = slots.length - filled;
+  const allSlots = slotsData || [];
+  const filledSlots = allSlots.filter(s => s.status === 'filled' || s.status === 'reserved');
+  const vacantSlots = allSlots.filter(s => s.status === 'vacant');
+
+  const allowedVacantCount = Math.max(0, offer.staff_needed - filledSlots.length);
+  const validVacantSlots = vacantSlots.slice(0, allowedVacantCount);
+
+  const slots = [...filledSlots, ...validVacantSlots].sort((a, b) => a.slot_no - b.slot_no);
+  const filled = filledSlots.length;
+  const vacant = Math.max(0, offer.staff_needed - filled);
   const role = offer.positions?.name || 'Various';
   const cCode = offer.countries?.code || 'XX';
   const countryName = offer.countries?.name || 'Unknown';

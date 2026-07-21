@@ -331,6 +331,14 @@ export async function updateJobOffer(offerId: string, formData: FormData) {
         });
       }
       await supabase.from('job_offer_slots').insert(newSlots);
+    } else if (staffNeeded < currentCount) {
+      // Delete excess vacant slots beyond the new staffNeeded count
+      await supabase
+        .from('job_offer_slots')
+        .delete()
+        .eq('job_offer_id', offerId)
+        .eq('status', 'vacant')
+        .gt('slot_no', staffNeeded);
     }
 
     revalidatePath('/dashboard/employer/offers');
