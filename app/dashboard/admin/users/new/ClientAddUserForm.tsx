@@ -1,9 +1,8 @@
 'use client';
 
-import { createUserByAdmin } from '@/app/actions/admin-actions';
+import { createUserByAdmin, getActiveCountries } from '@/app/actions/admin-actions';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
 
 export default function ClientAddUserForm() {
   const router = useRouter();
@@ -14,9 +13,8 @@ export default function ClientAddUserForm() {
 
   useEffect(() => {
     async function fetchCountries() {
-      const supabase = createClient();
-      const { data } = await supabase.from('countries').select('*').eq('is_active', true).order('name');
-      if (data) setCountries(data);
+      const data = await getActiveCountries();
+      setCountries(data);
     }
     fetchCountries();
   }, []);

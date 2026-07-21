@@ -25,7 +25,7 @@ export async function createUserByAdmin(formData: FormData) {
   if (!email || !password || !fullName || !role) {
     return { error: 'All fields are required' };
   }
-  
+
   if (role !== 'admin' && !phone) {
     return { error: 'Phone / WhatsApp number is required.' };
   }
@@ -231,4 +231,14 @@ export async function updateUserRoleStatus(userId: string, formData: FormData) {
 
 export async function autoProvisionEntityForActiveUser(userId: string) {
   await provisionEntityForActiveUser(userId);
+}
+
+export async function getActiveCountries() {
+  const adminClient = createAdminClient();
+  const { data } = await adminClient
+    .from('countries')
+    .select('*')
+    .eq('is_active', true)
+    .order('name');
+  return data || [];
 }

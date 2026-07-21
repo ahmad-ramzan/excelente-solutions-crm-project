@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import FlowerLogo from '../components/FlowerLogo';
-import { createClient } from '@/utils/supabase/client';
+import { getActiveCountries } from '@/app/actions/admin-actions';
 
 type RoleOpt = 'Employer' | 'Agent' | 'Salesperson' | 'Lawyer';
 
@@ -35,9 +35,8 @@ export default function RegisterPage() {
 
   useEffect(() => {
     async function fetchCountries() {
-      const supabase = createClient();
-      const { data } = await supabase.from('countries').select('*').eq('is_active', true).order('name');
-      if (data) setCountries(data);
+      const data = await getActiveCountries();
+      setCountries(data);
     }
     fetchCountries();
   }, []);
