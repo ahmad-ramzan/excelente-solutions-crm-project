@@ -112,117 +112,130 @@ export async function createJobOffer(formData: FormData) {
 }
 
 export async function createMultipleJobOffers(formData: FormData) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  const offers = JSON.parse((formData.get('offers') as string) || '[]') as JobOfferInput[];
-
-  if (!Array.isArray(offers) || offers.length === 0) {
-    return { error: 'Add at least one vacancy position' };
-  }
-
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-
-  const uploadFiles = async (files: File[], folder: string) => {
-    const paths: string[] = [];
-
-    for (const file of files) {
-      if (!file || file.size === 0) continue;
-
-      if (file.size > MAX_FILE_SIZE) {
-        throw new Error(`File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed size is 5 MB.`);
-      }
-
-      const ext = file.name.split('.').pop();
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
-      const filePath = `${folder}/${user.id}-${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}${ext ? '' : '.bin'}`;
-      const buffer = Buffer.from(await file.arrayBuffer());
-
-      const { error } = await supabase.storage
-        .from('contracts')
-        .upload(filePath, buffer, {
-          contentType: file.type || 'application/octet-stream',
-          upsert: true,
-        });
-
-      if (error) {
-        console.error('Job offer file upload error:', error);
-        throw new Error(`Failed to upload "${file.name}": ${error.message}`);
-      }
-
-      paths.push(filePath);
-    }
-
-    return paths;
-  };
-
-  // Validate each offer before inserting
-  for (let i = 0; i < offers.length; i++) {
-    const offer = offers[i];
-    if (!offer.employerId) return { error: `Vacancy ${i + 1}: Employer is missing.` };
-    if (!offer.countryId) return { error: `Vacancy ${i + 1}: Country is missing.` };
-    if (!offer.positionId) return { error: `Vacancy ${i + 1}: Please select a position.` };
-    if (!offer.staffNeeded || parseInt(offer.staffNeeded) <= 0) return { error: `Vacancy ${i + 1}: Number of staff needed must be at least 1.` };
-  }
-
-  const insertData = offers.map(offer => ({
-    employer_id: offer.employerId,
-    country_id: offer.countryId,
-    position_id: offer.positionId,
-    staff_needed: parseInt(offer.staffNeeded),
-    salary_amount: offer.salaryAmount ? parseFloat(offer.salaryAmount) : null,
-    start_date: offer.startDate || null,
-    end_date: offer.endDate || null,
-    created_by: user.id,
-    assigned_salesperson_id: callerProfile?.role === 'salesperson' ? user.id : null,
-    status: 'open',
-  }));
-
-  const { data: insertedOffers, error } = await supabase
-    .from('job_offers')
-    .insert(insertData)
-    .select('id');
-
-  if (error) {
-    console.error('Job offer insert error:', error);
-
-    // Provide human-readable error messages for common DB issues
-    let msg = error.message;
-    if (error.code === '23503') {
-      msg = 'A referenced record (employer, country, or position) does not exist. Please check your selections.';
-    } else if (error.code === '23505') {
-      msg = 'A duplicate vacancy already exists with the same details.';
-    } else if (error.code === '42501') {
-      msg = 'Permission denied. Your account may not have access to create vacancies.';
-    }
-
-    return { error: `Failed to create vacancies: ${msg}` };
-  }
-
-  // Upload attachments to storage (files are stored for reference even though
-  // the job_offers table doesn't have dedicated attachment columns yet).
   try {
-    for (let index = 0; index < (insertedOffers || []).length; index += 1) {
-      const offerId = insertedOffers[index].id;
-      await uploadFiles(formData.getAll(`accommodationPhotos-${index}`) as File[], `job-offers/${offerId}/accommodation`);
-      await uploadFiles(formData.getAll(`workplacePhotos-${index}`) as File[], `job-offers/${offerId}/workplace`);
-      await uploadFiles(formData.getAll(`workVideo-${index}`) as File[], `job-offers/${offerId}/work-videos`);
-      await uploadFiles(formData.getAll(`flightTicketPdf-${index}`) as File[], `job-offers/${offerId}/flight-tickets`);
-      await uploadFiles(formData.getAll(`contractWithExcelente-${index}`) as File[], `job-offers/${offerId}/excelente-contracts`);
-      await uploadFiles(formData.getAll(`additionalPdfs-${index}`) as File[], `job-offers/${offerId}/additional-pdfs`);
-    }
-  } catch (uploadError) {
-    console.error(uploadError);
-    return { error: uploadError instanceof Error ? uploadError.message : 'Failed to upload vacancy attachments' };
-  }
+    const supabase = await createClient();
 
-  revalidatePath('/dashboard/employer/offers');
-  revalidatePath('/dashboard/employer/vacancies');
-  revalidatePath('/dashboard/employer/selected');
-  return { success: true };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: 'Not authenticated. Please log in.' };
+
+    const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    
+    let offers: JobOfferInput[] = [];
+    try {
+      offers = JSON.parse((formData.get('offers') as string) || '[]') as JobOfferInput[];
+    } catch {
+      return { error: 'Invalid vacancy data submitted' };
+    }
+
+    if (!Array.isArray(offers) || offers.length === 0) {
+      return { error: 'Add at least one vacancy position' };
+    }
+
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
+    const uploadFiles = async (files: File[], folder: string) => {
+      const paths: string[] = [];
+
+      for (const file of files) {
+        if (!file || file.size === 0) continue;
+
+        if (file.size > MAX_FILE_SIZE) {
+          throw new Error(`File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed size is 5 MB.`);
+        }
+
+        const ext = file.name.split('.').pop();
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+        const filePath = `${folder}/${user.id}-${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}${ext ? '' : '.bin'}`;
+        const buffer = Buffer.from(await file.arrayBuffer());
+
+        // Use Admin Client to upload files so RLS on Storage does not block the upload
+        const { createAdminClient } = await import('@/utils/supabase/admin');
+        const adminClient = createAdminClient();
+
+        const { error } = await adminClient.storage
+          .from('contracts')
+          .upload(filePath, buffer, {
+            contentType: file.type || 'application/octet-stream',
+            upsert: true,
+          });
+
+        if (error) {
+          console.error('Job offer file upload error:', error);
+          throw new Error(`Failed to upload "${file.name}": ${error.message}`);
+        }
+
+        paths.push(filePath);
+      }
+
+      return paths;
+    };
+
+    // Validate each offer before inserting
+    for (let i = 0; i < offers.length; i++) {
+      const offer = offers[i];
+      if (!offer.employerId) return { error: `Vacancy ${i + 1}: Employer is missing.` };
+      if (!offer.countryId) return { error: `Vacancy ${i + 1}: Country is missing.` };
+      if (!offer.positionId) return { error: `Vacancy ${i + 1}: Please select a position.` };
+      if (!offer.staffNeeded || parseInt(offer.staffNeeded) <= 0) return { error: `Vacancy ${i + 1}: Number of staff needed must be at least 1.` };
+    }
+
+    const insertData = offers.map(offer => ({
+      employer_id: offer.employerId,
+      country_id: offer.countryId,
+      position_id: offer.positionId,
+      staff_needed: parseInt(offer.staffNeeded),
+      salary_amount: offer.salaryAmount ? parseFloat(offer.salaryAmount) : null,
+      start_date: offer.startDate || null,
+      end_date: offer.endDate || null,
+      created_by: user.id,
+      assigned_salesperson_id: callerProfile?.role === 'salesperson' ? user.id : null,
+      status: 'open',
+    }));
+
+    const { data: insertedOffers, error } = await supabase
+      .from('job_offers')
+      .insert(insertData)
+      .select('id');
+
+    if (error) {
+      console.error('Job offer insert error:', error);
+
+      let msg = error.message;
+      if (error.code === '23503') {
+        msg = 'A referenced record (employer, country, or position) does not exist. Please check your selections.';
+      } else if (error.code === '23505') {
+        msg = 'A duplicate vacancy already exists with the same details.';
+      } else if (error.code === '42501') {
+        msg = 'Permission denied. Your account may not have access to create vacancies.';
+      }
+
+      return { error: `Failed to create vacancies: ${msg}` };
+    }
+
+    // Upload attachments to storage using admin client
+    try {
+      for (let index = 0; index < (insertedOffers || []).length; index += 1) {
+        const offerId = insertedOffers[index].id;
+        await uploadFiles(formData.getAll(`accommodationPhotos-${index}`) as File[], `job-offers/${offerId}/accommodation`);
+        await uploadFiles(formData.getAll(`workplacePhotos-${index}`) as File[], `job-offers/${offerId}/workplace`);
+        await uploadFiles(formData.getAll(`workVideo-${index}`) as File[], `job-offers/${offerId}/work-videos`);
+        await uploadFiles(formData.getAll(`flightTicketPdf-${index}`) as File[], `job-offers/${offerId}/flight-tickets`);
+        await uploadFiles(formData.getAll(`contractWithExcelente-${index}`) as File[], `job-offers/${offerId}/excelente-contracts`);
+        await uploadFiles(formData.getAll(`additionalPdfs-${index}`) as File[], `job-offers/${offerId}/additional-pdfs`);
+      }
+    } catch (uploadError) {
+      console.error('Attachment upload error:', uploadError);
+      return { error: uploadError instanceof Error ? uploadError.message : 'Failed to upload vacancy attachments' };
+    }
+
+    revalidatePath('/dashboard/employer/offers');
+    revalidatePath('/dashboard/employer/vacancies');
+    revalidatePath('/dashboard/employer/selected');
+    return { success: true };
+  } catch (err: any) {
+    console.error('Unexpected error in createMultipleJobOffers:', err);
+    return { error: err?.message || 'An unexpected server error occurred while creating vacancies' };
+  }
 }
 
 export async function selectCandidate(jobOfferId: string, candidateId: string) {
