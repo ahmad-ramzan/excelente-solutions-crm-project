@@ -1,6 +1,6 @@
 import AppSidebar from '../../components/AppSidebar';
 import AppTopbar from '../../components/AppTopbar';
-import { createClient } from '@/utils/supabase/server';
+import { createClient, getAuthUser } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { getDashboardStats } from '@/app/lib/queries';
 import Link from 'next/link';
@@ -9,26 +9,35 @@ export default async function AgentDashboard() {
   const supabase = await createClient();
   const adminClient = createAdminClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
-  const stats = await getDashboardStats(supabase, 'agent', user.id);
-
-  // Fetch Candidates for this Agent
-  const { data: dbCandidates } = await supabase
-    .from('candidate_public_view')
-    .select('*')
-    .eq('agent_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(5);
+  const [stats, { data: dbCandidates }] = await Promise.all([
+    getDashboardStats(supabase, 'agent', user.id),
+    supabase
+      .from('candidate_public_view')
+      .select('*')
+      .eq('agent_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5),
+  ]);
 
   const candidateIds = (dbCandidates || []).map(c => c.id);
   const countryMap: Record<string, { names: string[]; codes: string[] }> = {};
+  const employerMap: Record<string, string> = {};
+
   if (candidateIds.length > 0) {
-    const { data: candidateCountries } = await adminClient
-      .from('candidate_countries')
-      .select('candidate_id, countries(name, code)')
-      .in('candidate_id', candidateIds);
+    // Independent of each other — fetch concurrently.
+    const [{ data: candidateCountries }, { data: selections }] = await Promise.all([
+      adminClient
+        .from('candidate_countries')
+        .select('candidate_id, countries(name, code)')
+        .in('candidate_id', candidateIds),
+      adminClient
+        .from('job_offer_selections')
+        .select('candidate_id, employers(name)')
+        .in('candidate_id', candidateIds),
+    ]);
 
     (candidateCountries || []).forEach((row: any) => {
       const country = Array.isArray(row.countries) ? row.countries[0] : row.countries;
@@ -37,14 +46,6 @@ export default async function AgentDashboard() {
       if (country.name) countryMap[row.candidate_id].names.push(country.name);
       if (country.code) countryMap[row.candidate_id].codes.push(country.code);
     });
-  }
-
-  const employerMap: Record<string, string> = {};
-  if (candidateIds.length > 0) {
-    const { data: selections } = await adminClient
-      .from('job_offer_selections')
-      .select('candidate_id, employers(name)')
-      .in('candidate_id', candidateIds);
 
     selections?.forEach((s: any) => {
       const employer = Array.isArray(s.employers) ? s.employers[0] : s.employers;
@@ -83,7 +84,7 @@ export default async function AgentDashboard() {
     <>
       <AppSidebar role="agent" />
       <div className="main">
-        <AppTopbar section="Dashboard" />
+        <AppTopbar section="Dashboard" role="agent" />
         <div className="wrap">
           <div className="page-head" style={{ marginBottom: '24px' }}>
             <div>

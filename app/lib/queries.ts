@@ -5,8 +5,21 @@ export async function getDashboardStats(supabase: SupabaseClient, role: string, 
   const stats: any = {};
   
   if (role === 'admin') {
+    // All independent of each other — fetch concurrently instead of one wave at a time.
+    const [
+      { data: candStats },
+      { count: cCountries }, { count: cPositions }, { count: cSales }, { count: cAgents }, { count: cEmployers }, { count: cLawyers },
+    ] = await Promise.all([
+      supabase.from('candidates').select('status'),
+      supabase.from('countries').select('*', { count: 'exact', head: true }),
+      supabase.from('positions').select('*', { count: 'exact', head: true }),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'salesperson'),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'agent'),
+      supabase.from('employers').select('*', { count: 'exact', head: true }),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'lawyer'),
+    ]);
+
     // Total candidates by status
-    const { data: candStats } = await supabase.from('candidates').select('status');
     const candCounts = { available: 0, selected: 0, visa_processing: 0, approved: 0 };
     candStats?.forEach(c => {
       if (candCounts[c.status as keyof typeof candCounts] !== undefined) {
@@ -15,16 +28,6 @@ export async function getDashboardStats(supabase: SupabaseClient, role: string, 
     });
     stats.candidates = candCounts;
     stats.total_candidates = candStats?.length || 0;
-
-    // Entity counts
-    const [{ count: cCountries }, { count: cPositions }, { count: cSales }, { count: cAgents }, { count: cEmployers }, { count: cLawyers }] = await Promise.all([
-      supabase.from('countries').select('*', { count: 'exact', head: true }),
-      supabase.from('positions').select('*', { count: 'exact', head: true }),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'salesperson'),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'agent'),
-      supabase.from('employers').select('*', { count: 'exact', head: true }),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'lawyer'),
-    ]);
     
     stats.entities = {
       countries: cCountries || 0,

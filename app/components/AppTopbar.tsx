@@ -1,10 +1,11 @@
-import { createClient } from '@/utils/supabase/server';
+import { createClient, getAuthUser } from '@/utils/supabase/server';
 import { signOut } from '@/app/dashboard/actions';
 import NotificationBell from './NotificationBell';
 import MobileMenuButton from './MobileMenuButton';
 
 interface AppTopbarProps {
   section: string;
+  role?: string;
 }
 
 const CANDIDATE_SEARCH_TARGETS: Record<string, string> = {
@@ -13,20 +14,15 @@ const CANDIDATE_SEARCH_TARGETS: Record<string, string> = {
   employer: '/dashboard/employer/candidates',
 };
 
-export default async function AppTopbar({ section }: AppTopbarProps) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+export default async function AppTopbar({ section, role }: AppTopbarProps) {
+  const user = await getAuthUser();
 
   let notifications: any[] = [];
   let unreadCount = 0;
-  let searchTarget: string | null = null;
+  const searchTarget = role ? CANDIDATE_SEARCH_TARGETS[role] || null : null;
 
   if (user) {
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (profile?.role) {
-      searchTarget = CANDIDATE_SEARCH_TARGETS[profile.role] || null;
-    }
-
+    const supabase = await createClient();
     const { data: notifData } = await supabase
       .from('notifications')
       .select('id, title, body, created_at, read_at')

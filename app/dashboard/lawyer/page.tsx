@@ -1,31 +1,32 @@
 import AppSidebar from '../../components/AppSidebar';
 import AppTopbar from '../../components/AppTopbar';
-import { createClient } from '@/utils/supabase/server';
+import { createClient, getAuthUser } from '@/utils/supabase/server';
 import Link from 'next/link';
 
 export default async function LawyerDashboard() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
-  // Find Lawyer's primary country (lawyer_countries table)
-  const { data: lcData } = await supabase
-    .from('lawyer_countries')
-    .select('country_id, countries(name)')
-    .eq('lawyer_id', user.id)
-    .limit(1);
+  // Both independent of each other — fetch concurrently.
+  const [{ data: lcData }, { data: dbCases }] = await Promise.all([
+    // Find Lawyer's primary country (lawyer_countries table)
+    supabase
+      .from('lawyer_countries')
+      .select('country_id, countries(name)')
+      .eq('lawyer_id', user.id)
+      .limit(1),
+    supabase
+      .from('visa_cases')
+      .select('id, public_code, status, remarks, candidates(first_name, last_name, public_code), employers(name)')
+      .eq('lawyer_id', user.id)
+      .order('opened_at', { ascending: false }),
+  ]);
 
   const lcCountry: any = lcData && lcData.length > 0 ? lcData[0].countries : null;
   const countryName = (Array.isArray(lcCountry) ? lcCountry[0]?.name : lcCountry?.name) || 'your assigned country';
 
-  // Fetch Cases for this Lawyer
-  const { data: dbCases } = await supabase
-    .from('visa_cases')
-    .select('id, public_code, status, remarks, candidates(first_name, last_name, public_code), employers(name)')
-    .eq('lawyer_id', user.id)
-    .order('opened_at', { ascending: false });
-  
   const cases = (dbCases || []).map((c: any) => ({
     id: c.id,
     public_code: c.public_code,
@@ -47,7 +48,7 @@ export default async function LawyerDashboard() {
     <>
       <AppSidebar role="lawyer" />
       <div className="main">
-        <AppTopbar section="Dashboard" />
+        <AppTopbar section="Dashboard" role="lawyer" />
         <div className="wrap">
           <div className="page-head" style={{ marginBottom: '24px' }}>
             <div>

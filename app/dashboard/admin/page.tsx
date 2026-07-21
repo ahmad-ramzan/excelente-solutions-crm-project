@@ -8,14 +8,18 @@ import ExportButton from './ExportButton';
 export default async function AdminDashboard() {
   const supabase = await createClient();
 
-  const stats = await getDashboardStats(supabase, 'admin');
-
-  // Fetch Recent Candidates
-  const { data: dbCandidates } = await supabase
-    .from('candidate_public_view')
-    .select('*')
-    .limit(5)
-    .order('created_at', { ascending: false });
+  // Independent of each other — fetch concurrently instead of one at a time.
+  const [stats, { data: dbCandidates }, { data: countryData }] = await Promise.all([
+    getDashboardStats(supabase, 'admin'),
+    supabase
+      .from('candidate_public_view')
+      .select('*')
+      .limit(5)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('candidates')
+      .select('country_id, countries(name, code)'),
+  ]);
 
   const candidates = (dbCandidates || []).map((c: any) => ({
     id: c.id,
@@ -42,11 +46,6 @@ export default async function AdminDashboard() {
   // Assign agent name
   candidates.forEach(c => c.agent = agentMap[c.agent_id] || 'N/A');
 
-  // Fetch Country Breakdown
-  const { data: countryData } = await supabase
-    .from('candidates')
-    .select('country_id, countries(name, code)');
-  
   const countryCounts: Record<string, { count: number; name: string; code: string }> = {};
   let totalCountryCands = 0;
   
@@ -75,7 +74,7 @@ export default async function AdminDashboard() {
     <>
       <AppSidebar role="admin" />
       <div className="main">
-        <AppTopbar section="Dashboard" />
+        <AppTopbar section="Dashboard" role="admin" />
         <div className="wrap">
           <div className="page-head">
             <div>

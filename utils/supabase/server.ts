@@ -1,5 +1,15 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { cache } from 'react'
+
+// Memoized per-request: every Server Component that calls this during the
+// same render gets the same in-flight/resolved result instead of each
+// issuing its own network round trip to Supabase Auth.
+export const getAuthUser = cache(async () => {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  return user
+})
 
 export async function createClient() {
   const cookieStore = await cookies()

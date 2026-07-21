@@ -1,13 +1,13 @@
 import AppSidebar from '../../components/AppSidebar';
 import AppTopbar from '../../components/AppTopbar';
-import { createClient } from '@/utils/supabase/server';
+import { createClient, getAuthUser } from '@/utils/supabase/server';
 import { getDashboardStats } from '@/app/lib/queries';
 import Link from 'next/link';
 
 export default async function EmployerDashboard() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
   // 1. Find the employer record for this user
@@ -24,7 +24,7 @@ export default async function EmployerDashboard() {
       <>
         <AppSidebar role="employer" />
         <div className="main">
-          <AppTopbar section="Dashboard" />
+          <AppTopbar section="Dashboard" role="employer" />
           <div className="wrap">
             <div style={{ padding: '60px 40px', textAlign: 'center', background: '#fff', borderRadius: '16px', border: '1px solid var(--line)', marginTop: '40px' }}>
               <div style={{ width: '48px', height: '48px', background: '#f5f3ff', color: 'var(--brand)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
@@ -52,17 +52,23 @@ export default async function EmployerDashboard() {
   const countryData = employer.countries as any;
   const countryName = (Array.isArray(countryData) ? countryData[0]?.name : countryData?.name) || 'Unknown';
 
-  // 3. Fetch Stats
-  const stats = await getDashboardStats(supabase, 'employer', employer.id);
-
-  // 4. Fetch available candidates in this employer's country
-  // The Employer can only see available candidates in their country.
-  const { data: dbCandidates } = await supabase
-    .from('candidate_public_view')
-    .select('*')
-    .eq('status', 'available')
-    .order('created_at', { ascending: false })
-    .limit(5);
+  // 3-5. Stats, available candidates and active offers are independent — fetch concurrently.
+  const [stats, { data: dbCandidates }, { data: activeOffersData }] = await Promise.all([
+    getDashboardStats(supabase, 'employer', employer.id),
+    // The Employer can only see available candidates in their country.
+    supabase
+      .from('candidate_public_view')
+      .select('*')
+      .eq('status', 'available')
+      .order('created_at', { ascending: false })
+      .limit(5),
+    supabase
+      .from('job_offers')
+      .select('*, countries(name), positions(name)')
+      .eq('employer_id', employer.id)
+      .in('status', ['draft', 'open'])
+      .order('created_at', { ascending: false }),
+  ]);
 
   const candidates = (dbCandidates || []).map((c: any) => {
     return {
@@ -77,21 +83,13 @@ export default async function EmployerDashboard() {
     };
   });
 
-  // 5. Fetch active job offers
-  const { data: activeOffersData } = await supabase
-    .from('job_offers')
-    .select('*, countries(name), positions(name)')
-    .eq('employer_id', employer.id)
-    .in('status', ['draft', 'open'])
-    .order('created_at', { ascending: false });
-
   const activeOffers = activeOffersData || [];
 
   return (
     <>
       <AppSidebar role="employer" />
       <div className="main">
-        <AppTopbar section="Dashboard" />
+        <AppTopbar section="Dashboard" role="employer" />
         <div className="wrap">
           <div className="page-head" style={{ marginBottom: '24px' }}>
             <div>

@@ -1,13 +1,11 @@
 import AppSidebar from '../../components/AppSidebar';
 import AppTopbar from '../../components/AppTopbar';
-import { createClient } from '@/utils/supabase/server';
+import { getAuthUser } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import Link from 'next/link';
 
 export default async function SalespersonDashboard() {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
   const adminClient = createAdminClient();
@@ -98,7 +96,7 @@ export default async function SalespersonDashboard() {
     <>
       <AppSidebar role="salesperson" />
       <div className="main">
-        <AppTopbar section="Dashboard" />
+        <AppTopbar section="Dashboard" role="salesperson" />
         <div className="wrap">
           <div className="page-head" style={{ marginBottom: '32px' }}>
             <div>
