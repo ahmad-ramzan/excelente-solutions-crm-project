@@ -248,3 +248,26 @@ export async function getActiveCountries() {
     .order('name');
   return data || [];
 }
+
+export async function deleteUserByAdmin(userId: string) {
+  try {
+    const adminClient = createAdminClient();
+
+    // Delete linked profile and user relation records first
+    await adminClient.from('employer_users').delete().eq('profile_id', userId);
+    await adminClient.from('profiles').delete().eq('id', userId);
+
+    // Delete the user from Supabase Authentication
+    const { error } = await adminClient.auth.admin.deleteUser(userId);
+    if (error) {
+      console.error('Delete auth user error:', error);
+      return { error: `Failed to delete user: ${error.message}` };
+    }
+
+    revalidatePath('/dashboard/admin/users');
+    return { success: true };
+  } catch (err: any) {
+    console.error('Unexpected error deleting user:', err);
+    return { error: err?.message || 'Failed to delete user' };
+  }
+}
