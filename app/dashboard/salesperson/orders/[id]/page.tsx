@@ -15,10 +15,20 @@ export default async function SalespersonOfferDetailsPage({ params }: { params: 
     .from('job_offers')
     .select('*, countries(name, code), positions(name), employers(name)')
     .eq('id', id)
-    .eq('assigned_salesperson_id', user.id)
     .single();
 
   if (!offer) notFound();
+
+  // Verify salesperson access (either offer or employer is assigned to this salesperson)
+  const { data: emp } = await supabase
+    .from('employers')
+    .select('assigned_salesperson_id')
+    .eq('id', offer.employer_id)
+    .single();
+
+  if (offer.assigned_salesperson_id !== user.id && emp?.assigned_salesperson_id !== user.id) {
+    notFound();
+  }
 
   const { data: slotsData } = await supabase
     .from('job_offer_slots')

@@ -185,6 +185,12 @@ export async function assignSalesperson(employerId: string, salespersonId: strin
 
   if (error) return { error: error.message };
 
+  // Also update all existing job offers for this employer so the salesperson sees them
+  await supabase
+    .from('job_offers')
+    .update({ assigned_salesperson_id: salespersonId || null })
+    .eq('employer_id', employerId);
+
   revalidatePath('/dashboard/admin/employers');
   revalidatePath('/dashboard/salesperson/employers');
   revalidatePath('/dashboard/salesperson/orders');
