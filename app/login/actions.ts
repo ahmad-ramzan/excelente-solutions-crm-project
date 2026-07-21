@@ -179,13 +179,15 @@ export async function signup(formData: FormData) {
   }
 
   // ── Create auth user (email confirmation email sent by Supabase automatically) ──
+  const rawSiteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const cleanSiteUrl = rawSiteUrl.replace(/\/+$/, '').split('/login')[0];
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: metadata,
-      // emailRedirectTo sets where Supabase sends the user after they click the link
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/login?confirmed=true`,
+      emailRedirectTo: `${cleanSiteUrl}/login?confirmed=true`,
     },
   })
 
