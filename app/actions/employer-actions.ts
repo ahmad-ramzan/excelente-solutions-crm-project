@@ -54,7 +54,7 @@ export async function createEmployer(formData: FormData) {
 
   if (error) {
     console.error('Employer insert error:', error);
-    return { error: 'Failed to create employer' };
+    return { error: `Failed to create employer: ${error.message}` };
   }
 
   revalidatePath('/dashboard/salesperson/employers');
@@ -101,7 +101,7 @@ export async function createJobOffer(formData: FormData) {
 
   if (error) {
     console.error('Job offer insert error:', error);
-    return { error: 'Failed to create job offer' };
+    return { error: `Failed to create job offer: ${error.message}` };
   }
 
   // The DB trigger `create_slots_after_job_offer_insert` will auto-create the slots
@@ -124,11 +124,17 @@ export async function createMultipleJobOffers(formData: FormData) {
     return { error: 'Add at least one vacancy position' };
   }
 
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
   const uploadFiles = async (files: File[], folder: string) => {
     const paths: string[] = [];
 
     for (const file of files) {
       if (!file || file.size === 0) continue;
+
+      if (file.size > MAX_FILE_SIZE) {
+        throw new Error(`File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed size is 5 MB.`);
+      }
 
       const ext = file.name.split('.').pop();
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
@@ -144,7 +150,7 @@ export async function createMultipleJobOffers(formData: FormData) {
 
       if (error) {
         console.error('Job offer file upload error:', error);
-        throw new Error('Failed to upload vacancy attachment');
+        throw new Error(`Failed to upload "${file.name}": ${error.message}`);
       }
 
       paths.push(filePath);
@@ -153,11 +159,20 @@ export async function createMultipleJobOffers(formData: FormData) {
     return paths;
   };
 
+  // Validate each offer before inserting
+  for (let i = 0; i < offers.length; i++) {
+    const offer = offers[i];
+    if (!offer.employerId) return { error: `Vacancy ${i + 1}: Employer is missing.` };
+    if (!offer.countryId) return { error: `Vacancy ${i + 1}: Country is missing.` };
+    if (!offer.positionId) return { error: `Vacancy ${i + 1}: Please select a position.` };
+    if (!offer.staffNeeded || parseInt(offer.staffNeeded) <= 0) return { error: `Vacancy ${i + 1}: Number of staff needed must be at least 1.` };
+  }
+
   const insertData = offers.map(offer => ({
     employer_id: offer.employerId,
     country_id: offer.countryId,
     position_id: offer.positionId,
-    staff_needed: offer.staffNeeded,
+    staff_needed: parseInt(offer.staffNeeded),
     salary_amount: offer.salaryAmount ? parseFloat(offer.salaryAmount) : null,
     start_date: offer.startDate || null,
     end_date: offer.endDate || null,
@@ -177,7 +192,18 @@ export async function createMultipleJobOffers(formData: FormData) {
 
   if (error) {
     console.error('Job offer insert error:', error);
-    return { error: 'Failed to create job offers' };
+
+    // Provide human-readable error messages for common DB issues
+    let msg = error.message;
+    if (error.code === '23503') {
+      msg = 'A referenced record (employer, country, or position) does not exist. Please check your selections.';
+    } else if (error.code === '23505') {
+      msg = 'A duplicate vacancy already exists with the same details.';
+    } else if (error.code === '42501') {
+      msg = 'Permission denied. Your account may not have access to create vacancies.';
+    }
+
+    return { error: `Failed to create vacancies: ${msg}` };
   }
 
   try {
@@ -204,7 +230,7 @@ export async function createMultipleJobOffers(formData: FormData) {
 
       if (updateError) {
         console.error('Job offer attachment update error:', updateError);
-        return { error: 'Vacancies were created, but some attachments could not be saved' };
+        return { error: `Vacancies were created, but attachment save failed: ${updateError.message}` };
       }
     }
   } catch (uploadError) {
