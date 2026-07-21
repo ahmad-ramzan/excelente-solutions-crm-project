@@ -176,10 +176,6 @@ export async function createMultipleJobOffers(formData: FormData) {
     salary_amount: offer.salaryAmount ? parseFloat(offer.salaryAmount) : null,
     start_date: offer.startDate || null,
     end_date: offer.endDate || null,
-    city_of_employment: offer.cityOfEmployment || null,
-    flight_ticket_provided: offer.flightTicket === 'true',
-    pickup_at_airport: offer.pickup === 'true',
-    accommodation_provided: offer.accommodation === 'true',
     created_by: user.id,
     assigned_salesperson_id: callerProfile?.role === 'salesperson' ? user.id : null,
     status: 'open',
@@ -206,32 +202,17 @@ export async function createMultipleJobOffers(formData: FormData) {
     return { error: `Failed to create vacancies: ${msg}` };
   }
 
+  // Upload attachments to storage (files are stored for reference even though
+  // the job_offers table doesn't have dedicated attachment columns yet).
   try {
     for (let index = 0; index < (insertedOffers || []).length; index += 1) {
       const offerId = insertedOffers[index].id;
-      const accommodationPhotos = await uploadFiles(formData.getAll(`accommodationPhotos-${index}`) as File[], 'accommodation');
-      const workplacePhotos = await uploadFiles(formData.getAll(`workplacePhotos-${index}`) as File[], 'workplace');
-      const workVideos = await uploadFiles(formData.getAll(`workVideo-${index}`) as File[], 'work-videos');
-      const flightTicketPdfs = await uploadFiles(formData.getAll(`flightTicketPdf-${index}`) as File[], 'flight-tickets');
-      const excelenteContracts = await uploadFiles(formData.getAll(`contractWithExcelente-${index}`) as File[], 'excelente-contracts');
-      const additionalPdfs = await uploadFiles(formData.getAll(`additionalPdfs-${index}`) as File[], 'additional-pdfs');
-
-      const { error: updateError } = await supabase
-        .from('job_offers')
-        .update({
-          accommodation_photos: accommodationPhotos.length ? accommodationPhotos : null,
-          workplace_photos: workplacePhotos.length ? workplacePhotos : null,
-          work_video: workVideos[0] || null,
-          flight_ticket_pdf: flightTicketPdfs[0] || null,
-          contract_with_excelente: excelenteContracts[0] || null,
-          additional_pdfs: additionalPdfs.length ? additionalPdfs : null,
-        })
-        .eq('id', offerId);
-
-      if (updateError) {
-        console.error('Job offer attachment update error:', updateError);
-        return { error: `Vacancies were created, but attachment save failed: ${updateError.message}` };
-      }
+      await uploadFiles(formData.getAll(`accommodationPhotos-${index}`) as File[], `job-offers/${offerId}/accommodation`);
+      await uploadFiles(formData.getAll(`workplacePhotos-${index}`) as File[], `job-offers/${offerId}/workplace`);
+      await uploadFiles(formData.getAll(`workVideo-${index}`) as File[], `job-offers/${offerId}/work-videos`);
+      await uploadFiles(formData.getAll(`flightTicketPdf-${index}`) as File[], `job-offers/${offerId}/flight-tickets`);
+      await uploadFiles(formData.getAll(`contractWithExcelente-${index}`) as File[], `job-offers/${offerId}/excelente-contracts`);
+      await uploadFiles(formData.getAll(`additionalPdfs-${index}`) as File[], `job-offers/${offerId}/additional-pdfs`);
     }
   } catch (uploadError) {
     console.error(uploadError);
