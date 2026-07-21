@@ -218,7 +218,6 @@ export async function createMultipleJobOffers(formData: FormData) {
         const offerId = insertedOffers[index].id;
         await uploadFiles(formData.getAll(`accommodationPhotos-${index}`) as File[], `job-offers/${offerId}/accommodation`);
         await uploadFiles(formData.getAll(`workplacePhotos-${index}`) as File[], `job-offers/${offerId}/workplace`);
-        await uploadFiles(formData.getAll(`workVideo-${index}`) as File[], `job-offers/${offerId}/work-videos`);
         await uploadFiles(formData.getAll(`flightTicketPdf-${index}`) as File[], `job-offers/${offerId}/flight-tickets`);
         await uploadFiles(formData.getAll(`contractWithExcelente-${index}`) as File[], `job-offers/${offerId}/excelente-contracts`);
         await uploadFiles(formData.getAll(`additionalPdfs-${index}`) as File[], `job-offers/${offerId}/additional-pdfs`);

@@ -224,11 +224,7 @@ export default function ClientOfferForm({
                 <input name={`accommodationPhotos-${index}`} type="file" accept="image/*" multiple style={{ width: '100%', fontSize: '13px', color: 'var(--slate)' }} />
                 <span style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', display: 'block' }}>Max 5 MB per file</span>
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Upload video of work expected</label>
-                <input name={`workVideo-${index}`} type="file" accept="video/*" style={{ width: '100%', fontSize: '13px', color: 'var(--slate)' }} />
-                <span style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', display: 'block' }}>Max 5 MB per file</span>
-              </div>
+
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Add Contract with Excelente</label>
                 <input name={`contractWithExcelente-${index}`} type="file" accept="application/pdf" style={{ width: '100%', fontSize: '13px', color: 'var(--slate)' }} />
