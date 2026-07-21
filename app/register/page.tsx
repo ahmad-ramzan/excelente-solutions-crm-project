@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import FlowerLogo from '../components/FlowerLogo';
+import { createClient } from '@/utils/supabase/client';
 
 type RoleOpt = 'Employer' | 'Agent' | 'Salesperson' | 'Lawyer';
 
@@ -13,47 +14,12 @@ const roles: { label: RoleOpt; sub: string }[] = [
   { label: 'Lawyer', sub: 'I process visas' },
 ];
 
-// Full world countries list
-const COUNTRIES = [
-  'Afghanistan','Albania','Algeria','Andorra','Angola','Antigua and Barbuda',
-  'Argentina','Armenia','Australia','Austria','Azerbaijan','Bahamas','Bahrain',
-  'Bangladesh','Barbados','Belarus','Belgium','Belize','Benin','Bhutan',
-  'Bolivia','Bosnia and Herzegovina','Botswana','Brazil','Brunei','Bulgaria',
-  'Burkina Faso','Burundi','Cabo Verde','Cambodia','Cameroon','Canada',
-  'Central African Republic','Chad','Chile','China','Colombia','Comoros',
-  'Congo (Brazzaville)','Congo (Kinshasa)','Costa Rica','Croatia','Cuba',
-  'Cyprus','Czech Republic','Denmark','Djibouti','Dominica','Dominican Republic',
-  'Ecuador','Egypt','El Salvador','Equatorial Guinea','Eritrea','Estonia',
-  'Eswatini','Ethiopia','Fiji','Finland','France','Gabon','Gambia','Georgia',
-  'Germany','Ghana','Greece','Grenada','Guatemala','Guinea','Guinea-Bissau',
-  'Guyana','Haiti','Honduras','Hungary','Iceland','India','Indonesia','Iran',
-  'Iraq','Ireland','Israel','Italy','Jamaica','Japan','Jordan','Kazakhstan',
-  'Kenya','Kiribati','Kuwait','Kyrgyzstan','Laos','Latvia','Lebanon','Lesotho',
-  'Liberia','Libya','Liechtenstein','Lithuania','Luxembourg','Madagascar',
-  'Malawi','Malaysia','Maldives','Mali','Malta','Marshall Islands','Mauritania',
-  'Mauritius','Mexico','Micronesia','Moldova','Monaco','Mongolia','Montenegro',
-  'Morocco','Mozambique','Myanmar','Namibia','Nauru','Nepal','Netherlands',
-  'New Zealand','Nicaragua','Niger','Nigeria','North Korea','North Macedonia',
-  'Norway','Oman','Pakistan','Palau','Palestine','Panama','Papua New Guinea',
-  'Paraguay','Peru','Philippines','Poland','Portugal','Qatar','Romania',
-  'Russia','Rwanda','Saint Kitts and Nevis','Saint Lucia',
-  'Saint Vincent and the Grenadines','Samoa','San Marino',
-  'Sao Tome and Principe','Saudi Arabia','Senegal','Serbia','Seychelles',
-  'Sierra Leone','Singapore','Slovakia','Slovenia','Solomon Islands','Somalia',
-  'South Africa','South Korea','South Sudan','Spain','Sri Lanka','Sudan',
-  'Suriname','Sweden','Switzerland','Syria','Taiwan','Tajikistan','Tanzania',
-  'Thailand','Timor-Leste','Togo','Tonga','Trinidad and Tobago','Tunisia',
-  'Turkey','Turkmenistan','Tuvalu','Uganda','Ukraine','United Arab Emirates',
-  'United Kingdom','United States','Uruguay','Uzbekistan','Vanuatu',
-  'Vatican City','Venezuela','Vietnam','Yemen','Zambia','Zimbabwe',
-];
-
-function CountrySelect({ id }: { id: string }) {
+function CountrySelect({ id, countries }: { id: string; countries: any[] }) {
   return (
     <select id={id} name="country" className="input" required defaultValue="">
       <option value="" disabled>Select country</option>
-      {COUNTRIES.map((c) => (
-        <option key={c} value={c}>{c}</option>
+      {countries.map((c) => (
+        <option key={c.id} value={c.name}>{c.name}</option>
       ))}
     </select>
   );
@@ -65,6 +31,16 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [pwdError, setPwdError] = useState<string | null>(null);
+  const [countries, setCountries] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchCountries() {
+      const supabase = createClient();
+      const { data } = await supabase.from('countries').select('*').eq('is_active', true).order('name');
+      if (data) setCountries(data);
+    }
+    fetchCountries();
+  }, []);
 
   function validatePasswords(form: HTMLFormElement): boolean {
     const pwd = (form.elements.namedItem('password') as HTMLInputElement).value;
@@ -183,6 +159,13 @@ export default function RegisterPage() {
 
         <form onSubmit={handleRegister} noValidate>
 
+          <div className="field">
+            <label htmlFor="country">
+              Country <span style={{ color: 'var(--red)' }}>*</span>
+            </label>
+            <CountrySelect id="country" countries={countries} />
+          </div>
+
           {/* ── Responsible Person Name (all roles) ── */}
           <div className="row2">
             <div className="field">
@@ -237,15 +220,9 @@ export default function RegisterPage() {
                   <input id="zipCode" name="zipCode" className="input" placeholder="Postal Code" required />
                 </div>
               </div>
-              <div className="row2">
-                <div className="field">
-                  <label htmlFor="position">Position of responsible person <span style={{ color: 'var(--red)' }}>*</span></label>
-                  <input id="position" name="position" className="input" placeholder="e.g. HR Manager" required />
-                </div>
-                <div className="field">
-                  <label htmlFor="country">Country <span style={{ color: 'var(--red)' }}>*</span></label>
-                  <CountrySelect id="country" />
-                </div>
+              <div className="field">
+                <label htmlFor="position">Position of responsible person <span style={{ color: 'var(--red)' }}>*</span></label>
+                <input id="position" name="position" className="input" placeholder="e.g. HR Manager" required />
               </div>
             </>
           )}
@@ -271,15 +248,9 @@ export default function RegisterPage() {
                   <input id="zipCode" name="zipCode" className="input" placeholder="Postal Code" required />
                 </div>
               </div>
-              <div className="row2">
-                <div className="field">
-                  <label htmlFor="position">Position of responsible person <span style={{ color: 'var(--red)' }}>*</span></label>
-                  <input id="position" name="position" className="input" placeholder="e.g. Director" required />
-                </div>
-                <div className="field">
-                  <label htmlFor="country">Country <span style={{ color: 'var(--red)' }}>*</span></label>
-                  <CountrySelect id="country" />
-                </div>
+              <div className="field">
+                <label htmlFor="position">Position of responsible person <span style={{ color: 'var(--red)' }}>*</span></label>
+                <input id="position" name="position" className="input" placeholder="e.g. Director" required />
               </div>
             </>
           )}
@@ -305,15 +276,9 @@ export default function RegisterPage() {
                   <input id="zipCode" name="zipCode" className="input" placeholder="Postal Code" required />
                 </div>
               </div>
-              <div className="row2">
-                <div className="field">
-                  <label htmlFor="position">Position of responsible person <span style={{ color: 'var(--red)' }}>*</span></label>
-                  <input id="position" name="position" className="input" placeholder="e.g. Director" required />
-                </div>
-                <div className="field">
-                  <label htmlFor="country">Country <span style={{ color: 'var(--red)' }}>*</span></label>
-                  <CountrySelect id="country" />
-                </div>
+              <div className="field">
+                <label htmlFor="position">Position of responsible person <span style={{ color: 'var(--red)' }}>*</span></label>
+                <input id="position" name="position" className="input" placeholder="e.g. Director" required />
               </div>
             </>
           )}
@@ -335,15 +300,9 @@ export default function RegisterPage() {
                   <input id="zipCode" name="zipCode" className="input" placeholder="Postal Code" required />
                 </div>
               </div>
-              <div className="row2">
-                <div className="field">
-                  <label htmlFor="country">Country <span style={{ color: 'var(--red)' }}>*</span></label>
-                  <CountrySelect id="country" />
-                </div>
-                <div className="field">
-                  <label htmlFor="taxId">Tax ID <span style={{ color: 'var(--red)' }}>*</span></label>
-                  <input id="taxId" name="taxId" className="input" placeholder="Tax Identification Number" required />
-                </div>
+              <div className="field">
+                <label htmlFor="taxId">Tax ID <span style={{ color: 'var(--red)' }}>*</span></label>
+                <input id="taxId" name="taxId" className="input" placeholder="Tax Identification Number" required />
               </div>
             </>
           )}

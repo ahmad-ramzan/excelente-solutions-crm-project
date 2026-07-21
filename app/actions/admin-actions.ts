@@ -20,13 +20,86 @@ export async function createUserByAdmin(formData: FormData) {
   const password = formData.get('password') as string;
   const fullName = formData.get('fullName') as string;
   const role = formData.get('role') as string;
+  const phone = formData.get('phone') as string;
 
   if (!email || !password || !fullName || !role) {
     return { error: 'All fields are required' };
   }
+  
+  if (role !== 'admin' && !phone) {
+    return { error: 'Phone / WhatsApp number is required.' };
+  }
 
   if (!CREATABLE_ROLES.includes(role)) {
     return { error: 'Invalid role selected' };
+  }
+
+  const metadata: Record<string, string> = {
+    full_name: fullName,
+    role,
+  };
+  if (role !== 'admin') {
+    metadata.phone = phone;
+  }
+
+  if (role === 'employer') {
+    const companyName = formData.get('companyName') as string;
+    const country = formData.get('country') as string;
+    const outletName = formData.get('outletName') as string;
+    const address = formData.get('address') as string;
+    const city = formData.get('city') as string;
+    const zipCode = formData.get('zipCode') as string;
+    const position = formData.get('position') as string;
+
+    if (!companyName || !country || !outletName || !address || !city || !zipCode || !position) {
+      return { error: 'All employer fields are required.' };
+    }
+
+    metadata.company_name = companyName;
+    metadata.country_name = country;
+    metadata.outlet_name = outletName;
+    metadata.address = address;
+    metadata.city = city;
+    metadata.zip_code = zipCode;
+    metadata.position = position;
+  }
+
+  if (role === 'agent' || role === 'lawyer') {
+    const country = formData.get('country') as string;
+    const companyName = formData.get('companyName') as string;
+    const address = formData.get('address') as string;
+    const city = formData.get('city') as string;
+    const zipCode = formData.get('zipCode') as string;
+    const position = formData.get('position') as string;
+
+    if (!companyName || !country || !address || !city || !zipCode || !position) {
+      return { error: `All ${role} fields are required.` };
+    }
+
+    metadata.country_name = country;
+    metadata.company_name = companyName;
+    metadata.address = address;
+    metadata.city = city;
+    metadata.zip_code = zipCode;
+    metadata.position = position;
+  }
+
+  if (role === 'salesperson') {
+    const country = formData.get('country') as string;
+    const address = formData.get('address') as string;
+    const city = formData.get('city') as string;
+    const zipCode = formData.get('zipCode') as string;
+    const taxId = formData.get('taxId') as string;
+
+    if (!country || !address || !city || !zipCode || !taxId) {
+      return { error: 'All salesperson fields are required.' };
+    }
+
+    metadata.country_name = country;
+    metadata.address = address;
+    metadata.city = city;
+    metadata.zip_code = zipCode;
+    metadata.tax_id = taxId;
   }
 
   const adminClient = createAdminClient();
@@ -34,10 +107,7 @@ export async function createUserByAdmin(formData: FormData) {
     email,
     password,
     email_confirm: true,
-    user_metadata: {
-      full_name: fullName,
-      role,
-    },
+    user_metadata: metadata,
   });
 
   if (error) {
