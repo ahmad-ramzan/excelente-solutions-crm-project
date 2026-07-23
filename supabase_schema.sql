@@ -1144,6 +1144,20 @@ using (
   )
 );
 
+drop policy if exists "salesperson reads candidates for assigned cases" on public.candidates;
+create policy "salesperson reads candidates for assigned cases"
+  on public.candidates for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.visa_cases vc
+    join public.job_offers jo on jo.id = vc.job_offer_id
+    where vc.candidate_id = candidates.id
+    and jo.assigned_salesperson_id = auth.uid()
+  )
+);
+
 -- Candidate private details
 drop policy if exists "admin reads private candidate details" on public.candidate_private_details;
 create policy "admin reads private candidate details"
@@ -1355,7 +1369,15 @@ drop policy if exists "salesperson reads assigned job offers" on public.job_offe
 create policy "salesperson reads assigned job offers"
   on public.job_offers for select
 to authenticated
-using (assigned_salesperson_id = auth.uid() or created_by = auth.uid());
+using (
+  assigned_salesperson_id = auth.uid()
+  or created_by = auth.uid()
+  or exists (
+    select 1 from public.employers e
+    where e.id = job_offers.employer_id
+    and e.assigned_salesperson_id = auth.uid()
+  )
+);
 
 drop policy if exists "employers read own job offers" on public.job_offers;
 create policy "employers read own job offers"
@@ -1408,7 +1430,13 @@ using (
     and (
       public.is_admin()
       or jo.assigned_salesperson_id = auth.uid()
+      or jo.created_by = auth.uid()
       or jo.employer_id = any(public.current_employer_ids())
+      or exists (
+        select 1 from public.employers e
+        where e.id = jo.employer_id
+        and e.assigned_salesperson_id = auth.uid()
+      )
     )
   )
 );
