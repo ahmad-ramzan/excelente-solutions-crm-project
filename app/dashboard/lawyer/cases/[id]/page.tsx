@@ -52,9 +52,21 @@ export default async function LawyerCaseDetailPage({ params }: { params: Promise
   // Fetch Candidate Documents
   const { data: documents } = await supabase
     .from('candidate_documents')
-    .select('id, type, file_name, file_path, status, created_at')
+    .select('id, type, file_name, file_path, mime_type, size_bytes, status, created_at')
     .eq('candidate_id', caseData.candidate_id)
     .order('created_at', { ascending: false });
+
+  const getDocIcon = (mime?: string) => {
+    if (mime?.includes('image')) return { color: 'var(--brand)', bg: 'var(--brand-soft)' };
+    return { color: 'var(--red)', bg: '#fee2e2' };
+  };
+
+  const getDocFormat = (mime: string | undefined, path: string) => {
+    if (mime?.includes('pdf')) return 'PDF';
+    if (mime?.includes('image')) return 'IMG';
+    const ext = path.split('.').pop()?.toUpperCase();
+    return ext || 'FILE';
+  };
 
   // "candidate-documents" is a private bucket — every link needs a signed URL.
   const docUrls = await getCandidateDocumentSignedUrls((documents || []).map(d => d.file_path));
@@ -131,44 +143,34 @@ export default async function LawyerCaseDetailPage({ params }: { params: Promise
               <div className="card">
                 <div className="card-h">
                   <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Documents</h3>
+                  <span className="chip" style={{ background: 'var(--paper)', color: 'var(--slate)', border: 'none', fontSize: '11px', fontWeight: 700 }}>{documents?.length || 0}</span>
                 </div>
-                <div className="card-b" style={{ padding: 0 }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <tbody>
-                      {(documents || []).map((doc, i) => (
-                        <tr key={doc.id} style={{ borderBottom: i === (documents?.length || 0) - 1 ? 'none' : '1px solid var(--line)' }}>
-                          <td style={{ padding: '16px 22px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <div style={{ width: '36px', height: '36px', background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--slate)' }}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                              </div>
-                              <div>
-                                <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--ink)' }}>{doc.file_name}</div>
-                                <div style={{ fontSize: '12px', color: 'var(--slate)', textTransform: 'capitalize' }}>{doc.type.replace('_', ' ')} • Uploaded {new Date(doc.created_at).toLocaleDateString()}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td style={{ padding: '16px 22px', textAlign: 'right' }}>
-                            <Link href={docUrls[doc.file_path] || '#'} target="_blank" rel="noopener noreferrer">
-                              <button className="btn" style={{ background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                                View
-                              </button>
-                            </Link>
-                          </td>
-                        </tr>
-                      ))}
-                      {(!documents || documents.length === 0) && (
-                        <tr>
-                          <td style={{ padding: '32px', textAlign: 'center', color: 'var(--slate)' }}>
-                            No documents uploaded yet.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                  
-                  <div style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', background: 'var(--paper)' }}>
-                    <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '12px' }}>Upload new document</h4>
+                <div className="card-b" style={{ padding: '0 22px' }}>
+                  {(documents || []).map(doc => {
+                    const style = getDocIcon(doc.mime_type);
+                    return (
+                      <div key={doc.id} className="doc">
+                        <div className="dic" style={{ color: style.color, background: style.bg, borderColor: style.bg }}>{getDocFormat(doc.mime_type, doc.file_path)}</div>
+                        <div>
+                          <div className="dnm" style={{ textTransform: 'capitalize' }}>{doc.type.replace(/_/g, ' ')}</div>
+                          <div className="dmeta">
+                            {doc.file_name}{doc.size_bytes ? ` · ${(doc.size_bytes / 1024 / 1024).toFixed(1)} MB` : ''} · {new Date(doc.created_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div className="dright">
+                          <a href={docUrls[doc.file_path] || '#'} target="_blank" rel="noopener noreferrer">
+                            <button className="ico-btn">↓</button>
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {(!documents || documents.length === 0) && (
+                    <div style={{ padding: '20px 0', fontSize: '13px', color: 'var(--muted)' }}>No documents uploaded yet.</div>
+                  )}
+
+                  <div style={{ margin: '0 -22px', padding: '20px 22px', borderTop: '1px solid var(--line)', background: 'var(--paper)' }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '14px' }}>Upload new document</h4>
                     <ClientDocumentUpload visaCaseId={caseData.id} candidateId={caseData.candidate_id} />
                   </div>
                 </div>
