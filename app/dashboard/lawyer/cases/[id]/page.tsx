@@ -157,16 +157,16 @@ export default async function LawyerCaseDetailPage({ params }: { params: Promise
 
                   <div className="resp-grid-2" style={{ marginBottom: 0 }}>
                     <div>
-                      <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>Passport No.</div>
-                      <div style={{ fontSize: '14.5px', color: 'var(--ink)' }}>{passportNumber || 'N/A'}</div>
-                    </div>
-                    <div>
                       <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>Nationality</div>
                       <div style={{ fontSize: '14.5px', color: 'var(--ink)' }}>{c?.nationality || '--'}</div>
                     </div>
                     <div>
                       <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>Gender</div>
                       <div style={{ fontSize: '14.5px', color: 'var(--ink)', textTransform: 'capitalize' }}>{c?.gender || '--'}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>Passport No.</div>
+                      <div style={{ fontSize: '14.5px', color: 'var(--ink)' }}>{passportNumber || 'N/A'}</div>
                     </div>
                     <div>
                       <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '4px' }}>Destination</div>

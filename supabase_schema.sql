@@ -1044,6 +1044,18 @@ create policy "employer users read own employer"
 to authenticated
 using (id = any(public.current_employer_ids()));
 
+drop policy if exists "lawyer reads employers for assigned cases" on public.employers;
+create policy "lawyer reads employers for assigned cases"
+  on public.employers for select
+to authenticated
+using (
+  exists (
+    select 1 from public.visa_cases vc
+    where vc.employer_id = employers.id
+    and vc.lawyer_id = auth.uid()
+  )
+);
+
 drop policy if exists "salesperson creates employers" on public.employers;
 create policy "salesperson creates employers"
   on public.employers for insert
