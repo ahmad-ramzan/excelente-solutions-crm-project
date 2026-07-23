@@ -10,10 +10,14 @@ export async function updateEmployerProfile(formData: FormData) {
 
   const employerId = formData.get('employerId') as string;
   const name = formData.get('name') as string;
+  const outletName = formData.get('outletName') as string;
   const contactName = formData.get('contactName') as string;
+  const contactPosition = formData.get('contactPosition') as string;
   const email = formData.get('email') as string;
   const phone = formData.get('phone') as string;
   const address = formData.get('address') as string;
+  const city = formData.get('city') as string;
+  const zipCode = formData.get('zipCode') as string;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
@@ -34,10 +38,14 @@ export async function updateEmployerProfile(formData: FormData) {
     .from('employers')
     .update({
       name,
+      outlet_name: outletName || null,
       contact_name: contactName,
+      contact_position: contactPosition || null,
       email,
       phone,
       address,
+      city: city || null,
+      zip_code: zipCode || null,
       updated_at: new Date().toISOString()
     })
     .eq('id', employerId);

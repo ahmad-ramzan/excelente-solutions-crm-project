@@ -51,7 +51,7 @@ export default async function EmployerProfilePage() {
   // 2. Fetch employer details
   const { data: employer } = await adminClient
     .from('employers')
-    .select('id, name, contact_name, email, phone, address, country_id, countries(name)')
+    .select('id, name, outlet_name, contact_name, contact_position, email, phone, address, city, zip_code, country_id, countries(name)')
     .eq('id', employerUser.employer_id)
     .maybeSingle();
 

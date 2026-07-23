@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createMultipleJobOffers } from '@/app/actions/employer-actions';
+import FileUploadField from '@/app/components/FileUploadField';
 
 interface Vacancy {
   id: number;
@@ -219,32 +220,34 @@ export default function ClientOfferForm({
           <div style={{ marginTop: '24px' }}>
             <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)', marginBottom: '12px' }}>Attachments</h4>
             <div className="resp-grid-2">
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Upload photos of Accommodation</label>
-                <input name={`accommodationPhotos-${index}`} type="file" accept="image/*" multiple style={{ width: '100%', fontSize: '13px', color: 'var(--slate)' }} />
-                <span style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', display: 'block' }}>Max 5 MB per file</span>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Add Contract with Excelente</label>
-                <input name={`contractWithExcelente-${index}`} type="file" accept="application/pdf" style={{ width: '100%', fontSize: '13px', color: 'var(--slate)' }} />
-                <span style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', display: 'block' }}>Max 5 MB per file</span>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Add photos of Workplace</label>
-                <input name={`workplacePhotos-${index}`} type="file" accept="image/*" multiple style={{ width: '100%', fontSize: '13px', color: 'var(--slate)' }} />
-                <span style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', display: 'block' }}>Max 5 MB per file</span>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Add Flight Ticket PDF</label>
-                <input name={`flightTicketPdf-${index}`} type="file" accept="application/pdf" style={{ width: '100%', fontSize: '13px', color: 'var(--slate)' }} />
-                <span style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', display: 'block' }}>Max 5 MB per file</span>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Add PDF</label>
-                <input name={`additionalPdfs-${index}`} type="file" accept="application/pdf" multiple style={{ width: '100%', fontSize: '13px', color: 'var(--slate)' }} />
-                <span style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', display: 'block' }}>Max 5 MB per file</span>
-              </div>
+              <FileUploadField
+                name={`accommodationPhotos-${index}`}
+                label="Upload photos of Accommodation"
+                accept="image/*"
+                multiple
+              />
+              <FileUploadField
+                name={`contractWithExcelente-${index}`}
+                label="Add Contract with Excelente"
+                accept="application/pdf"
+              />
+              <FileUploadField
+                name={`workplacePhotos-${index}`}
+                label="Add photos of Workplace"
+                accept="image/*"
+                multiple
+              />
+              <FileUploadField
+                name={`flightTicketPdf-${index}`}
+                label="Add Flight Ticket PDF"
+                accept="application/pdf"
+              />
+              <FileUploadField
+                name={`additionalPdfs-${index}`}
+                label="Add PDF"
+                accept="application/pdf"
+                multiple
+              />
             </div>
           </div>
 

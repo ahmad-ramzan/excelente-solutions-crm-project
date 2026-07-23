@@ -164,6 +164,17 @@ img {
   background: var(--paper);
 }
 
+.btn-outline {
+  border-color: var(--line);
+  color: var(--brand);
+  background: var(--card);
+}
+
+.btn-outline:hover {
+  border-color: var(--brand);
+  background: rgba(123, 97, 255, 0.06);
+}
+
 .btn-sm {
   padding: 7px 13px;
   font-size: 12.5px;
@@ -2781,4 +2792,112 @@ hr.soft {
     height: 200px;
     border-radius: 14px;
   }
+}
+
+/* ── File upload field ─────────────────────────────────────── */
+.upl {
+  display: block;
+}
+.upl-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.upl-zone {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 14px;
+  border: 1.5px dashed var(--line);
+  border-radius: 10px;
+  background: #fbfbfe;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.upl-zone:hover,
+.upl-zone.is-drag {
+  border-color: var(--brand);
+  background: rgba(123, 97, 255, 0.06);
+}
+.upl-ic {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(123, 97, 255, 0.12);
+  color: var(--brand);
+}
+.upl-txt {
+  min-width: 0;
+}
+.upl-main {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.upl-sub {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.upl-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.upl-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+}
+.upl-file.is-bad {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+.upl-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.upl-size {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--muted);
+}
+.upl-file.is-bad .upl-size {
+  color: #b91c1c;
+  font-weight: 600;
+}
+.upl-x {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 5px;
+}
+.upl-x:hover {
+  color: #b91c1c;
+  background: #fee2e2;
 }

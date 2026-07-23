@@ -58,9 +58,18 @@ export async function autoProvisionEntityForActiveUser(userId: string): Promise<
     if (existing) return { success: true };
     if (!countryId) return { success: false, error: 'A country is required before this account can be linked.' };
 
+    // The employers table has dedicated columns for these, so store them
+    // properly instead of folding city/zip into the address text.
     const { data: employer, error } = await adminClient
       .from('employers')
-      .insert(baseEntity)
+      .insert({
+        ...baseEntity,
+        address: meta.address || null,
+        outlet_name: meta.outlet_name || null,
+        contact_position: meta.position || null,
+        city: meta.city || null,
+        zip_code: meta.zip_code || null,
+      })
       .select('id')
       .single();
 

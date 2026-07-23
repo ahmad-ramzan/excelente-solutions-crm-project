@@ -149,6 +149,44 @@ export default async function EmployerJobOffersPage({ searchParams }: { searchPa
             </div>
           )}
 
+          {/* YOUR VACANCIES SECTION — the job offers themselves, so they can be viewed/edited */}
+          {offers.length > 0 && (
+            <div style={{ marginTop: '32px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--ink)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', background: 'var(--brand)' }}></span>
+                Your Vacancies
+              </h2>
+
+              <div className="resp-grid-cards">
+                {offers.map((o: any) => {
+                  const filled = slots.filter(s => s.job_offer_id === o.id && s.candidate_id != null).length;
+                  return (
+                    <div key={o.id} className="card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, minWidth: '180px' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '15px' }}>
+                          {o.positions?.name || 'Unknown Position'}
+                        </div>
+                        <div style={{ color: 'var(--muted)', fontSize: '13px', marginTop: '4px' }}>
+                          {o.countries?.name || 'Unassigned'} · {filled}/{o.staff_needed || 0} filled · {String(o.status).toUpperCase()}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                        <Link href={`/dashboard/employer/offers/${o.id}`}>
+                          <button className="btn btn-outline" style={{ padding: '6px 16px', fontSize: '12px' }}>View</button>
+                        </Link>
+                        <Link href={`/dashboard/employer/offers/${o.id}/edit`}>
+                          <button className="btn" style={{ padding: '6px 16px', fontSize: '12px', background: 'var(--brand)', color: '#fff', border: 'none' }}>
+                            Edit
+                          </button>
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* OCCUPIED POSITIONS SECTION */}
           {displayOccupied.length > 0 && (
             <div style={{ marginTop: '32px' }}>
@@ -190,7 +228,7 @@ export default async function EmployerJobOffersPage({ searchParams }: { searchPa
                   Vacant Positions
                 </h2>
                 <Link href="/dashboard/employer/candidates">
-                  <button className="btn btn-outline" style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 600, color: 'var(--brand)' }}>
+                  <button className="btn btn-outline btn-sm">
                     SELECT CANDIDATES
                   </button>
                 </Link>
@@ -215,14 +253,6 @@ export default async function EmployerJobOffersPage({ searchParams }: { searchPa
                     </div>
                   );
                 })}
-              </div>
-
-              <div style={{ marginTop: '24px', textAlign: 'center' }}>
-                <Link href="/dashboard/employer/candidates">
-                  <button className="btn btn-outline" style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 600, color: 'var(--brand)' }}>
-                    SELECT CANDIDATES
-                  </button>
-                </Link>
               </div>
             </div>
           )}

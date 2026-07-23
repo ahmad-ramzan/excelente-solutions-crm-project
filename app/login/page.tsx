@@ -79,7 +79,7 @@ function LoginForm() {
           }}>
             <strong>✅ Account created successfully!</strong>
             <br />
-            We&apos;ve sent a confirmation email to your address. Please click the link in the email to activate your account, then sign in here.
+            We&apos;ve sent a confirmation email to your address. Click the link in the email to activate your account — you&apos;ll be taken straight to your dashboard.
           </div>
         )}
 

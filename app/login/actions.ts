@@ -187,7 +187,9 @@ export async function signup(formData: FormData) {
     password,
     options: {
       data: metadata,
-      emailRedirectTo: `${cleanSiteUrl}/auth/callback?next=${encodeURIComponent('/login?confirmed=true')}`,
+      // No `next` here on purpose: /auth/callback establishes the session and
+      // then sends the user to their own dashboard.
+      emailRedirectTo: `${cleanSiteUrl}/auth/callback`,
     },
   })
 

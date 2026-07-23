@@ -181,7 +181,7 @@ export default function RegisterPage() {
             </div>
             <div className="field">
               <label htmlFor="phone">
-                {selected === 'Salesperson' ? 'Tel./WhatsApp' : 'Tel./WhatsApp of responsible person'} <span style={{ color: 'var(--red)' }}>*</span>
+                {selected === 'Salesperson' ? 'Tel./WhatsApp' : 'Tel. of responsible person'} <span style={{ color: 'var(--red)' }}>*</span>
               </label>
               <input id="phone" name="phone" className="input" placeholder="+30 …" required />
             </div>
