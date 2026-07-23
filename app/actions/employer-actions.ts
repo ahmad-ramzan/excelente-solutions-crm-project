@@ -133,24 +133,31 @@ export async function createMultipleJobOffers(formData: FormData) {
 
     const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
+    // Uploads run in parallel (both the files within one call, and — below —
+    // every vacancy's uploads against each other. Doing this sequentially was
+    // slow enough with several vacancies/attachments to risk the serverless
+    // function timing out mid-request, which the browser sees as
+    // "An unexpected response was received from the server."
     const uploadFiles = async (files: File[], folder: string) => {
-      const paths: string[] = [];
+      const validFiles = files.filter(f => f && f.size > 0);
 
-      for (const file of files) {
-        if (!file || file.size === 0) continue;
-
+      for (const file of validFiles) {
         if (file.size > MAX_FILE_SIZE) {
           throw new Error(`File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum allowed size is 5 MB.`);
         }
+      }
 
+      if (validFiles.length === 0) return [];
+
+      // Use Admin Client to upload files so RLS on Storage does not block the upload
+      const { createAdminClient } = await import('@/utils/supabase/admin');
+      const adminClient = createAdminClient();
+
+      return Promise.all(validFiles.map(async (file) => {
         const ext = file.name.split('.').pop();
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
         const filePath = `${folder}/${user.id}-${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}${ext ? '' : '.bin'}`;
         const buffer = Buffer.from(await file.arrayBuffer());
-
-        // Use Admin Client to upload files so RLS on Storage does not block the upload
-        const { createAdminClient } = await import('@/utils/supabase/admin');
-        const adminClient = createAdminClient();
 
         const { error } = await adminClient.storage
           .from('contracts')
@@ -164,10 +171,8 @@ export async function createMultipleJobOffers(formData: FormData) {
           throw new Error(`Failed to upload "${file.name}": ${error.message}`);
         }
 
-        paths.push(filePath);
-      }
-
-      return paths;
+        return filePath;
+      }));
     };
 
     // Validate each offer before inserting
@@ -228,27 +233,32 @@ export async function createMultipleJobOffers(formData: FormData) {
       return { error: `Failed to create vacancies: ${msg}` };
     }
 
-    // Upload attachments to storage using admin client
+    // Upload attachments to storage using admin client — every vacancy, and every
+    // attachment category within a vacancy, uploads concurrently rather than
+    // one file at a time.
     try {
-      for (let index = 0; index < (insertedOffers || []).length; index += 1) {
-        const offerId = insertedOffers[index].id;
-        await uploadFiles(formData.getAll(`accommodationPhotos-${index}`) as File[], `job-offers/${offerId}/accommodation`);
-        await uploadFiles(formData.getAll(`workplacePhotos-${index}`) as File[], `job-offers/${offerId}/workplace`);
-        await uploadFiles(formData.getAll(`flightTicketPdf-${index}`) as File[], `job-offers/${offerId}/flight-tickets`);
-        await uploadFiles(formData.getAll(`contractWithExcelente-${index}`) as File[], `job-offers/${offerId}/excelente-contracts`);
-        await uploadFiles(formData.getAll(`additionalPdfs-${index}`) as File[], `job-offers/${offerId}/additional-pdfs`);
+      await Promise.all((insertedOffers || []).map(async (insertedOffer, index) => {
+        const offerId = insertedOffer.id;
 
-        // Required — visible to the assigned lawyer and agent, so its storage
-        // path is saved back onto the job offer row (unlike the optional
-        // attachments above, which are upload-only for now).
-        const contractPaths = await uploadFiles(formData.getAll(`contractWithCandidate-${index}`) as File[], `job-offers/${offerId}/contract-with-candidate`);
+        const [, , , , , contractPaths] = await Promise.all([
+          uploadFiles(formData.getAll(`accommodationPhotos-${index}`) as File[], `job-offers/${offerId}/accommodation`),
+          uploadFiles(formData.getAll(`workplacePhotos-${index}`) as File[], `job-offers/${offerId}/workplace`),
+          uploadFiles(formData.getAll(`flightTicketPdf-${index}`) as File[], `job-offers/${offerId}/flight-tickets`),
+          uploadFiles(formData.getAll(`contractWithExcelente-${index}`) as File[], `job-offers/${offerId}/excelente-contracts`),
+          uploadFiles(formData.getAll(`additionalPdfs-${index}`) as File[], `job-offers/${offerId}/additional-pdfs`),
+          // Required — visible to the assigned lawyer and agent, so its storage
+          // path is saved back onto the job offer row (unlike the optional
+          // attachments above, which are upload-only for now).
+          uploadFiles(formData.getAll(`contractWithCandidate-${index}`) as File[], `job-offers/${offerId}/contract-with-candidate`),
+        ]);
+
         if (contractPaths[0]) {
           await supabase
             .from('job_offers')
             .update({ contract_file_path: contractPaths[0], contract_signed: true })
             .eq('id', offerId);
         }
-      }
+      }));
     } catch (uploadError) {
       console.error('Attachment upload error:', uploadError);
       return { error: uploadError instanceof Error ? uploadError.message : 'Failed to upload vacancy attachments' };

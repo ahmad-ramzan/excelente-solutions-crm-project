@@ -696,9 +696,62 @@ stable
 security definer
 set search_path = public
 as $$
-  select coalesce(array_agg(employer_id), '{}') 
-  from public.employer_users 
+  select coalesce(array_agg(employer_id), '{}')
+  from public.employer_users
   where profile_id = auth.uid()
+$$;
+
+-- These three exist specifically to break a circular RLS dependency between
+-- employers, job_offers and visa_cases (each needed to check access on one of
+-- the others). SECURITY DEFINER functions bypass RLS on the tables they query
+-- internally, so calling them from a policy does not re-trigger that table's
+-- own policies the way an inline correlated subquery would — which is what
+-- caused "infinite recursion detected in policy" once all three referenced
+-- each other.
+create or replace function public.is_salesperson_employer(p_employer_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.employers e
+    where e.id = p_employer_id
+    and e.assigned_salesperson_id = auth.uid()
+  )
+$$;
+
+create or replace function public.is_salesperson_job_offer(p_job_offer_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.job_offers jo
+    where jo.id = p_job_offer_id
+    and (
+      jo.assigned_salesperson_id = auth.uid()
+      or jo.created_by = auth.uid()
+      or public.is_salesperson_employer(jo.employer_id)
+    )
+  )
+$$;
+
+create or replace function public.is_lawyer_case_employer(p_employer_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.visa_cases vc
+    where vc.employer_id = p_employer_id
+    and vc.lawyer_id = auth.uid()
+  )
 $$;
 
 -- =========================
@@ -1048,13 +1101,7 @@ drop policy if exists "lawyer reads employers for assigned cases" on public.empl
 create policy "lawyer reads employers for assigned cases"
   on public.employers for select
 to authenticated
-using (
-  exists (
-    select 1 from public.visa_cases vc
-    where vc.employer_id = employers.id
-    and vc.lawyer_id = auth.uid()
-  )
-);
+using (public.is_lawyer_case_employer(employers.id));
 
 drop policy if exists "salesperson creates employers" on public.employers;
 create policy "salesperson creates employers"
@@ -1162,11 +1209,9 @@ create policy "salesperson reads candidates for assigned cases"
 to authenticated
 using (
   exists (
-    select 1
-    from public.visa_cases vc
-    join public.job_offers jo on jo.id = vc.job_offer_id
+    select 1 from public.visa_cases vc
     where vc.candidate_id = candidates.id
-    and jo.assigned_salesperson_id = auth.uid()
+    and public.is_salesperson_job_offer(vc.job_offer_id)
   )
 );
 
@@ -1384,11 +1429,7 @@ to authenticated
 using (
   assigned_salesperson_id = auth.uid()
   or created_by = auth.uid()
-  or exists (
-    select 1 from public.employers e
-    where e.id = job_offers.employer_id
-    and e.assigned_salesperson_id = auth.uid()
-  )
+  or public.is_salesperson_employer(job_offers.employer_id)
 );
 
 drop policy if exists "employers read own job offers" on public.job_offers;
@@ -1444,11 +1485,7 @@ using (
       or jo.assigned_salesperson_id = auth.uid()
       or jo.created_by = auth.uid()
       or jo.employer_id = any(public.current_employer_ids())
-      or exists (
-        select 1 from public.employers e
-        where e.id = jo.employer_id
-        and e.assigned_salesperson_id = auth.uid()
-      )
+      or public.is_salesperson_employer(jo.employer_id)
     )
   )
 );
@@ -1498,13 +1535,7 @@ drop policy if exists "salesperson reads assigned visa cases" on public.visa_cas
 create policy "salesperson reads assigned visa cases"
   on public.visa_cases for select
 to authenticated
-using (
-  exists (
-    select 1 from public.job_offers jo
-    where jo.id = visa_cases.job_offer_id
-    and jo.assigned_salesperson_id = auth.uid()
-  )
-);
+using (public.is_salesperson_job_offer(visa_cases.job_offer_id));
 
 drop policy if exists "lawyer updates assigned visa cases" on public.visa_cases;
 create policy "lawyer updates assigned visa cases"

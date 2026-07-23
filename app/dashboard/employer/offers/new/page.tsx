@@ -3,6 +3,11 @@ import AppTopbar from '../../../../components/AppTopbar';
 import ClientOfferForm from './ClientOfferForm';
 import { createClient } from '@/utils/supabase/server';
 
+// Submitting this form can upload several files at once (contracts, photos);
+// give the server action more headroom than the platform default before it's
+// killed mid-request.
+export const maxDuration = 60;
+
 export default async function EmployerNewJobOfferPage() {
   const supabase = await createClient();
 
