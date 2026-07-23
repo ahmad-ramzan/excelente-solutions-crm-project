@@ -8,14 +8,13 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
   const supabase = await createClient();
   const params = await searchParams;
 
+  // `candidate_public_view` has no `country_name` column — a candidate can have
+  // several destination countries (candidate_countries is many-to-many), so
+  // that's filtered/joined separately below instead of on the view directly.
   let query = supabase.from('candidate_public_view').select('*').order('created_at', { ascending: false });
 
   if (params.status && params.status !== 'all') {
     query = query.eq('status', params.status);
-  }
-
-  if (params.country && params.country !== 'all') {
-    query = query.eq('country_name', params.country);
   }
 
   if (params.q) {
@@ -23,37 +22,62 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
     query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,public_code.ilike.%${q}%`);
   }
 
-  const { data: dbCandidates } = await query;
-  
+  const { data: allCandidates } = await query;
+
   const { data: countries } = await supabase.from('countries').select('name');
-  
+
+  const candidateIds = (allCandidates || []).map((c: any) => c.id);
+  const candidateCountryMap: Record<string, { names: string[]; codes: string[] }> = {};
+  if (candidateIds.length > 0) {
+    const { data: candidateCountries } = await supabase
+      .from('candidate_countries')
+      .select('candidate_id, countries(name, code)')
+      .in('candidate_id', candidateIds);
+
+    (candidateCountries || []).forEach((row: any) => {
+      const country = Array.isArray(row.countries) ? row.countries[0] : row.countries;
+      if (!country) return;
+      if (!candidateCountryMap[row.candidate_id]) candidateCountryMap[row.candidate_id] = { names: [], codes: [] };
+      candidateCountryMap[row.candidate_id].names.push(country.name);
+      candidateCountryMap[row.candidate_id].codes.push(country.code);
+    });
+  }
+
+  const dbCandidates = params.country && params.country !== 'all'
+    ? (allCandidates || []).filter((c: any) => (candidateCountryMap[c.id]?.names || []).includes(params.country))
+    : (allCandidates || []);
+
   // Try to get employer name via selections for selected/visa_processing/approved candidates
-  const selectedCandidateIds = (dbCandidates || []).filter((c: any) => c.status !== 'available').map((c: any) => c.id);
+  const selectedCandidateIds = dbCandidates.filter((c: any) => c.status !== 'available').map((c: any) => c.id);
   const employerMap: Record<string, string> = {};
   if (selectedCandidateIds.length > 0) {
     const { data: selections } = await supabase
       .from('job_offer_selections')
       .select('candidate_id, employers(name)')
       .in('candidate_id', selectedCandidateIds);
-      
+
     selections?.forEach((s: any) => {
       employerMap[s.candidate_id] = s.employers?.name || 'Unknown';
     });
   }
 
-  const candidates = (dbCandidates || []).map((c: any) => ({
-    id: c.id,
-    public_code: c.public_code,
-    initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
-    name: `${c.first_name} ${c.last_name}`,
-    nationality: c.nationality,
-    country: c.country_name || 'Unassigned',
-    countryCode: c.country_code || '--',
-    trade: c.positions?.[0] || 'N/A',
-    skills: c.positions?.slice(1) || [],
-    employer: employerMap[c.id] || 'Not Assigned',
-    status: c.status
-  }));
+  const candidates = dbCandidates.map((c: any) => {
+    const assignedCountries = candidateCountryMap[c.id]?.names || [];
+    const assignedCountryCodes = candidateCountryMap[c.id]?.codes || [];
+    return {
+      id: c.id,
+      public_code: c.public_code,
+      initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
+      name: `${c.first_name} ${c.last_name}`,
+      nationality: c.nationality,
+      country: c.open_to_all_countries ? 'Any Country' : (assignedCountries.join(', ') || 'Unassigned'),
+      countryCode: c.open_to_all_countries ? 'ANY' : (assignedCountryCodes[0] || '--'),
+      trade: c.positions?.[0] || 'N/A',
+      skills: c.positions?.slice(1) || [],
+      employer: employerMap[c.id] || 'Not Assigned',
+      status: c.status
+    };
+  });
 
   const currentStatus = params.status || 'all';
   const currentCountry = params.country || 'all';

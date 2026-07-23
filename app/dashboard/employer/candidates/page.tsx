@@ -52,18 +52,38 @@ export default async function EmployerCandidatesPage({ searchParams }: { searchP
   const countryName = Array.isArray(countries) ? countries[0]?.name : countries?.name || 'Unknown';
   const countryCode = Array.isArray(countries) ? countries[0]?.code : countries?.code || 'N/A';
 
-  // 3. Build query for available candidates in this country
-  const query = supabase
+  // 3. Build query for available candidates, then narrow to this employer's
+  // country. Candidate destinations live in candidate_countries (many-to-many)
+  // — candidate_public_view has no single country column to filter on directly.
+  const { data: allAvailable } = await supabase
     .from('candidate_public_view')
     .select('*')
     .eq('status', 'available')
     .order('created_at', { ascending: false });
 
-  const { data: dbCandidates } = await query;
+  const availableIds = (allAvailable || []).map((c: any) => c.id);
+  const candidateCountryMap: Record<string, string[]> = {};
+  if (availableIds.length > 0) {
+    const { data: candidateCountries } = await supabase
+      .from('candidate_countries')
+      .select('candidate_id, countries(name)')
+      .in('candidate_id', availableIds);
+
+    (candidateCountries || []).forEach((row: any) => {
+      const country = Array.isArray(row.countries) ? row.countries[0] : row.countries;
+      if (!country?.name) return;
+      if (!candidateCountryMap[row.candidate_id]) candidateCountryMap[row.candidate_id] = [];
+      candidateCountryMap[row.candidate_id].push(country.name);
+    });
+  }
+
+  const dbCandidates = (allAvailable || []).filter((c: any) =>
+    c.open_to_all_countries || (candidateCountryMap[c.id] || []).includes(countryName)
+  );
 
   // Filter by position if provided in search params
   const currentPosition = params.position || 'all';
-  let filteredCandidates = dbCandidates || [];
+  let filteredCandidates = dbCandidates;
 
   if (currentPosition !== 'all') {
     filteredCandidates = filteredCandidates.filter(c =>

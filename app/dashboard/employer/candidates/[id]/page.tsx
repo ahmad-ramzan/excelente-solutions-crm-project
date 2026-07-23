@@ -40,8 +40,26 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
 
   if (!cand) notFound();
 
+  // A candidate can have several destination countries (candidate_countries is
+  // many-to-many) — candidate_public_view has no single country_name column.
+  const { data: candidateCountries } = await supabase
+    .from('candidate_countries')
+    .select('countries(name, code)')
+    .eq('candidate_id', cand.id)
+    .order('created_at', { ascending: true });
+
+  const countryNames = (candidateCountries || [])
+    .map((row: any) => (Array.isArray(row.countries) ? row.countries[0] : row.countries)?.name)
+    .filter(Boolean);
+  const countryCodes = (candidateCountries || [])
+    .map((row: any) => (Array.isArray(row.countries) ? row.countries[0] : row.countries)?.code)
+    .filter(Boolean);
+  const destinationLabel = cand.open_to_all_countries ? 'Any Country' : (countryNames.join(', ') || 'Unassigned');
+  const destinationCode = cand.open_to_all_countries ? 'ANY' : (countryCodes.length === 1 ? countryCodes[0] : (countryNames.length ? `${countryNames.length} selected` : 'N/A'));
+
   // 3. Authorize: candidate must be available in this employer's country, OR already selected by this employer
-  const isAvailableInCountry = cand.status === 'available' && cand.country_name === employerCountryName;
+  const isAvailableInCountry = cand.status === 'available'
+    && (cand.open_to_all_countries || countryNames.includes(employerCountryName));
 
   const { data: existingSelection } = await supabase
     .from('job_offer_selections')
@@ -168,7 +186,7 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
                     </div>
                     <div className="r">
                       <div className="k">Destination</div>
-                      <div className="v">{cand.country_name} <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{cand.country_code}</span></div>
+                      <div className="v">{destinationLabel} <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{destinationCode}</span></div>
                     </div>
                     <div className="r">
                       <div className="k">City of visa application</div>

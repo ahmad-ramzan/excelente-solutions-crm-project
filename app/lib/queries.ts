@@ -85,14 +85,26 @@ export async function getAgentCandidates(supabase: SupabaseClient, agentId: stri
 }
 
 export async function getEmployerCandidates(supabase: SupabaseClient, countryId: string) {
-  // Employers only see available candidates for their country
-  const { data } = await supabase
+  // Employers only see available candidates for their country. Destinations
+  // live in candidate_countries (many-to-many) — candidate_public_view has no
+  // single country_id column to filter on directly.
+  const { data: available } = await supabase
     .from('candidate_public_view')
     .select('*')
-    .eq('country_id', countryId)
     .eq('status', 'available')
     .order('created_at', { ascending: false });
-  return data || [];
+
+  const ids = (available || []).map(c => c.id);
+  if (ids.length === 0) return [];
+
+  const { data: candidateCountries } = await supabase
+    .from('candidate_countries')
+    .select('candidate_id')
+    .eq('country_id', countryId)
+    .in('candidate_id', ids);
+
+  const eligibleIds = new Set((candidateCountries || []).map(cc => cc.candidate_id));
+  return (available || []).filter(c => c.open_to_all_countries || eligibleIds.has(c.id));
 }
 
 // Positions currently being hired for, aggregated from employers' open job offers —

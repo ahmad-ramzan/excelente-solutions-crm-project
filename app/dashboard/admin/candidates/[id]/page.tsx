@@ -24,6 +24,23 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
     .eq('candidate_id', cand.id)
     .single();
 
+  // A candidate can have several destination countries (candidate_countries is
+  // many-to-many) — candidate_public_view has no single country_name column.
+  const { data: candidateCountries } = await supabase
+    .from('candidate_countries')
+    .select('countries(name, code)')
+    .eq('candidate_id', cand.id)
+    .order('created_at', { ascending: true });
+
+  const countryNames = (candidateCountries || [])
+    .map((row: any) => (Array.isArray(row.countries) ? row.countries[0] : row.countries)?.name)
+    .filter(Boolean);
+  const countryCodes = (candidateCountries || [])
+    .map((row: any) => (Array.isArray(row.countries) ? row.countries[0] : row.countries)?.code)
+    .filter(Boolean);
+  const destinationLabel = cand.open_to_all_countries ? 'Any Country' : (countryNames.join(', ') || 'Unassigned');
+  const destinationCode = cand.open_to_all_countries ? 'ANY' : (countryCodes.length === 1 ? countryCodes[0] : (countryNames.length ? `${countryNames.length} selected` : 'N/A'));
+
   // Fetch Documents
   const { data: docs } = await supabase
     .from('candidate_documents')
@@ -172,7 +189,7 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                     </div>
                     <div className="r">
                       <div className="k">Destination</div>
-                      <div className="v">{cand.country_name} <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{cand.country_code}</span></div>
+                      <div className="v">{destinationLabel} <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{destinationCode}</span></div>
                     </div>
                     <div className="r">
                       <div className="k">City of visa application</div>

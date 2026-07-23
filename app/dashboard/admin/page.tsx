@@ -9,6 +9,9 @@ export default async function AdminDashboard() {
   const supabase = await createClient();
 
   // Independent of each other — fetch concurrently instead of one at a time.
+  // Candidates can have several destination countries (candidate_countries is
+  // many-to-many) — `candidates.country_id` was dropped when that model landed,
+  // so both the country breakdown and each candidate's country come from here.
   const [stats, { data: dbCandidates }, { data: countryData }] = await Promise.all([
     getDashboardStats(supabase, 'admin'),
     supabase
@@ -17,23 +20,35 @@ export default async function AdminDashboard() {
       .limit(5)
       .order('created_at', { ascending: false }),
     supabase
-      .from('candidates')
-      .select('country_id, countries(name, code)'),
+      .from('candidate_countries')
+      .select('candidate_id, country_id, countries(name, code)'),
   ]);
 
-  const candidates = (dbCandidates || []).map((c: any) => ({
-    id: c.id,
-    public_code: c.public_code,
-    initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
-    name: `${c.first_name} ${c.last_name}`,
-    nationality: c.nationality,
-    country: c.country_name || 'Unassigned',
-    countryCode: c.country_code || '--',
-    trade: c.positions?.[0] || 'N/A',
-    agent_id: c.agent_id, // we should probably join profiles for agent name, let's just show 'Agent' for now if not joined
-    agent: '',
-    status: c.status
-  }));
+  const candidateCountryMap: Record<string, { names: string[]; codes: string[] }> = {};
+  countryData?.forEach((row: any) => {
+    if (!row.countries) return;
+    if (!candidateCountryMap[row.candidate_id]) candidateCountryMap[row.candidate_id] = { names: [], codes: [] };
+    candidateCountryMap[row.candidate_id].names.push(row.countries.name);
+    candidateCountryMap[row.candidate_id].codes.push(row.countries.code);
+  });
+
+  const candidates = (dbCandidates || []).map((c: any) => {
+    const assignedCountries = candidateCountryMap[c.id]?.names || [];
+    const assignedCountryCodes = candidateCountryMap[c.id]?.codes || [];
+    return {
+      id: c.id,
+      public_code: c.public_code,
+      initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
+      name: `${c.first_name} ${c.last_name}`,
+      nationality: c.nationality,
+      country: c.open_to_all_countries ? 'Any Country' : (assignedCountries.join(', ') || 'Unassigned'),
+      countryCode: c.open_to_all_countries ? 'ANY' : (assignedCountryCodes[0] || '--'),
+      trade: c.positions?.[0] || 'N/A',
+      agent_id: c.agent_id, // we should probably join profiles for agent name, let's just show 'Agent' for now if not joined
+      agent: '',
+      status: c.status
+    };
+  });
 
   // Fetch Agent Names for candidates
   const agentIds = Array.from(new Set(candidates.map(c => c.agent_id).filter(Boolean)));
@@ -42,13 +57,13 @@ export default async function AdminDashboard() {
     const { data: agents } = await supabase.from('profiles').select('id, full_name').in('id', agentIds);
     agents?.forEach(a => agentMap[a.id] = a.full_name);
   }
-  
+
   // Assign agent name
   candidates.forEach(c => c.agent = agentMap[c.agent_id] || 'N/A');
 
   const countryCounts: Record<string, { count: number; name: string; code: string }> = {};
   let totalCountryCands = 0;
-  
+
   countryData?.forEach(c => {
     if (c.countries) {
       const cid = c.country_id;
@@ -171,7 +186,7 @@ export default async function AdminDashboard() {
                         <td>
                           <span className="flag">
                             {c.country}
-                            <span className="fc">{c.country.slice(0, 2).toUpperCase()}</span>
+                            <span className="fc">{c.countryCode}</span>
                           </span>
                         </td>
                         <td>{c.agent}</td>
