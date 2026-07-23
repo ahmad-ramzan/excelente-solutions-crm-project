@@ -21,15 +21,21 @@ export default function SelectCandidateButton({ jobOfferId, candidateId }: { job
     setLoading(true);
     setError(null);
 
-    // In a real app, upload the file to Supabase Storage here and pass the URL to selectCandidate.
-    // We are simulating the upload for now as requested.
+    const formData = new FormData();
+    formData.set('jobOfferId', jobOfferId);
+    formData.set('candidateId', candidateId);
+    formData.set('file', file);
 
-    const result = await selectCandidate(jobOfferId, candidateId);
+    const result = await selectCandidate(formData);
 
     if (result?.error) {
       setError(result.error);
       setLoading(false);
       return;
+    }
+
+    if (result?.warning) {
+      alert(result.warning);
     }
 
     setShowModal(false);
@@ -54,7 +60,7 @@ export default function SelectCandidateButton({ jobOfferId, candidateId }: { job
             
             <div style={{ marginBottom: '20px' }}>
               <FileUploadField
-                name="signedContract"
+                name="file"
                 label="Signed contract"
                 accept="application/pdf"
                 onFilesChange={(files) => setFile(files[0] || null)}

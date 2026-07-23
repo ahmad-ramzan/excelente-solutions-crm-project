@@ -264,8 +264,15 @@ export async function createMultipleJobOffers(formData: FormData) {
   }
 }
 
-export async function selectCandidate(jobOfferId: string, candidateId: string) {
+export async function selectCandidate(formData: FormData) {
   const supabase = await createClient();
+
+  const jobOfferId = formData.get('jobOfferId') as string;
+  const candidateId = formData.get('candidateId') as string;
+  const file = formData.get('file') as File | null;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated' };
 
   // Call the atomic RPC defined in the schema
   const { data, error } = await supabase.rpc('select_candidate_for_job_offer', {
@@ -276,6 +283,42 @@ export async function selectCandidate(jobOfferId: string, candidateId: string) {
   if (error) {
     console.error('Candidate selection error:', error);
     return { error: error.message || 'Failed to select candidate' };
+  }
+
+  // The placement is already confirmed at this point — a failed contract
+  // upload shouldn't undo it, just gets surfaced as a warning below.
+  let warning: string | undefined;
+  if (file && file.size > 0) {
+    const { createAdminClient } = await import('@/utils/supabase/admin');
+    const adminClient = createAdminClient();
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+    const filePath = `${candidateId}/contract/${Date.now()}-${safeName}`;
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    const { error: uploadError } = await adminClient.storage
+      .from('contracts')
+      .upload(filePath, buffer, { contentType: file.type || 'application/pdf', upsert: true });
+
+    if (uploadError) {
+      console.error('Signed contract upload error:', uploadError);
+      warning = 'Candidate selected, but the signed contract failed to upload. Please upload it again from Selected Candidates.';
+    } else {
+      const { error: docError } = await adminClient.from('candidate_documents').insert({
+        candidate_id: candidateId,
+        type: 'contract',
+        status: 'uploaded',
+        file_path: filePath,
+        file_name: file.name,
+        mime_type: file.type,
+        size_bytes: file.size,
+        uploaded_by: user.id,
+      });
+
+      if (docError) {
+        console.error('Signed contract document record error:', docError);
+        warning = 'Candidate selected, but the signed contract failed to save. Please upload it again from Selected Candidates.';
+      }
+    }
   }
 
   // --- MOCK EMAIL NOTIFICATION ---
@@ -294,8 +337,9 @@ export async function selectCandidate(jobOfferId: string, candidateId: string) {
   revalidatePath('/dashboard/employer/candidates');
   revalidatePath('/dashboard/employer/offers');
   revalidatePath('/dashboard/employer/selections');
-  
-  return { success: true, selectionId: data };
+  revalidatePath('/dashboard/agent/selected');
+
+  return { success: true, selectionId: data, warning };
 }
 
 export async function updateJobOffer(offerId: string, formData: FormData) {
