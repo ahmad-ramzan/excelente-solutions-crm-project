@@ -43,8 +43,9 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
     });
   }
 
-  const dbCandidates = params.country && params.country !== 'all'
-    ? (allCandidates || []).filter((c: any) => (candidateCountryMap[c.id]?.names || []).includes(params.country))
+  const countryFilter = params.country && params.country !== 'all' ? params.country : null;
+  const dbCandidates = countryFilter
+    ? (allCandidates || []).filter((c: any) => (candidateCountryMap[c.id]?.names || []).includes(countryFilter))
     : (allCandidates || []);
 
   // Try to get employer name via selections for selected/visa_processing/approved candidates
