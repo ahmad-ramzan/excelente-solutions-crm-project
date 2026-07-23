@@ -3,6 +3,7 @@
 import { updateCandidate } from '@/app/actions/candidate-actions';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import FileUploadField from '@/app/components/FileUploadField';
 
 interface VacancyPosition {
   id: string;
@@ -214,14 +215,16 @@ export default function EditClientForm({
       </div>
 
       <div className="resp-grid-2" style={{ marginBottom: '40px' }}>
-        <div>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Candidate photo (Leave empty to keep existing)</label>
-          <input name="photo" type="file" accept="image/jpeg,image/png" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px dashed var(--line)', background: 'var(--paper)' }} />
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>CV (Leave empty to keep existing)</label>
-          <input name="cv" type="file" accept="application/pdf,image/jpeg" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px dashed var(--line)', background: 'var(--paper)' }} />
-        </div>
+        <FileUploadField
+          name="photo"
+          label="Candidate photo (leave empty to keep existing)"
+          accept="image/jpeg,image/png"
+        />
+        <FileUploadField
+          name="cv"
+          label="CV (leave empty to keep existing)"
+          accept="application/pdf,image/jpeg"
+        />
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>

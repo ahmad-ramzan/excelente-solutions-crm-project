@@ -227,7 +227,7 @@ export default async function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Health Pipeline */}
+              {/* Health Pipeline — driven by real candidate status counts */}
               <div className="card">
                 <div className="card-h">
                   <h3>Pipeline health</h3>
@@ -236,32 +236,33 @@ export default async function AdminDashboard() {
                   <div style={{ padding: '18px 22px' }}>
                     <div className="pipe">
                       {[
-                        { label: 'Available', icon: '↻', color: 'var(--slate)' },
-                        { label: 'Selected', icon: '+', color: 'var(--green)' },
-                        { label: 'VISA Processing', icon: '🏢', color: 'var(--gold)' },
-                        { label: 'Approved', icon: '✓', color: 'var(--muted)' },
-                      ].map((ps, idx) => {
-                        const stage = 3;
-                        const isDone = idx + 1 < stage;
-                        const isCur = idx + 1 === stage;
-                        const isLast = idx === 3;
+                        { label: 'Available', icon: '↻', color: 'var(--slate)', count: stats.candidates?.available || 0 },
+                        { label: 'Selected', icon: '+', color: 'var(--green)', count: stats.candidates?.selected || 0 },
+                        { label: 'VISA Processing', icon: '🏢', color: 'var(--gold)', count: stats.candidates?.visa_processing || 0 },
+                        { label: 'Approved', icon: '✓', color: 'var(--muted)', count: stats.candidates?.approved || 0 },
+                      ].map((ps, idx, stages) => {
+                        // "Reached" a stage if any candidate is at it or further along the pipeline.
+                        const isReached = stages.slice(idx).some(s => s.count > 0);
+                        const isCur = isReached && !stages.slice(idx + 1).some(s => s.count > 0);
+                        const isLast = idx === stages.length - 1;
                         return (
-                          <div key={ps.label} className={`node ${isDone ? 'done' : isCur ? 'cur' : ''}`}>
+                          <div key={ps.label} className={`node ${isReached && !isCur ? 'done' : isCur ? 'cur' : ''}`}>
                             <div className="stamp" style={{
-                              color: isCur || isDone ? ps.color : 'var(--muted)',
-                              borderColor: isCur || isDone ? ps.color : 'var(--line)',
-                              background: isCur || isDone ? 'transparent' : 'var(--card)'
+                              color: isReached ? ps.color : 'var(--muted)',
+                              borderColor: isReached ? ps.color : 'var(--line)',
+                              background: isReached ? 'transparent' : 'var(--card)'
                             }}>
                               {ps.icon}
                             </div>
                             <div className="lab">{ps.label}</div>
+                            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--ink)', marginTop: '2px' }}>{ps.count}</div>
                             {!isLast && <div className="bar" />}
                           </div>
                         );
                       })}
                     </div>
                     <div style={{ marginTop: '16px', fontSize: '11px', color: 'var(--slate)', lineHeight: 1.5 }}>
-                      52 of 89 candidates have advanced past selection. 12 fully approved this quarter.
+                      {(stats.candidates?.selected || 0) + (stats.candidates?.visa_processing || 0) + (stats.candidates?.approved || 0)} of {stats.total_candidates || 0} candidates have advanced past selection. {stats.candidates?.approved || 0} fully approved.
                     </div>
                   </div>
                 </div>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateUserRoleStatus, deleteUserByAdmin } from '@/app/actions/admin-actions';
+import { updateUserRoleStatus, deleteUserByAdmin, updateUserStatus } from '@/app/actions/admin-actions';
 
 export default function ClientEditUserForm({ user }: { user: { id: string; full_name: string; role: string; status: string } }) {
   const router = useRouter();
@@ -10,6 +10,8 @@ export default function ClientEditUserForm({ user }: { user: { id: string; full_
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [suspending, setSuspending] = useState(false);
+  const hasLinkedRecords = deleteError.includes('linked records');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -41,6 +43,18 @@ export default function ClientEditUserForm({ user }: { user: { id: string; full_
     if (res.error) {
       setDeleteError(res.error);
       setDeleting(false);
+    } else {
+      router.push('/dashboard/admin/users');
+    }
+  };
+
+  const handleSuspend = async () => {
+    setSuspending(true);
+    const res = await updateUserStatus(user.id, 'suspended');
+    setSuspending(false);
+
+    if (res.error) {
+      setDeleteError(res.error);
     } else {
       router.push('/dashboard/admin/users');
     }
@@ -110,7 +124,22 @@ export default function ClientEditUserForm({ user }: { user: { id: string; full_
         </div>
       </div>
 
-      {deleteError && <div style={{ color: '#dc2626', fontSize: '13px', padding: '10px', background: '#fee2e2', borderRadius: '6px' }}>{deleteError}</div>}
+      {deleteError && (
+        <div style={{ padding: '10px', background: '#fee2e2', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-start' }}>
+          <div style={{ color: '#dc2626', fontSize: '13px' }}>{deleteError}</div>
+          {hasLinkedRecords && (
+            <button
+              type="button"
+              onClick={handleSuspend}
+              disabled={suspending}
+              className="btn"
+              style={{ background: '#fff', border: '1px solid #fecaca', color: '#dc2626', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 600, opacity: suspending ? 0.7 : 1 }}
+            >
+              {suspending ? <><span className="btn-spinner" />Suspending...</> : 'Suspend this user instead'}
+            </button>
+          )}
+        </div>
+      )}
     </form>
   );
 }

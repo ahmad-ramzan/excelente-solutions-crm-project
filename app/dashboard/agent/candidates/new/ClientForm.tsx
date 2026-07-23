@@ -3,6 +3,7 @@
 import { createCandidate } from '@/app/actions/candidate-actions';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import FileUploadField from '@/app/components/FileUploadField';
 
 interface VacancyPosition {
   id: string;
@@ -219,20 +220,32 @@ export default function ClientForm({ countries, positions, vacancyPositions }: {
         <h2 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Documents</h2>
       </div>
 
-      <div className="resp-grid-2" style={{ marginBottom: '40px' }}>
-        <div>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Candidate photo</label>
-          <input name="photo" type="file" accept="image/jpeg,image/png" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px dashed var(--line)', background: 'var(--paper)' }} />
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>PDF Resume / CV</label>
-          <input name="cv" type="file" accept="application/pdf,image/jpeg" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px dashed var(--line)', background: 'var(--paper)' }} />
-        </div>
+      <div className="resp-grid-2" style={{ marginBottom: '8px' }}>
+        <FileUploadField
+          name="photo"
+          label="Candidate photo"
+          accept="image/jpeg,image/png"
+          hint="Counts toward 5 MB total"
+        />
+        <FileUploadField
+          name="cv"
+          label="PDF Resume / CV"
+          accept="application/pdf,image/jpeg"
+          hint="Counts toward 5 MB total"
+        />
         <div style={{ gridColumn: '1 / -1' }}>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Work Experience Photos/Videos</label>
-          <input name="workExperience" type="file" multiple accept="image/*,video/*" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px dashed var(--line)', background: 'var(--paper)' }} />
+          <FileUploadField
+            name="workExperience"
+            label="Work Experience Photos/Videos"
+            accept="image/*,video/*"
+            multiple
+            hint="Counts toward 5 MB total"
+          />
         </div>
       </div>
+      <p style={{ fontSize: '11.5px', color: 'var(--slate)', margin: '0 0 40px' }}>
+        Photo, CV, and work-experience files together must stay under 5 MB.
+      </p>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
         <button type="button" onClick={() => router.back()} className="btn" style={{ background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600 }}>
