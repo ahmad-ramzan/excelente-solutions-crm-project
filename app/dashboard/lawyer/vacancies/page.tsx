@@ -3,31 +3,43 @@ import AppTopbar from '../../../components/AppTopbar';
 import { createClient, getAuthUser } from '@/utils/supabase/server';
 import { getContractSignedUrls } from '@/app/lib/queries';
 
-export default async function AgentVacanciesPage() {
+export default async function LawyerVacanciesPage() {
   const supabase = await createClient();
 
   const user = await getAuthUser();
   if (!user) return null;
 
-  const { data: vacancies } = await supabase
-    .from('job_offer_progress')
-    .select('*')
-    .in('status', ['open'])
-    .order('created_at', { ascending: false });
+  const { data: lcData } = await supabase
+    .from('lawyer_countries')
+    .select('country_id')
+    .eq('lawyer_id', user.id);
 
-  const offers = vacancies || [];
+  const countryIds = (lcData || []).map(lc => lc.country_id);
+
+  let offers: any[] = [];
+  if (countryIds.length > 0) {
+    const { data: vacancies } = await supabase
+      .from('job_offer_progress')
+      .select('*')
+      .in('status', ['open'])
+      .in('country_id', countryIds)
+      .order('created_at', { ascending: false });
+
+    offers = vacancies || [];
+  }
+
   const contractUrls = await getContractSignedUrls(offers.map(o => o.id));
 
   return (
     <>
-      <AppSidebar role="agent" />
+      <AppSidebar role="lawyer" />
       <div className="main">
-        <AppTopbar section="Vacancies" role="agent" />
+        <AppTopbar section="Vacancies" role="lawyer" />
         <div className="wrap">
           <div className="page-head" style={{ marginBottom: '24px' }}>
             <div>
               <h1>Vacancies</h1>
-              <p className="ph-sub">Current open positions needing candidates.</p>
+              <p className="ph-sub">Open positions in your assigned countries, with the employer's Contract with Candidate.</p>
             </div>
           </div>
 
@@ -76,7 +88,7 @@ export default async function AgentVacanciesPage() {
                 {offers.length === 0 && (
                   <tr>
                     <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--slate)' }}>
-                      No open vacancies at the moment.
+                      No open vacancies in your assigned countries right now.
                     </td>
                   </tr>
                 )}

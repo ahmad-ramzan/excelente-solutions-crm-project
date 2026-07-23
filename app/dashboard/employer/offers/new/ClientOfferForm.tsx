@@ -85,6 +85,17 @@ export default function ClientOfferForm({
       return;
     }
 
+    // Contract with Candidate is required for every vacancy — lawyers and agents rely on it.
+    const missingContract = vacancies.some((_, index) => {
+      const input = e.currentTarget.querySelector(`input[name="contractWithCandidate-${index}"]`) as HTMLInputElement | null;
+      return !input?.files || input.files.length === 0;
+    });
+    if (missingContract) {
+      setError("Please upload the Contract with Candidate for every vacancy.");
+      setIsSubmitting(false);
+      return;
+    }
+
     // Client-side file size validation (5 MB max per file)
     const MAX_FILE_SIZE = 5 * 1024 * 1024;
     const fileInputs = e.currentTarget.querySelectorAll('input[type="file"]');
@@ -218,7 +229,10 @@ export default function ClientOfferForm({
           </div>
 
           <div style={{ marginTop: '24px' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)', marginBottom: '12px' }}>Attachments</h4>
+            <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)', marginBottom: '4px' }}>Attachments</h4>
+            <p style={{ fontSize: '11.5px', color: 'var(--slate)', margin: '0 0 12px' }}>
+              Fields marked * are required. The Contract with Candidate is visible to the assigned lawyer and agent.
+            </p>
             <div className="resp-grid-2">
               <FileUploadField
                 name={`accommodationPhotos-${index}`}
@@ -229,6 +243,11 @@ export default function ClientOfferForm({
               <FileUploadField
                 name={`contractWithExcelente-${index}`}
                 label="Add Contract with Excelente"
+                accept="application/pdf"
+              />
+              <FileUploadField
+                name={`contractWithCandidate-${index}`}
+                label="Upload Contract with Candidate *"
                 accept="application/pdf"
               />
               <FileUploadField

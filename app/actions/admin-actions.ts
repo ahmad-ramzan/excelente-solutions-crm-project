@@ -251,11 +251,33 @@ export async function getActiveCountries() {
 
 export async function deleteUserByAdmin(userId: string) {
   try {
+    const supabase = await createClient();
+
+    const { data: { user: caller } } = await supabase.auth.getUser();
+    if (!caller) return { error: 'Not authenticated' };
+
+    if (caller.id === userId) {
+      return { error: 'You cannot delete your own account.' };
+    }
+
+    const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', caller.id).single();
+    if (callerProfile?.role !== 'admin') return { error: 'Only admins can delete users' };
+
     const adminClient = createAdminClient();
 
     // Delete linked profile and user relation records first
     await adminClient.from('employer_users').delete().eq('profile_id', userId);
-    await adminClient.from('profiles').delete().eq('id', userId);
+    const { error: profileError } = await adminClient.from('profiles').delete().eq('id', userId);
+
+    if (profileError) {
+      console.error('Delete profile error:', profileError);
+      // Foreign key violation — this user still owns records elsewhere (candidates,
+      // job offers, visa cases, etc.) that don't cascade-delete.
+      if (profileError.code === '23503') {
+        return { error: 'This user still has linked records (candidates, job offers, or cases) and cannot be deleted. Suspend the account instead to revoke access.' };
+      }
+      return { error: `Failed to delete user: ${profileError.message}` };
+    }
 
     // Delete the user from Supabase Authentication
     const { error } = await adminClient.auth.admin.deleteUser(userId);

@@ -177,6 +177,9 @@ export async function createMultipleJobOffers(formData: FormData) {
       if (!offer.countryId) return { error: `Vacancy ${i + 1}: Country is missing.` };
       if (!offer.positionId) return { error: `Vacancy ${i + 1}: Please select a position.` };
       if (!offer.staffNeeded || parseInt(offer.staffNeeded) <= 0) return { error: `Vacancy ${i + 1}: Number of staff needed must be at least 1.` };
+
+      const contractFiles = (formData.getAll(`contractWithCandidate-${i}`) as File[]).filter(f => f && f.size > 0);
+      if (contractFiles.length === 0) return { error: `Vacancy ${i + 1}: Please upload the Contract with Candidate.` };
     }
 
     // Fetch assigned salesperson for this employer if created by employer
@@ -234,6 +237,17 @@ export async function createMultipleJobOffers(formData: FormData) {
         await uploadFiles(formData.getAll(`flightTicketPdf-${index}`) as File[], `job-offers/${offerId}/flight-tickets`);
         await uploadFiles(formData.getAll(`contractWithExcelente-${index}`) as File[], `job-offers/${offerId}/excelente-contracts`);
         await uploadFiles(formData.getAll(`additionalPdfs-${index}`) as File[], `job-offers/${offerId}/additional-pdfs`);
+
+        // Required — visible to the assigned lawyer and agent, so its storage
+        // path is saved back onto the job offer row (unlike the optional
+        // attachments above, which are upload-only for now).
+        const contractPaths = await uploadFiles(formData.getAll(`contractWithCandidate-${index}`) as File[], `job-offers/${offerId}/contract-with-candidate`);
+        if (contractPaths[0]) {
+          await supabase
+            .from('job_offers')
+            .update({ contract_file_path: contractPaths[0], contract_signed: true })
+            .eq('id', offerId);
+        }
       }
     } catch (uploadError) {
       console.error('Attachment upload error:', uploadError);

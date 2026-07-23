@@ -4,7 +4,16 @@ import { createCandidate } from '@/app/actions/candidate-actions';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-export default function ClientForm({ countries, positions }: { countries: any[], positions: any[] }) {
+interface VacancyPosition {
+  id: string;
+  name: string;
+  openRoles: number;
+  employers: string[];
+  countries: string[];
+}
+
+export default function ClientForm({ countries, positions, vacancyPositions }: { countries: any[], positions: any[], vacancyPositions: VacancyPosition[] }) {
+  const hasOpenVacancies = vacancyPositions.length > 0;
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -185,11 +194,19 @@ export default function ClientForm({ countries, positions }: { countries: any[],
       <div style={{ marginBottom: '8px' }}>
         <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Select positions (Ctrl/Cmd to select multiple)</label>
         <select name="positions" required multiple style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)', minHeight: '120px' }}>
-          {positions.map(p => <option key={p.id} value={p.id} style={{ padding: '4px' }}>{p.name}</option>)}
+          {hasOpenVacancies
+            ? vacancyPositions.map(p => (
+                <option key={p.id} value={p.id} style={{ padding: '4px' }}>
+                  {p.name} — {p.openRoles} open role{p.openRoles === 1 ? '' : 's'} · {p.countries.join(', ')}
+                </option>
+              ))
+            : positions.map(p => <option key={p.id} value={p.id} style={{ padding: '4px' }}>{p.name}</option>)}
         </select>
       </div>
       <p style={{ fontSize: '11.5px', color: 'var(--slate)', margin: 0, marginBottom: '24px' }}>
-        Positions are managed by the admin and reused across the system. A candidate can apply for several.
+        {hasOpenVacancies
+          ? 'Showing positions with live vacancies currently registered by employers. A candidate can apply for up to 3.'
+          : 'No open vacancies right now — showing the full position catalog instead. A candidate can apply for up to 3.'}
       </p>
 
       <div style={{ height: '1px', background: 'var(--line)', margin: '32px 0' }}></div>

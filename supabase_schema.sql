@@ -1363,6 +1363,15 @@ create policy "employers read own job offers"
 to authenticated
 using (employer_id = any(public.current_employer_ids()));
 
+drop policy if exists "agent lawyer read open job offers" on public.job_offers;
+create policy "agent lawyer read open job offers"
+  on public.job_offers for select
+to authenticated
+using (
+  status = 'open'
+  and public.current_user_role() in ('agent', 'lawyer')
+);
+
 drop policy if exists "admin sales employer create job offers" on public.job_offers;
 create policy "admin sales employer create job offers"
   on public.job_offers for insert

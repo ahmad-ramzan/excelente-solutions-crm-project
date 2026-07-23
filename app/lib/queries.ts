@@ -94,3 +94,65 @@ export async function getEmployerCandidates(supabase: SupabaseClient, countryId:
     .order('created_at', { ascending: false });
   return data || [];
 }
+
+// Positions currently being hired for, aggregated from employers' open job offers —
+// used to steer candidates toward real, live vacancies instead of the full admin catalog.
+export async function getOpenVacancyPositions(supabase: SupabaseClient) {
+  const { data } = await supabase
+    .from('job_offers')
+    .select('position_id, staff_needed, positions(name), employers(name), countries(name)')
+    .in('status', ['draft', 'open']);
+
+  const byPosition = new Map<string, { id: string; name: string; openRoles: number; employers: Set<string>; countries: Set<string> }>();
+
+  (data || []).forEach((o: any) => {
+    if (!o.position_id) return;
+    const position = Array.isArray(o.positions) ? o.positions[0] : o.positions;
+    if (!position?.name) return;
+    const employer = Array.isArray(o.employers) ? o.employers[0] : o.employers;
+    const country = Array.isArray(o.countries) ? o.countries[0] : o.countries;
+
+    if (!byPosition.has(o.position_id)) {
+      byPosition.set(o.position_id, { id: o.position_id, name: position.name, openRoles: 0, employers: new Set(), countries: new Set() });
+    }
+    const entry = byPosition.get(o.position_id)!;
+    entry.openRoles += o.staff_needed || 0;
+    if (employer?.name) entry.employers.add(employer.name);
+    if (country?.name) entry.countries.add(country.name);
+  });
+
+  return Array.from(byPosition.values())
+    .map(e => ({
+      id: e.id,
+      name: e.name,
+      openRoles: e.openRoles,
+      employers: Array.from(e.employers),
+      countries: Array.from(e.countries),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// The "contracts" storage bucket is private, so viewing a job offer's uploaded
+// Contract with Candidate requires a signed URL generated with the service-role
+// client — regular RLS-scoped clients have no read access to it at all.
+export async function getContractSignedUrls(offerIds: string[]): Promise<Record<string, string>> {
+  if (offerIds.length === 0) return {};
+
+  const { createAdminClient } = await import('@/utils/supabase/admin');
+  const adminClient = createAdminClient();
+
+  const { data: offers } = await adminClient
+    .from('job_offers')
+    .select('id, contract_file_path')
+    .in('id', offerIds);
+
+  const result: Record<string, string> = {};
+
+  await Promise.all((offers || []).map(async (o) => {
+    if (!o.contract_file_path) return;
+    const { data } = await adminClient.storage.from('contracts').createSignedUrl(o.contract_file_path, 3600);
+    if (data?.signedUrl) result[o.id] = data.signedUrl;
+  }));
+
+  return result;
+}

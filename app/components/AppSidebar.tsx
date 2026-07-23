@@ -103,6 +103,7 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
         title: 'OVERVIEW',
         items: [
           { icon: '⊞', label: 'Dashboard', href: '/dashboard/lawyer' },
+          { icon: '📋', label: 'Vacancies', href: '/dashboard/lawyer/vacancies' },
         ],
       },
       {

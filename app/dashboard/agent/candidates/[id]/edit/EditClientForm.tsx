@@ -4,19 +4,30 @@ import { updateCandidate } from '@/app/actions/candidate-actions';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-export default function EditClientForm({ 
-  countries, 
-  positions, 
+interface VacancyPosition {
+  id: string;
+  name: string;
+  openRoles: number;
+  employers: string[];
+  countries: string[];
+}
+
+export default function EditClientForm({
+  countries,
+  positions,
+  vacancyPositions,
   candidate,
   privateDetails,
   candidatePositions
-}: { 
-  countries: any[], 
+}: {
+  countries: any[],
   positions: any[],
+  vacancyPositions: VacancyPosition[],
   candidate: any,
   privateDetails: any,
   candidatePositions: any[]
 }) {
+  const hasOpenVacancies = vacancyPositions.length > 0;
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -46,6 +57,11 @@ export default function EditClientForm({
   };
   
   const selectedPositionIds = candidatePositions.map(cp => cp.position_id);
+
+  // A position the candidate is already assigned to may no longer have an open
+  // vacancy — keep it selectable so saving the form doesn't silently drop it.
+  const vacancyIds = new Set(vacancyPositions.map(v => v.id));
+  const staleSelectedPositions = positions.filter(p => selectedPositionIds.includes(p.id) && !vacancyIds.has(p.id));
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
@@ -167,11 +183,24 @@ export default function EditClientForm({
       <div style={{ marginBottom: '8px' }}>
         <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Select positions (Ctrl/Cmd to select multiple)</label>
         <select name="positions" defaultValue={selectedPositionIds} required multiple style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)', minHeight: '120px' }}>
-          {positions.map(p => <option key={p.id} value={p.id} style={{ padding: '4px' }}>{p.name}</option>)}
+          {hasOpenVacancies
+            ? <>
+                {vacancyPositions.map(p => (
+                  <option key={p.id} value={p.id} style={{ padding: '4px' }}>
+                    {p.name} — {p.openRoles} open role{p.openRoles === 1 ? '' : 's'} · {p.countries.join(', ')}
+                  </option>
+                ))}
+                {staleSelectedPositions.map(p => (
+                  <option key={p.id} value={p.id} style={{ padding: '4px' }}>{p.name} (currently assigned · no open vacancy)</option>
+                ))}
+              </>
+            : positions.map(p => <option key={p.id} value={p.id} style={{ padding: '4px' }}>{p.name}</option>)}
         </select>
       </div>
       <p style={{ fontSize: '11.5px', color: 'var(--slate)', margin: 0, marginBottom: '24px' }}>
-        Positions are managed by the admin and reused across the system. A candidate can apply for up to 3.
+        {hasOpenVacancies
+          ? 'Showing positions with live vacancies currently registered by employers. A candidate can apply for up to 3.'
+          : 'No open vacancies right now — showing the full position catalog instead. A candidate can apply for up to 3.'}
       </p>
 
       <div style={{ height: '1px', background: 'var(--line)', margin: '32px 0' }}></div>

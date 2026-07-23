@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateUserRoleStatus } from '@/app/actions/admin-actions';
+import { updateUserRoleStatus, deleteUserByAdmin } from '@/app/actions/admin-actions';
 
 export default function ClientEditUserForm({ user }: { user: { id: string; full_name: string; role: string; status: string } }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -20,6 +22,25 @@ export default function ClientEditUserForm({ user }: { user: { id: string; full_
     if (res.error) {
       setError(res.error);
       setLoading(false);
+    } else {
+      router.push('/dashboard/admin/users');
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm(
+      `Delete ${user.full_name}? This permanently removes their login and profile. This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    setDeleteError('');
+
+    const res = await deleteUserByAdmin(user.id);
+
+    if (res.error) {
+      setDeleteError(res.error);
+      setDeleting(false);
     } else {
       router.push('/dashboard/admin/users');
     }
@@ -58,24 +79,38 @@ export default function ClientEditUserForm({ user }: { user: { id: string; full_
         </select>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
         <button
           type="button"
-          onClick={() => router.back()}
+          onClick={handleDelete}
+          disabled={deleting}
           className="btn"
-          style={{ background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600 }}
+          style={{ background: '#fff', border: '1px solid #fecaca', color: '#dc2626', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, opacity: deleting ? 0.7 : 1 }}
         >
-          Cancel
+          {deleting ? <><span className="btn-spinner" />Deleting...</> : 'Delete user'}
         </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="btn"
-          style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', border: 'none', color: '#fff', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, opacity: loading ? 0.7 : 1 }}
-        >
-          {loading ? <><span className="btn-spinner" />Saving...</> : 'Save changes'}
-        </button>
+
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="btn"
+            style={{ background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600 }}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn"
+            style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', border: 'none', color: '#fff', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? <><span className="btn-spinner" />Saving...</> : 'Save changes'}
+          </button>
+        </div>
       </div>
+
+      {deleteError && <div style={{ color: '#dc2626', fontSize: '13px', padding: '10px', background: '#fee2e2', borderRadius: '6px' }}>{deleteError}</div>}
     </form>
   );
 }
