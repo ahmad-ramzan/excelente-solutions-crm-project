@@ -56,7 +56,19 @@ export async function createCandidate(formData: FormData) {
 
   if (candError) {
     console.error('Candidate insert error:', candError);
-    return { error: 'Failed to create candidate' };
+
+    let msg = candError.message;
+    if (candError.code === '42501') {
+      msg = 'Permission denied while creating the candidate. Your account may not have access to this action.';
+    } else if (candError.code === '23502') {
+      msg = `A required field is missing: ${candError.message}`;
+    } else if (candError.code === '23503') {
+      msg = 'A referenced record (agent) does not exist. Please sign out and back in, then try again.';
+    } else if (!msg) {
+      msg = 'Failed to create candidate.';
+    }
+
+    return { error: msg };
   }
 
   // Insert Private Details
