@@ -114,26 +114,28 @@ export default function ClientCaseStatusForm({
         />
       </div>
 
-      <div className="form-group" style={{ marginBottom: '16px' }}>
-        <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--slate)', marginBottom: '8px' }}>Embassy / immigration appointment (Optional)</label>
-        <input
-          type="datetime-local"
-          name="embassyAppointmentAt"
-          defaultValue={currentEmbassyAppointmentAt ? currentEmbassyAppointmentAt.slice(0, 16) : ''}
-          className="form-input"
-          style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line-2)', fontSize: '14px', background: 'var(--paper)' }}
-        />
-      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px' }}>
+        <div className="form-group" style={{ marginBottom: '8px' }}>
+          <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--slate)', marginBottom: '8px' }}>Embassy / immigration appointment (Optional)</label>
+          <input
+            type="datetime-local"
+            name="embassyAppointmentAt"
+            defaultValue={currentEmbassyAppointmentAt ? currentEmbassyAppointmentAt.slice(0, 16) : ''}
+            className="form-input"
+            style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line-2)', fontSize: '14px', background: 'var(--paper)' }}
+          />
+        </div>
 
-      <div className="form-group" style={{ marginBottom: '16px' }}>
-        <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--slate)', marginBottom: '8px' }}>Expected decision date (Optional)</label>
-        <input
-          type="date"
-          name="expectedDecisionDate"
-          defaultValue={currentExpectedDecisionDate || ''}
-          className="form-input"
-          style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line-2)', fontSize: '14px', background: 'var(--paper)' }}
-        />
+        <div className="form-group">
+          <label className="form-label" style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--slate)', marginBottom: '8px' }}>Expected decision date (Optional)</label>
+          <input
+            type="date"
+            name="expectedDecisionDate"
+            defaultValue={currentExpectedDecisionDate || ''}
+            className="form-input"
+            style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line-2)', fontSize: '14px', background: 'var(--paper)' }}
+          />
+        </div>
       </div>
 
       <div className="form-group" style={{ marginBottom: '16px' }}>
