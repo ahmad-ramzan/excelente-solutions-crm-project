@@ -1454,6 +1454,18 @@ create policy "employer reads own visa cases"
 to authenticated
 using (employer_id = any(public.current_employer_ids()));
 
+drop policy if exists "salesperson reads assigned visa cases" on public.visa_cases;
+create policy "salesperson reads assigned visa cases"
+  on public.visa_cases for select
+to authenticated
+using (
+  exists (
+    select 1 from public.job_offers jo
+    where jo.id = visa_cases.job_offer_id
+    and jo.assigned_salesperson_id = auth.uid()
+  )
+);
+
 drop policy if exists "lawyer updates assigned visa cases" on public.visa_cases;
 create policy "lawyer updates assigned visa cases"
   on public.visa_cases for update
