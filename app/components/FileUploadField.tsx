@@ -28,12 +28,16 @@ export default function FileUploadField({
   accept,
   multiple = false,
   hint = 'Max 5 MB per file',
+  onFilesChange,
 }: {
   name: string;
   label: string;
   accept?: string;
   multiple?: boolean;
   hint?: string;
+  /** Called with the current file list whenever the selection changes — for
+   * callers that need the File(s) directly instead of reading FormData. */
+  onFilesChange?: (files: File[]) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
@@ -45,6 +49,7 @@ export default function FileUploadField({
     list.forEach((f) => dt.items.add(f));
     if (inputRef.current) inputRef.current.files = dt.files;
     setFiles(list);
+    onFilesChange?.(list);
   }
 
   function onPicked(picked: FileList | null) {

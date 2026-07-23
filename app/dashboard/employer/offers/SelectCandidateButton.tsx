@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { selectCandidate } from '@/app/actions/employer-actions';
+import FileUploadField from '@/app/components/FileUploadField';
 
 export default function SelectCandidateButton({ jobOfferId, candidateId }: { jobOfferId: string; candidateId: string }) {
   const router = useRouter();
@@ -51,29 +52,31 @@ export default function SelectCandidateButton({ jobOfferId, candidateId }: { job
             <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600, color: 'var(--ink)' }}>Confirm Selection</h3>
             <p style={{ fontSize: '14px', color: 'var(--slate)', marginBottom: '24px' }}>Please upload the signed contract (PDF) with the candidate to finalize the placement.</p>
             
-            <input 
-              type="file" 
-              accept=".pdf" 
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-              style={{ display: 'block', width: '100%', padding: '12px', border: '1px dashed var(--brand)', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}
-            />
+            <div style={{ marginBottom: '20px' }}>
+              <FileUploadField
+                name="signedContract"
+                label="Signed contract"
+                accept="application/pdf"
+                onFilesChange={(files) => setFile(files[0] || null)}
+              />
+            </div>
 
             {error && (
               <div style={{ color: '#b91c1c', fontSize: '12.5px', marginBottom: '16px' }}>{error}</div>
             )}
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button 
-                onClick={() => { setShowModal(false); setError(null); }} 
-                className="btn btn-outline" 
+              <button
+                onClick={() => { setShowModal(false); setError(null); }}
+                className="btn btn-outline"
                 style={{ padding: '8px 16px' }}
                 disabled={loading}
               >
                 Cancel
               </button>
-              <button 
-                onClick={handleConfirm} 
-                className="btn btn-gold" 
+              <button
+                onClick={handleConfirm}
+                className="btn btn-gold"
                 style={{ padding: '8px 16px', opacity: loading ? 0.7 : 1 }}
                 disabled={loading}
               >

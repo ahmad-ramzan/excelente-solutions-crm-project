@@ -220,13 +220,13 @@ export default async function EmployerCandidatesPage({ searchParams }: { searchP
 
                     {/* Actions */}
                     {isAvailable ? (
-                      <div className="resp-grid-2" style={{ marginBottom: 0 }}>
-                        <Link href={`/dashboard/employer/candidates/${c.public_code}`}>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <Link href={`/dashboard/employer/candidates/${c.public_code}`} style={{ flex: 1 }}>
                           <button className="btn" style={{ width: '100%', background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)', padding: '10px 0', borderRadius: '8px', fontSize: '13.5px', fontWeight: 600, cursor: 'pointer' }}>
                             View
                           </button>
                         </Link>
-                        <Link href={`/dashboard/employer/offers?select=${c.public_code}`}>
+                        <Link href={`/dashboard/employer/offers?select=${c.public_code}`} style={{ flex: 1 }}>
                           <button className="btn" style={{ width: '100%', background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', border: 'none', color: '#fff', padding: '10px 0', borderRadius: '8px', fontSize: '13.5px', fontWeight: 600, cursor: 'pointer' }}>
                             Select
                           </button>
