@@ -32,7 +32,7 @@ export default function ClientForm({ countries, positions, vacancyPositions }: {
       return;
     }
 
-    // Validate file sizes (1MB limit for Next.js default server action)
+    // Validate file sizes
     const photo = formData.get('photo') as File;
     const cv = formData.get('cv') as File;
     const workExpFiles = formData.getAll('workExperience') as File[];
@@ -44,9 +44,9 @@ export default function ClientForm({ countries, positions, vacancyPositions }: {
       if (f?.size) totalSize += f.size;
     });
 
-    // 1 MB = 1048576 bytes
-    if (totalSize > 1048576) {
-      setError('Total file size exceeds 1 MB limit. Please compress your files or select smaller ones.');
+    // 5 MB = 5 * 1024 * 1024 bytes
+    if (totalSize > 5 * 1024 * 1024) {
+      setError('Total file size exceeds 5 MB limit. Please compress your files or select smaller ones.');
       setLoading(false);
       return;
     }
@@ -157,7 +157,7 @@ export default function ClientForm({ countries, positions, vacancyPositions }: {
         </div>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>City of visa application</label>
-          <input name="city" type="text" defaultValue="Lahore" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
+          <input name="city" type="text" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
         </div>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Passport number</label>

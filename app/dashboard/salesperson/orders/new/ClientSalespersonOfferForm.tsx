@@ -15,6 +15,7 @@ export default function ClientSalespersonOfferForm({
   const [employerId, setEmployerId] = useState(employers[0]?.id || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [longTermEmployment, setLongTermEmployment] = useState(false);
 
   const selectedEmployer = employers.find(e => e.id === employerId);
 
@@ -110,8 +111,22 @@ export default function ClientSalespersonOfferForm({
         <div>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>End date</label>
           <div style={{ position: 'relative' }}>
-            <input type="date" name="endDate" style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '14px', color: 'var(--ink)' }} />
+            <input
+              type="date"
+              name="endDate"
+              disabled={longTermEmployment}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: longTermEmployment ? '#f8fafc' : '#fff', fontSize: '14px', color: 'var(--ink)' }}
+            />
           </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={longTermEmployment}
+              onChange={(e) => setLongTermEmployment(e.target.checked)}
+              style={{ width: '15px', height: '15px', accentColor: '#36b9ff' }}
+            />
+            <span style={{ fontSize: '12.5px', color: 'var(--slate)' }}>Long-term Employment (no end date)</span>
+          </label>
         </div>
       </div>
 

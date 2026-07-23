@@ -12,6 +12,7 @@ interface Vacancy {
   salaryAmount: string;
   startDate: string;
   endDate: string;
+  longTermEmployment: boolean;
   cityOfEmployment: string;
   flightTicket: string;
   pickup: string;
@@ -42,10 +43,11 @@ export default function ClientOfferForm({
     salaryAmount: '',
     startDate: '',
     endDate: '',
+    longTermEmployment: false,
     cityOfEmployment: '',
-    flightTicket: 'false',
-    pickup: 'false',
-    accommodation: 'false'
+    flightTicket: 'true',
+    pickup: 'true',
+    accommodation: 'true'
   }]);
 
   const addVacancy = () => {
@@ -56,10 +58,11 @@ export default function ClientOfferForm({
       salaryAmount: '',
       startDate: '',
       endDate: '',
+      longTermEmployment: false,
       cityOfEmployment: '',
-      flightTicket: 'false',
-      pickup: 'false',
-      accommodation: 'false'
+      flightTicket: 'true',
+      pickup: 'true',
+      accommodation: 'true'
     }]);
   };
 
@@ -71,6 +74,10 @@ export default function ClientOfferForm({
 
   const updateVacancy = (id: number, field: keyof Vacancy, value: string) => {
     setVacancies(vacancies.map(v => v.id === id ? { ...v, [field]: value } : v));
+  };
+
+  const toggleLongTerm = (id: number, checked: boolean) => {
+    setVacancies(vacancies.map(v => v.id === id ? { ...v, longTermEmployment: checked, endDate: checked ? '' : v.endDate } : v));
   };
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -200,31 +207,49 @@ export default function ClientOfferForm({
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>End Date Of Employment</label>
-              <input type="date" value={vacancy.endDate} onChange={(e) => updateVacancy(vacancy.id, 'endDate', e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '14px', color: 'var(--ink)' }} />
+              <input
+                type="date"
+                value={vacancy.endDate}
+                disabled={vacancy.longTermEmployment}
+                onChange={(e) => updateVacancy(vacancy.id, 'endDate', e.target.value)}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--line)', background: vacancy.longTermEmployment ? '#f8fafc' : '#fff', fontSize: '14px', color: 'var(--ink)' }}
+              />
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={vacancy.longTermEmployment}
+                  onChange={(e) => toggleLongTerm(vacancy.id, e.target.checked)}
+                  style={{ width: '15px', height: '15px', accentColor: '#36b9ff' }}
+                />
+                <span style={{ fontSize: '12.5px', color: 'var(--slate)' }}>Long-term Employment (no end date)</span>
+              </label>
             </div>
           </div>
 
-          <div style={{ marginTop: '24px', display: 'flex', gap: '24px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Flight ticket</label>
-              <select value={vacancy.flightTicket} onChange={(e) => updateVacancy(vacancy.id, 'flightTicket', e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff' }}>
-                <option value="true">YES</option>
-                <option value="false">NO</option>
-              </select>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Pickup at airport</label>
-              <select value={vacancy.pickup} onChange={(e) => updateVacancy(vacancy.id, 'pickup', e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff' }}>
-                <option value="true">YES</option>
-                <option value="false">NO</option>
-              </select>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Accommodation</label>
-              <select value={vacancy.accommodation} onChange={(e) => updateVacancy(vacancy.id, 'accommodation', e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff' }}>
-                <option value="true">YES</option>
-                <option value="false">NO</option>
-              </select>
+          <div style={{ marginTop: '24px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)', marginBottom: '12px' }}>Provided by Employer</h4>
+            <div style={{ display: 'flex', gap: '24px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Flight ticket</label>
+                <select value={vacancy.flightTicket} onChange={(e) => updateVacancy(vacancy.id, 'flightTicket', e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff' }}>
+                  <option value="true">YES</option>
+                  <option value="false">NO</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Pickup at airport</label>
+                <select value={vacancy.pickup} onChange={(e) => updateVacancy(vacancy.id, 'pickup', e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff' }}>
+                  <option value="true">YES</option>
+                  <option value="false">NO</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Accommodation</label>
+                <select value={vacancy.accommodation} onChange={(e) => updateVacancy(vacancy.id, 'accommodation', e.target.value)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff' }}>
+                  <option value="true">YES</option>
+                  <option value="false">NO</option>
+                </select>
+              </div>
             </div>
           </div>
 
