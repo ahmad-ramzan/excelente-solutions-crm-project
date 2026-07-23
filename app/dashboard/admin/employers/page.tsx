@@ -3,10 +3,12 @@ import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
 import AssignSalespersonCell from './AssignSalespersonCell';
 
-export default async function AdminEmployersPage() {
+export default async function AdminEmployersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const supabase = await createClient();
+  const params = await searchParams;
+  const q = params.q?.trim().toLowerCase() || '';
 
-  const [{ data: employers }, { data: salespersons }, { data: offers }] = await Promise.all([
+  const [{ data: allEmployers }, { data: salespersons }, { data: offers }] = await Promise.all([
     supabase
       .from('employers')
       .select('id, public_code, name, assigned_salesperson_id, countries(name, code)')
@@ -14,6 +16,14 @@ export default async function AdminEmployersPage() {
     supabase.from('profiles').select('id, full_name').eq('role', 'salesperson').eq('status', 'active').order('full_name'),
     supabase.from('job_offers').select('employer_id'),
   ]);
+
+  const employers = q
+    ? (allEmployers || []).filter((e: any) =>
+        e.name.toLowerCase().includes(q) ||
+        e.public_code.toLowerCase().includes(q) ||
+        (e.countries?.name || '').toLowerCase().includes(q)
+      )
+    : (allEmployers || []);
 
   const salespersonMap: Record<string, string> = {};
   (salespersons || []).forEach(s => { salespersonMap[s.id] = s.full_name; });
@@ -25,12 +35,14 @@ export default async function AdminEmployersPage() {
     <>
       <AppSidebar role="admin" />
       <div className="main">
-        <AppTopbar section="Employers" />
+        <AppTopbar section="Employers" role="admin" searchPlaceholder="Search employers…" searchValue={q} />
         <div className="wrap">
           <div className="page-head">
             <div>
               <h1>Employers</h1>
-              <p className="ph-sub">Every registered company, including any not yet assigned a salesperson.</p>
+              <p className="ph-sub">
+                {q ? `${employers.length} employer${employers.length === 1 ? '' : 's'} matching "${q}".` : 'Every registered company, including any not yet assigned a salesperson.'}
+              </p>
             </div>
           </div>
 
@@ -46,7 +58,7 @@ export default async function AdminEmployersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(employers || []).map((e: any) => (
+                  {employers.map((e: any) => (
                     <tr key={e.id}>
                       <td>
                         <div className="cell-name">
@@ -70,9 +82,11 @@ export default async function AdminEmployersPage() {
                       </td>
                     </tr>
                   ))}
-                  {(!employers || employers.length === 0) && (
+                  {employers.length === 0 && (
                     <tr>
-                      <td colSpan={4} style={{ textAlign: 'center', padding: '20px', color: 'var(--muted)' }}>No employers found.</td>
+                      <td colSpan={4} style={{ textAlign: 'center', padding: '20px', color: 'var(--muted)' }}>
+                        {q ? `No employers match "${q}".` : 'No employers found.'}
+                      </td>
                     </tr>
                   )}
                 </tbody>

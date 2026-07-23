@@ -62,7 +62,7 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
     <>
       <AppSidebar role="admin" />
       <div className="main">
-        <AppTopbar section="Candidates" />
+        <AppTopbar section="Candidates" role="admin" searchPlaceholder="Search candidates…" searchValue={params.q} />
         <div className="wrap">
           <div className="page-head">
             <div>

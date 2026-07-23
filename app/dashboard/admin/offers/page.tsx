@@ -3,10 +3,12 @@ import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 
-export default async function JobOffersPage() {
+export default async function JobOffersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const supabase = await createClient();
+  const params = await searchParams;
+  const q = params.q?.trim().toLowerCase() || '';
 
-  const { data: offers } = await supabase
+  const { data: allOffers } = await supabase
     .from('job_offers')
     .select(`
       id,
@@ -22,8 +24,22 @@ export default async function JobOffersPage() {
     `)
     .order('created_at', { ascending: false });
 
+  const offers = q
+    ? (allOffers || []).filter((o: any) => {
+        const employerName = ((o.employers as any)?.name || '').toLowerCase();
+        const countryName = ((o.countries as any)?.name || '').toLowerCase();
+        const positionName = ((o.positions as any)?.name || o.title || '').toLowerCase();
+        return (
+          o.public_code.toLowerCase().includes(q) ||
+          employerName.includes(q) ||
+          countryName.includes(q) ||
+          positionName.includes(q)
+        );
+      })
+    : (allOffers || []);
+
   // Get filled counts
-  const offerIds = (offers || []).map((o: any) => o.id);
+  const offerIds = offers.map((o: any) => o.id);
   const filledMap: Record<string, number> = {};
   if (offerIds.length > 0) {
     const { data: selections } = await supabase
@@ -46,12 +62,15 @@ export default async function JobOffersPage() {
     <>
       <AppSidebar role="admin" />
       <div className="main">
-        <AppTopbar section="Job Offers" />
+        <AppTopbar section="Job Offers" role="admin" searchPlaceholder="Search job offers…" searchValue={q} />
         <div className="wrap">
           <div className="page-head">
             <div>
               <h1>Job Offers</h1>
-              <p className="ph-sub">{offers?.length || 0} recruitment requirements — click an offer to manage its position slots.</p>
+              <p className="ph-sub">
+                {offers.length} recruitment requirement{offers.length === 1 ? '' : 's'}
+                {q ? ` matching "${q}"` : ' — click an offer to manage its position slots'}.
+              </p>
             </div>
           </div>
 
@@ -72,7 +91,7 @@ export default async function JobOffersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {offers?.map((o) => {
+                  {offers.map((o) => {
                     const countryName = (o.countries as any)?.name || 'Unknown';
                     const countryCode = (o.countries as any)?.code || '--';
                     const employerName = (o.employers as any)?.name || 'Unknown';
@@ -129,9 +148,11 @@ export default async function JobOffersPage() {
                       </tr>
                     );
                   })}
-                  {offers?.length === 0 && (
+                  {offers.length === 0 && (
                     <tr>
-                      <td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>No job offers found.</td>
+                      <td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
+                        {q ? `No job offers match "${q}".` : 'No job offers found.'}
+                      </td>
                     </tr>
                   )}
                 </tbody>

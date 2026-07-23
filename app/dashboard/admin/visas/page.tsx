@@ -3,8 +3,10 @@ import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
 
-export default async function VisaProcessesPage() {
+export default async function VisaProcessesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const supabase = await createClient();
+  const params = await searchParams;
+  const q = params.q?.trim() || '';
 
   const { data: dbVisas } = await supabase
     .from('visa_cases')
@@ -72,18 +74,29 @@ export default async function VisaProcessesPage() {
       statusColor,
       statusBg
     };
+  }).filter(vc => {
+    if (!q) return true;
+    const needle = q.toLowerCase();
+    return (
+      vc.public_code.toLowerCase().includes(needle) ||
+      vc.candidateName.toLowerCase().includes(needle) ||
+      vc.agent.toLowerCase().includes(needle) ||
+      vc.employer.toLowerCase().includes(needle)
+    );
   });
 
   return (
     <>
       <AppSidebar role="admin" />
       <div className="main">
-        <AppTopbar section="Visa processes" />
+        <AppTopbar section="Visa processes" role="admin" searchPlaceholder="Search visa cases…" searchValue={q} />
         <div className="wrap">
           <div className="page-head">
             <div>
               <h1>Visa processes</h1>
-              <p className="ph-sub">{visaCases.length} visa cases across all countries.</p>
+              <p className="ph-sub">
+                {visaCases.length} visa case{visaCases.length === 1 ? '' : 's'}{q ? ` matching "${q}"` : ' across all countries'}.
+              </p>
             </div>
           </div>
 
@@ -144,7 +157,9 @@ export default async function VisaProcessesPage() {
                   ))}
                   {visaCases.length === 0 && (
                     <tr>
-                      <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>No visa cases found.</td>
+                      <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
+                        {q ? `No visa cases match "${q}".` : 'No visa cases found.'}
+                      </td>
                     </tr>
                   )}
                 </tbody>
