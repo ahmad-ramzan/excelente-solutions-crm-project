@@ -109,13 +109,15 @@ export async function createCandidate(formData: FormData) {
 
   const workExperienceFiles = formData.getAll('workExperience') as File[];
 
-  // Function to upload a file directly to storage and return its path
+  // Function to upload a file directly to storage and return its path.
+  // Uses the admin client — the "candidate-documents" bucket is private with no
+  // storage RLS policies, so the regular session-scoped client can't write to it.
   const uploadToStorage = async (file: File, folder: string) => {
     if (!file || file.size === 0) return null;
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const filePath = `${candidate.id}/${folder}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const { data, error } = await supabase.storage.from('candidate-documents').upload(filePath, buffer, { contentType: file.type, upsert: true });
+    const { data, error } = await adminClient.storage.from('candidate-documents').upload(filePath, buffer, { contentType: file.type, upsert: true });
     if (error) {
       console.error(`Error uploading ${folder}:`, error);
       return null;
@@ -128,13 +130,14 @@ export async function createCandidate(formData: FormData) {
     photoUrl = await uploadToStorage(photo, 'photos');
   }
 
-  const workExpPaths: string[] = [];
+  const workExpUploads: { path: string; file: File }[] = [];
   if (workExperienceFiles && workExperienceFiles.length > 0) {
     for (const f of workExperienceFiles) {
       const p = await uploadToStorage(f, 'work-experience');
-      if (p) workExpPaths.push(p);
+      if (p) workExpUploads.push({ path: p, file: f });
     }
   }
+  const workExpPaths = workExpUploads.map(u => u.path);
 
   if (photoUrl || workExpPaths.length > 0) {
     await supabase.from('candidates').update({
@@ -143,11 +146,40 @@ export async function createCandidate(formData: FormData) {
     }).eq('id', candidate.id);
   }
 
+  // Also record photo/work-experience uploads as candidate_documents rows —
+  // that's what the candidate detail page's Documents card and photo lookup
+  // actually read from.
+  const documentInserts: any[] = [];
+  if (photoUrl) {
+    documentInserts.push({
+      candidate_id: candidate.id,
+      type: 'photo',
+      status: 'uploaded',
+      file_path: photoUrl,
+      file_name: photo.name,
+      mime_type: photo.type,
+      size_bytes: photo.size,
+      uploaded_by: user.id
+    });
+  }
+  workExpUploads.forEach(({ path, file }) => {
+    documentInserts.push({
+      candidate_id: candidate.id,
+      type: 'work_experience',
+      status: 'uploaded',
+      file_path: path,
+      file_name: file.name || 'Work experience file',
+      mime_type: file.type,
+      size_bytes: file.size,
+      uploaded_by: user.id
+    });
+  });
+
   // Upload CV as a document record
   if (cv && cv.size > 0) {
     const cvPath = await uploadToStorage(cv, 'cvs');
     if (cvPath) {
-      await supabase.from('candidate_documents').insert({
+      documentInserts.push({
         candidate_id: candidate.id,
         type: 'cv',
         status: 'uploaded',
@@ -157,6 +189,13 @@ export async function createCandidate(formData: FormData) {
         size_bytes: cv.size,
         uploaded_by: user.id
       });
+    }
+  }
+
+  if (documentInserts.length > 0) {
+    const { error: docsError } = await adminClient.from('candidate_documents').insert(documentInserts);
+    if (docsError) {
+      console.error('Candidate documents insert error:', docsError);
     }
   }
 
@@ -303,7 +342,9 @@ export async function updateCandidate(formData: FormData, candidateId: string) {
     const buffer = Buffer.from(arrayBuffer);
 
     const filePath = `${candidateId}/${docType}-${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabase.storage
+    // Admin client — "candidate-documents" is a private bucket with no storage
+    // RLS policies, so the regular session-scoped client can't write to it.
+    const { error: uploadError } = await adminClient.storage
       .from('candidate-documents')
       .upload(filePath, buffer, {
         contentType: file.type,
@@ -315,7 +356,7 @@ export async function updateCandidate(formData: FormData, candidateId: string) {
       return;
     }
 
-    const { error: dbInsertError } = await supabase.from('candidate_documents').insert({
+    const { error: dbInsertError } = await adminClient.from('candidate_documents').insert({
       candidate_id: candidateId,
       type: docType,
       status: 'uploaded',

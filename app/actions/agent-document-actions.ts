@@ -1,10 +1,12 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
 export async function uploadCandidateDocument(formData: FormData) {
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
@@ -34,7 +36,9 @@ export async function uploadCandidateDocument(formData: FormData) {
   
   const filePath = `${candidateId}/${type}-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
 
-  const { error: uploadError } = await supabase.storage
+  // Admin client — "candidate-documents" is a private bucket with no storage
+  // RLS policies, so the regular session-scoped client can't write to it.
+  const { error: uploadError } = await adminClient.storage
     .from('candidate-documents')
     .upload(filePath, buffer, {
       contentType: file.type,
@@ -46,7 +50,7 @@ export async function uploadCandidateDocument(formData: FormData) {
     return { error: 'Failed to upload file to storage' };
   }
 
-  const { error: dbError } = await supabase.from('candidate_documents').insert({
+  const { error: dbError } = await adminClient.from('candidate_documents').insert({
     candidate_id: candidateId,
     type,
     status: 'uploaded',

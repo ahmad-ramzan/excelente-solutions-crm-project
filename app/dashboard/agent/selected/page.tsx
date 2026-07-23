@@ -1,6 +1,7 @@
 import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
+import { getCandidateDocumentSignedUrls } from '@/app/lib/queries';
 import Link from 'next/link';
 import AgentDocumentManager from './AgentDocumentManager';
 
@@ -34,6 +35,9 @@ export default async function SelectedCandidatesPage() {
     });
   }
 
+  // "candidate-documents" is a private bucket — every link needs a signed URL.
+  const docUrls = await getCandidateDocumentSignedUrls(Object.values(documentsMap).flat().map(d => d.file_path));
+
   return (
     <>
       <AppSidebar role="agent" />
@@ -66,7 +70,7 @@ export default async function SelectedCandidatesPage() {
                 </div>
 
                 <div style={{ borderTop: '1px solid var(--line)', paddingTop: '24px' }}>
-                  <AgentDocumentManager candidateId={c.id} existingDocs={documentsMap[c.id] || []} />
+                  <AgentDocumentManager candidateId={c.id} existingDocs={documentsMap[c.id] || []} docUrls={docUrls} />
                 </div>
               </div>
             ))}

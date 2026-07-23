@@ -12,8 +12,8 @@ export default function VisaApprovalUploader({ candidateId, visaCaseId }: { cand
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 1048576) {
-      setError('File size exceeds 1 MB limit. Please select a smaller file.');
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File size exceeds 5 MB limit. Please select a smaller file.');
       return;
     }
 

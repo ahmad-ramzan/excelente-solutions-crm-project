@@ -1,6 +1,7 @@
 import AppSidebar from '../../../../components/AppSidebar';
 import AppTopbar from '../../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
+import { getCandidateDocumentSignedUrls } from '@/app/lib/queries';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
@@ -65,6 +66,9 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
     .eq('candidate_id', cand.id)
     .order('created_at', { ascending: false });
 
+  // "candidate-documents" is a private bucket — every link needs a signed URL.
+  const docUrls = await getCandidateDocumentSignedUrls((docs || []).map(d => d.file_path));
+
   const initials = `${cand.first_name?.[0] || ''}${cand.last_name?.[0] || ''}`.toUpperCase();
   const name = `${cand.first_name} ${cand.last_name}`;
   const photo = docs?.find(d => d.type === 'photo');
@@ -104,9 +108,9 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
             {/* LEFT PROFILE CARD */}
             <div>
               <div className="prof-card">
-                {photo ? (
+                {photo && docUrls[photo.file_path] ? (
                   <div className="pp" style={{
-                    backgroundImage: `url(${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${photo.file_path})`,
+                    backgroundImage: `url(${docUrls[photo.file_path]})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     border: 'none'
@@ -122,9 +126,9 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
                     <span className="tag" style={{ background: statusProps.bg, color: statusProps.color, border: 'none', lineHeight: '1.2' }}>• {statusProps.label}</span>
                   </div>
                 </div>
-                {cv && (
+                {cv && docUrls[cv.file_path] && (
                   <div className="pact">
-                    <a href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${cv.file_path}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', width: '100%' }}>
+                    <a href={docUrls[cv.file_path]} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', width: '100%' }}>
                       <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center' }}>View CV</button>
                     </a>
                   </div>
@@ -217,7 +221,7 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
                           <div className="dmeta">{d.file_name}{d.size_bytes ? ` · ${(d.size_bytes / 1024 / 1024).toFixed(1)} MB` : ''}</div>
                         </div>
                         <div className="dright">
-                          <a href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${d.file_path}`} target="_blank" rel="noopener noreferrer">
+                          <a href={docUrls[d.file_path] || '#'} target="_blank" rel="noopener noreferrer">
                             <button className="ico-btn">↓</button>
                           </a>
                         </div>

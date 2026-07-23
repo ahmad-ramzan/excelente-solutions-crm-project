@@ -1,6 +1,7 @@
 import AppSidebar from '../../../../components/AppSidebar';
 import AppTopbar from '../../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
+import { getCandidateDocumentSignedUrls } from '@/app/lib/queries';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import ClientCaseStatusForm from './ClientCaseStatusForm';
@@ -54,6 +55,9 @@ export default async function LawyerCaseDetailPage({ params }: { params: Promise
     .select('id, type, file_name, file_path, status, created_at')
     .eq('candidate_id', caseData.candidate_id)
     .order('created_at', { ascending: false });
+
+  // "candidate-documents" is a private bucket — every link needs a signed URL.
+  const docUrls = await getCandidateDocumentSignedUrls((documents || []).map(d => d.file_path));
 
   const c = caseData.candidates as any;
   const candidateName = `${c?.first_name} ${c?.last_name}`;
@@ -145,7 +149,7 @@ export default async function LawyerCaseDetailPage({ params }: { params: Promise
                             </div>
                           </td>
                           <td style={{ padding: '16px 22px', textAlign: 'right' }}>
-                            <Link href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${doc.file_path}`} target="_blank" rel="noopener noreferrer">
+                            <Link href={docUrls[doc.file_path] || '#'} target="_blank" rel="noopener noreferrer">
                               <button className="btn" style={{ background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
                                 View
                               </button>

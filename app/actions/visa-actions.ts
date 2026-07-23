@@ -210,6 +210,7 @@ export async function reassignLawyer(visaCaseId: string, newLawyerId: string) {
 
 export async function uploadVisaDocument(formData: FormData) {
   const supabase = await createClient();
+  const adminClient = createAdminClient();
 
   const visaCaseId = formData.get('visaCaseId') as string;
   const candidateId = formData.get('candidateId') as string;
@@ -225,7 +226,9 @@ export async function uploadVisaDocument(formData: FormData) {
   const buffer = Buffer.from(arrayBuffer);
 
   const filePath = `${candidateId}/${docType}-${Date.now()}-${file.name}`;
-  const { error: uploadError } = await supabase.storage
+  // Admin client — "candidate-documents" is a private bucket with no storage
+  // RLS policies, so the regular session-scoped client can't write to it.
+  const { error: uploadError } = await adminClient.storage
     .from('candidate-documents')
     .upload(filePath, buffer, {
       contentType: file.type,
@@ -238,7 +241,7 @@ export async function uploadVisaDocument(formData: FormData) {
   }
 
   // Record document in DB
-  const { error: dbError } = await supabase.from('candidate_documents').insert({
+  const { error: dbError } = await adminClient.from('candidate_documents').insert({
     candidate_id: candidateId,
     type: docType,
     status: 'uploaded',

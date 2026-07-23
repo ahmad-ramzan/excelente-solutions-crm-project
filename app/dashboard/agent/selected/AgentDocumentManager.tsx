@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { uploadCandidateDocument } from '@/app/actions/agent-document-actions';
 
 
-export default function AgentDocumentManager({ candidateId, existingDocs }: { candidateId: string, existingDocs: any[] }) {
+export default function AgentDocumentManager({ candidateId, existingDocs, docUrls }: { candidateId: string, existingDocs: any[], docUrls: Record<string, string> }) {
   const router = useRouter();
   const [loadingType, setLoadingType] = useState<string | null>(null);
 
@@ -13,8 +13,8 @@ export default function AgentDocumentManager({ candidateId, existingDocs }: { ca
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 1048576) {
-      alert('File size exceeds 1 MB limit. Please select a smaller file.');
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size exceeds 5 MB limit. Please select a smaller file.');
       return;
     }
 
@@ -52,7 +52,7 @@ export default function AgentDocumentManager({ candidateId, existingDocs }: { ca
           {contracts.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
               {contracts.map(c => (
-                <a key={c.id} href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${c.file_path}`} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)', textDecoration: 'underline' }}>
+                <a key={c.id} href={docUrls[c.file_path] || '#'} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)', textDecoration: 'underline' }}>
                   📄 {c.file_name || 'Contract'}
                 </a>
               ))}
@@ -68,27 +68,27 @@ export default function AgentDocumentManager({ candidateId, existingDocs }: { ca
         </div>
 
         {/* Passport */}
-        <DocUploaderCard type="passport_scan" title="Passport PDF" doc={getDoc('passport_scan')} loading={loadingType === 'passport_scan'} onUpload={(e) => handleUpload(e, 'passport_scan')} />
+        <DocUploaderCard type="passport_scan" title="Passport PDF" doc={getDoc('passport_scan')} docUrls={docUrls} loading={loadingType === 'passport_scan'} onUpload={(e) => handleUpload(e, 'passport_scan')} />
 
         {/* Health Certificate */}
-        <DocUploaderCard type="health_certificate" title="Health Certificate" doc={getDoc('health_certificate')} loading={loadingType === 'health_certificate'} onUpload={(e) => handleUpload(e, 'health_certificate')} />
+        <DocUploaderCard type="health_certificate" title="Health Certificate" doc={getDoc('health_certificate')} docUrls={docUrls} loading={loadingType === 'health_certificate'} onUpload={(e) => handleUpload(e, 'health_certificate')} />
 
         {/* Travel Insurance */}
-        <DocUploaderCard type="travel_insurance" title="Travel Insurance" doc={getDoc('travel_insurance')} loading={loadingType === 'travel_insurance'} onUpload={(e) => handleUpload(e, 'travel_insurance')} />
+        <DocUploaderCard type="travel_insurance" title="Travel Insurance" doc={getDoc('travel_insurance')} docUrls={docUrls} loading={loadingType === 'travel_insurance'} onUpload={(e) => handleUpload(e, 'travel_insurance')} />
 
         {/* Flight Ticket */}
-        <DocUploaderCard type="flight_ticket" title="Flight Ticket" doc={getDoc('flight_ticket')} loading={loadingType === 'flight_ticket'} onUpload={(e) => handleUpload(e, 'flight_ticket')} />
+        <DocUploaderCard type="flight_ticket" title="Flight Ticket" doc={getDoc('flight_ticket')} docUrls={docUrls} loading={loadingType === 'flight_ticket'} onUpload={(e) => handleUpload(e, 'flight_ticket')} />
       </div>
     </div>
   );
 }
 
-function DocUploaderCard({ type, title, doc, loading, onUpload }: { type: string, title: string, doc: any, loading: boolean, onUpload: (e: any) => void }) {
+function DocUploaderCard({ type, title, doc, docUrls, loading, onUpload }: { type: string, title: string, doc: any, docUrls: Record<string, string>, loading: boolean, onUpload: (e: any) => void }) {
   return (
     <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid var(--line)' }}>
       <div style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '13.5px', marginBottom: '12px' }}>{title}</div>
       {doc ? (
-        <a href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${doc.file_path}`} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)', textDecoration: 'underline', display: 'block', marginBottom: '12px' }}>
+        <a href={docUrls[doc.file_path] || '#'} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--brand)', textDecoration: 'underline', display: 'block', marginBottom: '12px' }}>
           📄 {doc.file_name || `${title} Document`}
         </a>
       ) : (

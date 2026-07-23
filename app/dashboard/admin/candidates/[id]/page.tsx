@@ -1,6 +1,7 @@
 import AppSidebar from '../../../../components/AppSidebar';
 import AppTopbar from '../../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
+import { getCandidateDocumentSignedUrls } from '@/app/lib/queries';
 import { notFound } from 'next/navigation';
 
 export default async function CandidateDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -29,6 +30,9 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
     .select('*')
     .eq('candidate_id', cand.id)
     .order('created_at', { ascending: false });
+
+  // "candidate-documents" is a private bucket — every link needs a signed URL.
+  const docUrls = await getCandidateDocumentSignedUrls((docs || []).map(d => d.file_path));
 
   // Fetch Visa Case to see assigned slot and lawyer docs
   const { data: visa } = await supabase
@@ -75,9 +79,9 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
             {/* LEFT PROFILE CARD */}
             <div>
               <div className="prof-card">
-                {docs?.find(d => d.type === 'photo') ? (
-                  <div className="pp" style={{ 
-                    backgroundImage: `url(${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${docs.find(d => d.type === 'photo')?.file_path})`,
+                {docs?.find(d => d.type === 'photo') && docUrls[docs.find(d => d.type === 'photo')!.file_path] ? (
+                  <div className="pp" style={{
+                    backgroundImage: `url(${docUrls[docs.find(d => d.type === 'photo')!.file_path]})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     border: 'none'
@@ -85,7 +89,7 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                 ) : (
                   <div className="pp" style={{ color: '#ffffff' }}>{initials}</div>
                 )}
-                
+
                 <div className="pi">
                   <h2>{name}</h2>
                   <div className="id">{cndId}</div>
@@ -93,9 +97,9 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                     <span className="tag" style={{ background: currentStatusProps.bg, color: currentStatusProps.color, border: 'none', lineHeight: '1.2' }}>• {currentStatusProps.label}</span>
                   </div>
                 </div>
-                {docs?.find(d => d.type === 'cv') && (
+                {docs?.find(d => d.type === 'cv') && docUrls[docs.find(d => d.type === 'cv')!.file_path] && (
                   <div className="pact">
-                    <a href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${docs.find(d => d.type === 'cv')?.file_path}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', width: '100%' }}>
+                    <a href={docUrls[docs.find(d => d.type === 'cv')!.file_path]} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', width: '100%' }}>
                       <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center' }}>View CV</button>
                     </a>
                   </div>
@@ -253,7 +257,7 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                           <div className="dmeta">{d.file_name} · {(d.size_bytes / 1024 / 1024).toFixed(1)} MB</div>
                         </div>
                         <div className="dright">
-                          <a href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${d.file_path}`} target="_blank" rel="noopener noreferrer">
+                          <a href={docUrls[d.file_path] || '#'} target="_blank" rel="noopener noreferrer">
                             <button className="ico-btn">↓</button>
                           </a>
                         </div>
@@ -283,7 +287,7 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                           <div className="dmeta">{d.file_name}</div>
                         </div>
                         <div className="dright">
-                          <a href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${d.file_path}`} target="_blank" rel="noopener noreferrer">
+                          <a href={docUrls[d.file_path] || '#'} target="_blank" rel="noopener noreferrer">
                             <button className="ico-btn">↓</button>
                           </a>
                         </div>

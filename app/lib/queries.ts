@@ -156,3 +156,23 @@ export async function getContractSignedUrls(offerIds: string[]): Promise<Record<
 
   return result;
 }
+
+// Same story for "candidate-documents" — private bucket, no client-side RLS read
+// access, so every photo/CV/document link needs a signed URL generated here.
+// Keyed by storage path (not document id) so callers can look up by file_path.
+export async function getCandidateDocumentSignedUrls(paths: (string | null | undefined)[]): Promise<Record<string, string>> {
+  const uniquePaths = Array.from(new Set(paths.filter((p): p is string => !!p)));
+  if (uniquePaths.length === 0) return {};
+
+  const { createAdminClient } = await import('@/utils/supabase/admin');
+  const adminClient = createAdminClient();
+
+  const result: Record<string, string> = {};
+
+  await Promise.all(uniquePaths.map(async (path) => {
+    const { data } = await adminClient.storage.from('candidate-documents').createSignedUrl(path, 3600);
+    if (data?.signedUrl) result[path] = data.signedUrl;
+  }));
+
+  return result;
+}

@@ -1,6 +1,7 @@
 import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
+import { getCandidateDocumentSignedUrls } from '@/app/lib/queries';
 import Link from 'next/link';
 import VisaApprovalUploader from './VisaApprovalUploader';
 
@@ -50,6 +51,9 @@ export default async function LawyerSearchPage({
     }
   }
 
+  // "candidate-documents" is a private bucket — the photo preview needs a signed URL.
+  const docUrls = candidateData ? await getCandidateDocumentSignedUrls([candidateData.photo_url]) : {};
+
   return (
     <>
       <AppSidebar role="lawyer" />
@@ -96,8 +100,8 @@ export default async function LawyerSearchPage({
             <div className="card" style={{ padding: '32px', background: 'var(--card)', borderRadius: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '24px', marginBottom: '32px' }}>
                 <div style={{ width: '80px', height: '80px', borderRadius: '16px', background: 'var(--brand-soft)', color: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 600, overflow: 'hidden' }}>
-                  {candidateData.photo_url ? (
-                    <img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${candidateData.photo_url}`} alt="Candidate" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {candidateData.photo_url && docUrls[candidateData.photo_url] ? (
+                    <img src={docUrls[candidateData.photo_url]} alt="Candidate" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     `${candidateData.first_name[0]}${candidateData.last_name[0]}`
                   )}

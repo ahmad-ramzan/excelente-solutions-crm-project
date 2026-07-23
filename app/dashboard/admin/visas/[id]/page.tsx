@@ -1,6 +1,7 @@
 import AppSidebar from '../../../../components/AppSidebar';
 import AppTopbar from '../../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
+import { getCandidateDocumentSignedUrls } from '@/app/lib/queries';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import ReassignLawyerForm from './ReassignLawyerForm';
@@ -45,6 +46,9 @@ export default async function VisaDetailPage({ params }: { params: Promise<{ id:
       .eq('country_id', vc.country_id),
     supabase.from('country_document_requirements').select('type').eq('country_id', vc.country_id),
   ]);
+
+  // "candidate-documents" is a private bucket — every link needs a signed URL.
+  const docUrls = await getCandidateDocumentSignedUrls((docs || []).map((d: any) => d.file_path));
 
   const { data: travel } = vc.status === 'approved'
     ? await supabase.from('visa_case_travel').select('*').eq('visa_case_id', vc.id).maybeSingle()
@@ -147,7 +151,7 @@ export default async function VisaDetailPage({ params }: { params: Promise<{ id:
                           <div className="dmeta">{d.file_name}</div>
                         </div>
                         <div className="dright">
-                          <a href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${d.file_path}`} target="_blank" rel="noopener noreferrer">
+                          <a href={docUrls[d.file_path] || '#'} target="_blank" rel="noopener noreferrer">
                             <button className="ico-btn">↓</button>
                           </a>
                         </div>
@@ -177,7 +181,7 @@ export default async function VisaDetailPage({ params }: { params: Promise<{ id:
                           <div className="dmeta">{d.file_name}</div>
                         </div>
                         <div className="dright">
-                          <a href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/${d.file_path}`} target="_blank" rel="noopener noreferrer">
+                          <a href={docUrls[d.file_path] || '#'} target="_blank" rel="noopener noreferrer">
                             <button className="ico-btn">↓</button>
                           </a>
                         </div>
