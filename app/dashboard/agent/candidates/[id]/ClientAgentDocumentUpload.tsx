@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { uploadVisaDocument } from '@/app/actions/visa-actions';
+import FileUploadField from '@/app/components/FileUploadField';
 
 export default function ClientAgentDocumentUpload({
   candidateId,
@@ -14,6 +15,8 @@ export default function ClientAgentDocumentUpload({
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasFile, setHasFile] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
 
   const docTypes = [
     { value: 'passport_scan', label: 'Passport Scan' },
@@ -27,6 +30,12 @@ export default function ClientAgentDocumentUpload({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    if (!hasFile) {
+      setError('Please choose a file to upload.');
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -39,7 +48,8 @@ export default function ClientAgentDocumentUpload({
       if (result.error) {
         setError(result.error);
       } else {
-        (e.target as HTMLFormElement).reset();
+        setResetKey(k => k + 1);
+        setHasFile(false);
         router.refresh();
       }
     } catch (err: any) {
@@ -50,7 +60,7 @@ export default function ClientAgentDocumentUpload({
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
       {error && (
         <div style={{ width: '100%', padding: '10px', background: '#fee2e2', color: '#b91c1c', borderRadius: '6px', fontSize: '13px' }}>
           {error}
@@ -70,13 +80,12 @@ export default function ClientAgentDocumentUpload({
         </select>
       </div>
 
-      <div>
-        <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--slate)', marginBottom: '6px' }}>File</label>
-        <input
-          type="file"
+      <div style={{ minWidth: '220px' }}>
+        <FileUploadField
+          key={resetKey}
           name="file"
-          required
-          style={{ padding: '7px 8px', borderRadius: '8px', border: '1px solid var(--line-2)', fontSize: '12.5px', background: 'var(--paper)' }}
+          label="File"
+          onFilesChange={(files) => setHasFile(files.length > 0)}
         />
       </div>
 

@@ -83,7 +83,29 @@ export default async function EmployerDashboard() {
     };
   });
 
-  const activeOffers = activeOffersData || [];
+  // Real fill counts for the "Slots" progress bar — was hardcoded to 0% before.
+  const activeOfferIds = (activeOffersData || []).map(o => o.id);
+  const filledMap: Record<string, number> = {};
+  if (activeOfferIds.length > 0) {
+    const { data: filledSlots } = await supabase
+      .from('job_offer_slots')
+      .select('job_offer_id')
+      .in('job_offer_id', activeOfferIds)
+      .in('status', ['reserved', 'filled']);
+
+    filledSlots?.forEach(s => {
+      filledMap[s.job_offer_id] = (filledMap[s.job_offer_id] || 0) + 1;
+    });
+  }
+
+  const activeOffers = (activeOffersData || []).map(o => {
+    const filled = filledMap[o.id] || 0;
+    return {
+      ...o,
+      filled,
+      progress: o.staff_needed > 0 ? Math.min(100, Math.round((filled / o.staff_needed) * 100)) : 0,
+    };
+  });
 
   return (
     <>
@@ -248,10 +270,10 @@ export default async function EmployerDashboard() {
                         <span style={{ color: 'var(--slate)', fontSize: '13px', fontWeight: 600 }}>Slots</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, margin: '0 16px' }}>
                           <div style={{ width: '100%', height: '6px', background: 'var(--line-2)', borderRadius: '999px', overflow: 'hidden' }}>
-                            <div style={{ width: '0%', height: '100%', background: 'var(--brand)', borderRadius: '999px' }}></div>
+                            <div style={{ width: `${offer.progress}%`, height: '100%', background: offer.progress >= 100 ? 'var(--green)' : 'var(--brand)', borderRadius: '999px' }}></div>
                           </div>
                         </div>
-                        <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--ink)' }}>{offer.staff_needed}</span>
+                        <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--ink)' }}>{offer.filled}/{offer.staff_needed}</span>
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
