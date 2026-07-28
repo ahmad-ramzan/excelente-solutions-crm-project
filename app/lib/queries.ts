@@ -197,16 +197,36 @@ export async function getCandidatePhotoMap(supabase: SupabaseClient, candidateId
 
   const { data: photos } = await supabase
     .from('candidate_documents')
-    .select('candidate_id, file_path')
+    .select('candidate_id, file_path, created_at')
     .eq('type', 'photo')
-    .in('candidate_id', candidateIds);
+    .in('candidate_id', candidateIds)
+    .order('created_at', { ascending: false });
 
-  if (!photos || photos.length === 0) return {};
+  // Candidates created before candidate_documents rows were written for photos
+  // only have candidates.photo_url set — fall back to that so older records
+  // still show a real photo instead of initials.
+  const documentedIds = new Set((photos || []).map(p => p.candidate_id));
+  const missingIds = candidateIds.filter(id => !documentedIds.has(id));
 
-  const urls = await getCandidateDocumentSignedUrls(photos.map(p => p.file_path));
+  let legacyPhotos: { candidate_id: string; file_path: string }[] = [];
+  if (missingIds.length > 0) {
+    const { data: legacy } = await supabase
+      .from('candidates')
+      .select('id, photo_url')
+      .in('id', missingIds)
+      .not('photo_url', 'is', null);
+    legacyPhotos = (legacy || []).map(c => ({ candidate_id: c.id, file_path: c.photo_url as string }));
+  }
 
+  const allPhotos = [...(photos || []), ...legacyPhotos];
+  if (allPhotos.length === 0) return {};
+
+  const urls = await getCandidateDocumentSignedUrls(allPhotos.map(p => p.file_path));
+
+  // photos is ordered newest-first, so the first match per candidate wins.
   const result: Record<string, string> = {};
-  photos.forEach(p => {
+  allPhotos.forEach(p => {
+    if (result[p.candidate_id]) return;
     const url = urls[p.file_path];
     if (url) result[p.candidate_id] = url;
   });
