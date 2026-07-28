@@ -1,6 +1,7 @@
 import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
+import { getCandidatePhotoMap } from '@/app/lib/queries';
 import Link from 'next/link';
 
 export default async function EmployerCandidatesPage({ searchParams }: { searchParams: Promise<{ position?: string, q?: string }> }) {
@@ -108,11 +109,14 @@ export default async function EmployerCandidatesPage({ searchParams }: { searchP
   });
   const positionsTabs = Array.from(positionSet).sort();
 
+  const photoMap = await getCandidatePhotoMap(supabase, filteredCandidates.map((c: any) => c.id));
+
   const candidates = filteredCandidates.map((c: any) => {
     return {
       id: c.id,
       public_code: c.public_code,
       initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
+      photoUrl: photoMap[c.id],
       name: `${c.first_name} ${c.last_name}`,
       nationality: c.nationality,
       positions: c.positions || [],
@@ -191,16 +195,23 @@ export default async function EmployerCandidatesPage({ searchParams }: { searchP
 
               return (
                 <div key={c.id} style={{ background: '#fff', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column' }}>
-                  {/* Top Header - Gradient */}
-                  <div style={{ position: 'relative', height: '140px', background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {/* Top Header — real photo when uploaded, gradient + initials otherwise */}
+                  <div style={{
+                    position: 'relative', height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    ...(c.photoUrl
+                      ? { backgroundImage: `url(${c.photoUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                      : { background: 'linear-gradient(135deg, #7b61ff, #36b9ff)' }),
+                  }}>
                     <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
                       <span className="tag" style={{ background: c.statusBg, color: c.statusColor, border: 'none', padding: '4px 8px', fontSize: '11px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                         • {c.status}
                       </span>
                     </div>
-                    <div style={{ color: '#fff', fontSize: '48px', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em', opacity: 0.9 }}>
-                      {c.initials}
-                    </div>
+                    {!c.photoUrl && (
+                      <div style={{ color: '#fff', fontSize: '48px', fontFamily: 'var(--font-heading)', letterSpacing: '-0.02em', opacity: 0.9 }}>
+                        {c.initials}
+                      </div>
+                    )}
                   </div>
 
                   {/* Bottom Content */}

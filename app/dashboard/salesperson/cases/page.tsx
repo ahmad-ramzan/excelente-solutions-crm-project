@@ -2,6 +2,7 @@ import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
+import { getCandidatePhotoMap } from '@/app/lib/queries';
 import Link from 'next/link';
 import TravelCoordinationCard from '@/app/components/TravelCoordinationCard';
 
@@ -37,7 +38,7 @@ export default async function SalespersonCasesPage({ searchParams }: { searchPar
     const { data } = await adminClient
       .from('visa_cases')
       .select(`
-        id, public_code, status,
+        id, public_code, status, candidate_id,
         candidates ( first_name, last_name ),
         employers ( name ),
         job_offers ( countries ( name, code ) )
@@ -48,10 +49,14 @@ export default async function SalespersonCasesPage({ searchParams }: { searchPar
     casesData = data || [];
   }
 
+  const photoMap = await getCandidatePhotoMap(adminClient, casesData.map(c => c.candidate_id));
+
   const cases = casesData.map((c: any) => ({
     id: c.id,
     public_code: c.public_code,
     candidateName: `${c.candidates?.first_name} ${c.candidates?.last_name}`,
+    candidateInitials: `${c.candidates?.first_name?.[0] || ''}${c.candidates?.last_name?.[0] || ''}`.toUpperCase(),
+    candidatePhotoUrl: photoMap[c.candidate_id],
     employer: c.employers?.name || 'Unknown',
     country: c.job_offers?.countries?.name || 'Unknown',
     countryCode: c.job_offers?.countries?.code || 'XX',
@@ -98,8 +103,17 @@ export default async function SalespersonCasesPage({ searchParams }: { searchPar
                         <td style={{ padding: '16px 22px', borderTopLeftRadius: '13px', borderBottomLeftRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)', color: 'var(--slate)', fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
                           {c.public_code}
                         </td>
-                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', fontWeight: 600, color: 'var(--ink)' }}>
-                          {c.candidateName}
+                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                          <div className="cell-name">
+                            {c.candidatePhotoUrl ? (
+                              <div className="av-sm" style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundImage: `url(${c.candidatePhotoUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }} />
+                            ) : (
+                              <div className="av-sm" style={{ width: '32px', height: '32px', borderRadius: '8px', fontSize: '12px', background: 'var(--brand-soft)', color: 'var(--brand)' }}>
+                                {c.candidateInitials}
+                              </div>
+                            )}
+                            <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{c.candidateName}</span>
+                          </div>
                         </td>
                         <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--slate)' }}>
                           {c.employer}

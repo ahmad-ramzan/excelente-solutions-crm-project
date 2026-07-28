@@ -188,3 +188,27 @@ export async function getCandidateDocumentSignedUrls(paths: (string | null | und
 
   return result;
 }
+
+// List views only need "is there a photo, and what's its URL" per candidate —
+// this bundles the candidate_documents lookup and signed-URL generation so
+// every list page doesn't have to repeat both steps.
+export async function getCandidatePhotoMap(supabase: SupabaseClient, candidateIds: string[]): Promise<Record<string, string>> {
+  if (candidateIds.length === 0) return {};
+
+  const { data: photos } = await supabase
+    .from('candidate_documents')
+    .select('candidate_id, file_path')
+    .eq('type', 'photo')
+    .in('candidate_id', candidateIds);
+
+  if (!photos || photos.length === 0) return {};
+
+  const urls = await getCandidateDocumentSignedUrls(photos.map(p => p.file_path));
+
+  const result: Record<string, string> = {};
+  photos.forEach(p => {
+    const url = urls[p.file_path];
+    if (url) result[p.candidate_id] = url;
+  });
+  return result;
+}

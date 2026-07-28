@@ -104,6 +104,10 @@ export default function ClientForm({ countries, positions, vacancyPositions }: {
             <option value="Female">Female</option>
           </select>
         </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Nationality</label>
+          <input name="nationality" required type="text" placeholder="e.g. Pakistani" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }} />
+        </div>
       </div>
 
       <div style={{ height: '1px', background: 'var(--line)', margin: '32px 0' }}></div>

@@ -1,6 +1,7 @@
 import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
+import { getCandidatePhotoMap } from '@/app/lib/queries';
 import Link from 'next/link';
 
 export default async function LawyerCasesPage() {
@@ -24,9 +25,11 @@ export default async function LawyerCasesPage() {
   // Fetch Cases for this Lawyer
   const { data: dbCases } = await supabase
     .from('visa_cases')
-    .select('id, public_code, status, remarks, candidates(public_code, first_name, last_name), employers(name), agent_id')
+    .select('id, public_code, status, remarks, candidate_id, candidates(public_code, first_name, last_name), employers(name), agent_id')
     .eq('lawyer_id', user.id)
     .order('opened_at', { ascending: false });
+
+  const photoMap = await getCandidatePhotoMap(supabase, (dbCases || []).map(c => c.candidate_id));
 
   // Get agent profiles
   const agentIds = Array.from(new Set((dbCases || []).map(c => c.agent_id).filter(Boolean)));
@@ -48,6 +51,7 @@ export default async function LawyerCasesPage() {
     public_code: c.public_code,
     candidate_code: c.candidates?.public_code,
     initials: `${c.candidates?.first_name?.[0] || ''}${c.candidates?.last_name?.[0] || ''}`.toUpperCase(),
+    photoUrl: photoMap[c.candidate_id],
     name: `${c.candidates?.first_name} ${c.candidates?.last_name}`,
     agent: c.agent_id ? agentsMap[c.agent_id] || 'Agent' : 'None',
     employer: c.employers?.name || 'Unknown',
@@ -92,9 +96,13 @@ export default async function LawyerCasesPage() {
                       </td>
                       <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
                         <div className="cell-name">
-                          <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)', width: '38px', height: '38px', borderRadius: '10px', fontSize: '13px' }}>
-                            {c.initials}
-                          </div>
+                          {c.photoUrl ? (
+                            <div className="av-sm" style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundImage: `url(${c.photoUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }} />
+                          ) : (
+                            <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)', width: '38px', height: '38px', borderRadius: '10px', fontSize: '13px' }}>
+                              {c.initials}
+                            </div>
+                          )}
                           <div>
                             <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{c.name}</div>
                             <div style={{ color: 'var(--muted)', fontSize: '11.5px', fontFamily: 'var(--font-mono)' }}>{c.candidate_code}</div>

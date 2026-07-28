@@ -2,7 +2,7 @@ import AppSidebar from '../../components/AppSidebar';
 import AppTopbar from '../../components/AppTopbar';
 import { createClient, getAuthUser } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
-import { getDashboardStats } from '@/app/lib/queries';
+import { getDashboardStats, getCandidatePhotoMap } from '@/app/lib/queries';
 import Link from 'next/link';
 
 export default async function AgentDashboard() {
@@ -53,6 +53,8 @@ export default async function AgentDashboard() {
     });
   }
 
+  const photoMap = await getCandidatePhotoMap(adminClient, candidateIds);
+
   const candidates = (dbCandidates || []).map((c: any) => {
     let bg = 'var(--line-2)';
     let color = 'var(--slate)';
@@ -68,6 +70,7 @@ export default async function AgentDashboard() {
       id: c.id,
       public_code: c.public_code,
       initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
+      photoUrl: photoMap[c.id],
       name: `${c.first_name} ${c.last_name}`,
       nationality: c.nationality,
       country: c.open_to_all_countries ? 'Any Country' : (assignedCountries.join(', ') || 'Unassigned'),
@@ -203,9 +206,13 @@ export default async function AgentDashboard() {
                     <tr key={c.id} style={{ borderBottom: i === candidates.length - 1 ? 'none' : '1px solid var(--line)' }}>
                       <td style={{ padding: '16px 0' }}>
                         <div className="cell-name">
-                          <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)', width: '38px', height: '38px', borderRadius: '10px', fontSize: '13px' }}>
-                            {c.initials}
-                          </div>
+                          {c.photoUrl ? (
+                            <div className="av-sm" style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundImage: `url(${c.photoUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }} />
+                          ) : (
+                            <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)', width: '38px', height: '38px', borderRadius: '10px', fontSize: '13px' }}>
+                              {c.initials}
+                            </div>
+                          )}
                           <div>
                             <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{c.name}</div>
                             <div style={{ color: 'var(--muted)', fontSize: '11.5px', fontFamily: 'var(--font-mono)' }}>

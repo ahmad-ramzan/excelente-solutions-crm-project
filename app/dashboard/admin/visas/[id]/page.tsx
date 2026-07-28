@@ -64,6 +64,8 @@ export default async function VisaDetailPage({ params }: { params: Promise<{ id:
 
   const name = candidate ? `${candidate.first_name} ${candidate.last_name}` : 'Unknown candidate';
   const initials = candidate ? `${candidate.first_name?.[0] || ''}${candidate.last_name?.[0] || ''}`.toUpperCase() : '--';
+  const photoDoc = (docs || []).find((d: any) => d.type === 'photo');
+  const photoUrl = photoDoc ? docUrls[photoDoc.file_path] : undefined;
 
   const getStatusProps = (s: string) => {
     switch (s) {
@@ -122,9 +124,13 @@ export default async function VisaDetailPage({ params }: { params: Promise<{ id:
             <div className="split-col">
               {/* Profile Card */}
               <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px 24px' }}>
-                <div className="av-sm" style={{ width: '48px', height: '48px', fontSize: '16px', background: 'var(--brand-soft)', color: 'var(--brand)', borderRadius: '12px' }}>
-                  {initials}
-                </div>
+                {photoUrl ? (
+                  <div className="av-sm" style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundImage: `url(${photoUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }} />
+                ) : (
+                  <div className="av-sm" style={{ width: '48px', height: '48px', fontSize: '16px', background: 'var(--brand-soft)', color: 'var(--brand)', borderRadius: '12px' }}>
+                    {initials}
+                  </div>
+                )}
                 <div>
                   <h3 style={{ fontSize: '18px', marginBottom: '2px' }}>{name}</h3>
                   <div style={{ fontSize: '12.5px', color: 'var(--slate)', marginBottom: '8px' }}>

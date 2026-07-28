@@ -1,6 +1,7 @@
 import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
+import { getCandidatePhotoMap } from '@/app/lib/queries';
 import Link from 'next/link';
 
 export default async function EmployerSelectionsPage() {
@@ -37,6 +38,11 @@ export default async function EmployerSelectionsPage() {
     .order('selected_at', { ascending: false });
 
   const selections = selectionsData || [];
+
+  const photoMap = await getCandidatePhotoMap(supabase, selections.map((s: any) => {
+    const cand = Array.isArray(s.candidates) ? s.candidates[0] : s.candidates;
+    return cand?.id;
+  }).filter(Boolean));
 
   return (
     <>
@@ -109,9 +115,13 @@ export default async function EmployerSelectionsPage() {
                       <tr key={s.id} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: '13px' }}>
                         <td style={{ padding: '16px 22px', borderTopLeftRadius: '13px', borderBottomLeftRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)' }}>
                           <div className="cell-name">
-                            <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)', width: '38px', height: '38px', borderRadius: '10px', fontSize: '13px' }}>
-                              {initials}
-                            </div>
+                            {photoMap[cand.id] ? (
+                              <div className="av-sm" style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundImage: `url(${photoMap[cand.id]})`, backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }} />
+                            ) : (
+                              <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)', width: '38px', height: '38px', borderRadius: '10px', fontSize: '13px' }}>
+                                {initials}
+                              </div>
+                            )}
                             <div>
                               <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{fullName}</div>
                               <div style={{ color: 'var(--muted)', fontSize: '11.5px', fontFamily: 'var(--font-mono)' }}>

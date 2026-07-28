@@ -2,6 +2,7 @@ import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import StatusBadge from '../../../components/StatusBadge';
 import { createClient } from '@/utils/supabase/server';
+import { getCandidatePhotoMap } from '@/app/lib/queries';
 import Link from 'next/link';
 
 export default async function CandidatesPage({ searchParams }: { searchParams: Promise<{ status?: string, country?: string, q?: string }> }) {
@@ -62,6 +63,8 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
     });
   }
 
+  const photoMap = await getCandidatePhotoMap(supabase, dbCandidates.map((c: any) => c.id));
+
   const candidates = dbCandidates.map((c: any) => {
     const assignedCountries = candidateCountryMap[c.id]?.names || [];
     const assignedCountryCodes = candidateCountryMap[c.id]?.codes || [];
@@ -69,6 +72,7 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
       id: c.id,
       public_code: c.public_code,
       initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
+      photoUrl: photoMap[c.id],
       name: `${c.first_name} ${c.last_name}`,
       nationality: c.nationality,
       country: c.open_to_all_countries ? 'Any Country' : (assignedCountries.join(', ') || 'Unassigned'),
@@ -142,9 +146,13 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
                     <tr key={c.id} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: '13px' }}>
                       <td style={{ padding: '16px 22px', borderTopLeftRadius: '13px', borderBottomLeftRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)' }}>
                         <div className="cell-name">
-                          <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}>
-                            {c.initials}
-                          </div>
+                          {c.photoUrl ? (
+                            <div className="av-sm" style={{ backgroundImage: `url(${c.photoUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }} />
+                          ) : (
+                            <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}>
+                              {c.initials}
+                            </div>
+                          )}
                           <div>
                             <div className="nm" style={{ marginBottom: '2px' }}>{c.name}</div>
                             <div className="meta" style={{ fontFamily: 'var(--font-mono)', fontSize: '10.5px', color: 'var(--muted)' }}>{c.public_code}</div>

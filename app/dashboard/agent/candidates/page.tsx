@@ -2,6 +2,7 @@ import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
+import { getCandidatePhotoMap } from '@/app/lib/queries';
 import Link from 'next/link';
 import CountrySelect from './CountrySelect';
 
@@ -64,6 +65,8 @@ export default async function AgentCandidatesPage({ searchParams }: { searchPara
     });
   }
 
+  const photoMap = await getCandidatePhotoMap(adminClient, candidateIds);
+
   const visibleCandidates = (dbCandidates || []).filter((c: any) => {
     if (!params.country || params.country === 'all') return true;
     if (c.open_to_all_countries) return params.country === 'Any Country';
@@ -86,6 +89,7 @@ export default async function AgentCandidatesPage({ searchParams }: { searchPara
       id: c.id,
       public_code: c.public_code,
       initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
+      photoUrl: photoMap[c.id],
       name: `${c.first_name} ${c.last_name}`,
       country: c.open_to_all_countries ? 'Any Country' : (assignedCountries.join(', ') || 'Unassigned'),
       countryCode: c.open_to_all_countries ? 'ANY' : (assignedCountryCodes.length === 1 ? assignedCountryCodes[0] : (assignedCountries.length ? `${assignedCountries.length} selected` : 'N/A')),
@@ -169,9 +173,13 @@ export default async function AgentCandidatesPage({ searchParams }: { searchPara
                     <tr key={c.id} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: '13px' }}>
                       <td style={{ padding: '16px 22px', borderTopLeftRadius: '13px', borderBottomLeftRadius: '13px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)' }}>
                         <div className="cell-name">
-                          <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)', width: '38px', height: '38px', borderRadius: '10px', fontSize: '13px' }}>
-                            {c.initials}
-                          </div>
+                          {c.photoUrl ? (
+                            <div className="av-sm" style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundImage: `url(${c.photoUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }} />
+                          ) : (
+                            <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)', width: '38px', height: '38px', borderRadius: '10px', fontSize: '13px' }}>
+                              {c.initials}
+                            </div>
+                          )}
                           <div>
                             <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{c.name}</div>
                             <div style={{ color: 'var(--muted)', fontSize: '11.5px', fontFamily: 'var(--font-mono)' }}>

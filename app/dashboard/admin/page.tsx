@@ -2,7 +2,7 @@ import AppSidebar from '../../components/AppSidebar';
 import AppTopbar from '../../components/AppTopbar';
 import StatusBadge from '../../components/StatusBadge';
 import { createClient } from '@/utils/supabase/server';
-import { getDashboardStats } from '@/app/lib/queries';
+import { getDashboardStats, getCandidatePhotoMap } from '@/app/lib/queries';
 import ExportButton from './ExportButton';
 
 export default async function AdminDashboard() {
@@ -32,6 +32,8 @@ export default async function AdminDashboard() {
     candidateCountryMap[row.candidate_id].codes.push(row.countries.code);
   });
 
+  const photoMap = await getCandidatePhotoMap(supabase, (dbCandidates || []).map((c: any) => c.id));
+
   const candidates = (dbCandidates || []).map((c: any) => {
     const assignedCountries = candidateCountryMap[c.id]?.names || [];
     const assignedCountryCodes = candidateCountryMap[c.id]?.codes || [];
@@ -39,6 +41,7 @@ export default async function AdminDashboard() {
       id: c.id,
       public_code: c.public_code,
       initials: `${c.first_name?.[0] || ''}${c.last_name?.[0] || ''}`.toUpperCase(),
+      photoUrl: photoMap[c.id],
       name: `${c.first_name} ${c.last_name}`,
       nationality: c.nationality,
       country: c.open_to_all_countries ? 'Any Country' : (assignedCountries.join(', ') || 'Unassigned'),
@@ -176,7 +179,11 @@ export default async function AdminDashboard() {
                       <tr key={c.id}>
                         <td>
                           <div className="cell-name">
-                            <div className="av-sm">{c.initials}</div>
+                            {c.photoUrl ? (
+                              <div className="av-sm" style={{ backgroundImage: `url(${c.photoUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }} />
+                            ) : (
+                              <div className="av-sm">{c.initials}</div>
+                            )}
                             <div>
                               <div className="nm">{c.name}</div>
                               <div className="meta">{c.public_code}</div>

@@ -11,6 +11,7 @@ export async function createCandidate(formData: FormData) {
   const firstName = formData.get('firstName') as string;
   const lastName = formData.get('lastName') as string;
   const gender = formData.get('gender') as string;
+  const nationality = formData.get('nationality') as string;
   const dateOfBirth = formData.get('dateOfBirth') as string;
   const phone = formData.get('phone') as string;
   const email = formData.get('email') as string;
@@ -43,6 +44,7 @@ export async function createCandidate(formData: FormData) {
       first_name: firstName,
       last_name: lastName,
       gender,
+      nationality,
       city,
       open_to_all_countries: isAnyCountry,
       available_from: availableFrom || null,
@@ -251,6 +253,7 @@ export async function updateCandidate(formData: FormData, candidateId: string) {
   const firstName = formData.get('firstName') as string;
   const lastName = formData.get('lastName') as string;
   const gender = formData.get('gender') as string;
+  const nationality = formData.get('nationality') as string;
   const dateOfBirth = formData.get('dateOfBirth') as string;
   const phone = formData.get('phone') as string;
   const email = formData.get('email') as string;
@@ -274,6 +277,7 @@ export async function updateCandidate(formData: FormData, candidateId: string) {
     first_name: firstName,
     last_name: lastName,
     gender,
+    nationality,
     city,
     open_to_all_countries: isAnyCountry,
   };

@@ -1,6 +1,7 @@
 import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
+import { getCandidatePhotoMap } from '@/app/lib/queries';
 import Link from 'next/link';
 
 export default async function VisaProcessesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
@@ -39,6 +40,8 @@ export default async function VisaProcessesPage({ searchParams }: { searchParams
     });
   }
 
+  const photoMap = await getCandidatePhotoMap(supabase, (dbVisas || []).map((v: any) => v.candidates?.id).filter(Boolean));
+
   const visaCases = (dbVisas || []).map((vc: any) => {
     const c = vc.candidates;
     const emp = vc.job_offer_selections?.job_offers?.employers?.name || 'Unknown';
@@ -66,6 +69,7 @@ export default async function VisaProcessesPage({ searchParams }: { searchParams
       id: vc.id,
       public_code: vc.public_code,
       candidateInitials: `${c?.first_name?.[0] || ''}${c?.last_name?.[0] || ''}`.toUpperCase(),
+      candidatePhotoUrl: c?.id ? photoMap[c.id] : undefined,
       candidateName: `${c?.first_name} ${c?.last_name}`,
       agent,
       employer: emp,
@@ -122,9 +126,13 @@ export default async function VisaProcessesPage({ searchParams }: { searchParams
                       </td>
                       <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
                         <div className="cell-name">
-                          <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}>
-                            {vc.candidateInitials}
-                          </div>
+                          {vc.candidatePhotoUrl ? (
+                            <div className="av-sm" style={{ backgroundImage: `url(${vc.candidatePhotoUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }} />
+                          ) : (
+                            <div className="av-sm" style={{ background: 'var(--brand-soft)', color: 'var(--brand)' }}>
+                              {vc.candidateInitials}
+                            </div>
+                          )}
                           <div style={{ fontWeight: 600, color: 'var(--ink)' }}>
                             {vc.candidateName.split(' ')[0]}<br />{vc.candidateName.split(' ').slice(1).join(' ')}
                           </div>
