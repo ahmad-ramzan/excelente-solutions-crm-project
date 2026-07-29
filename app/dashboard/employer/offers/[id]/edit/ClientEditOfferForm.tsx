@@ -22,6 +22,7 @@ interface JobOffer {
   salary_amount: number | null;
   start_date: string | null;
   end_date: string | null;
+  city_of_employment: string | null;
   status: string;
 }
 
@@ -44,6 +45,7 @@ export default function ClientEditOfferForm({
   const [salaryAmount, setSalaryAmount] = useState(offer.salary_amount?.toString() || '');
   const [startDate, setStartDate] = useState(offer.start_date || '');
   const [endDate, setEndDate] = useState(offer.end_date || '');
+  const [cityOfEmployment, setCityOfEmployment] = useState(offer.city_of_employment || '');
   const [status, setStatus] = useState(offer.status || 'open');
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -98,6 +100,11 @@ export default function ClientEditOfferForm({
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label style={labelStyle}>City of Employment</label>
+          <input name="cityOfEmployment" type="text" placeholder="e.g. Athens" value={cityOfEmployment} onChange={(e) => setCityOfEmployment(e.target.value)} style={inputStyle} />
         </div>
 
         <div>

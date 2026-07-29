@@ -947,6 +947,7 @@ select
   jo.position_id,
   p.name as position_name,
   jo.staff_needed,
+  jo.city_of_employment,
   count(s.id) filter (where s.status in ('reserved', 'filled')) as selected_count,
   jo.status,
   jo.contract_signed,

@@ -49,6 +49,7 @@ export default async function LawyerVacanciesPage() {
                 <tr>
                   <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)', textAlign: 'left' }}>JOB / POSITION</th>
                   <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)', textAlign: 'left' }}>EMPLOYER</th>
+                  <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)', textAlign: 'left' }}>CITY</th>
                   <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)', textAlign: 'center' }}>NEEDED</th>
                   <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)', textAlign: 'center' }}>SELECTED</th>
                   <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)', textAlign: 'center' }}>CONTRACT</th>
@@ -67,6 +68,9 @@ export default async function LawyerVacanciesPage() {
                     <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
                       <div style={{ fontWeight: 500, color: 'var(--ink)', fontSize: '13px' }}>{o.employer_name}</div>
                       <div style={{ color: 'var(--muted)', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>{o.public_code}</div>
+                    </td>
+                    <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--ink)', fontSize: '13px', fontWeight: 500 }}>
+                      {o.city_of_employment || <span style={{ color: 'var(--muted)', fontSize: '12px' }}>—</span>}
                     </td>
                     <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', textAlign: 'center', color: 'var(--slate)', fontWeight: 500 }}>
                       {o.staff_needed}
@@ -87,7 +91,7 @@ export default async function LawyerVacanciesPage() {
                 ))}
                 {offers.length === 0 && (
                   <tr>
-                    <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--slate)' }}>
+                    <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: 'var(--slate)' }}>
                       No open vacancies in your assigned countries right now.
                     </td>
                   </tr>

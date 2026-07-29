@@ -17,6 +17,7 @@ export default async function JobOffersPage({ searchParams }: { searchParams: Pr
       staff_needed,
       start_date,
       end_date,
+      city_of_employment,
       status,
       employers (name),
       countries (name, code),
@@ -82,6 +83,7 @@ export default async function JobOffersPage({ searchParams }: { searchParams: Pr
                     <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)' }}>ORDER</th>
                     <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)' }}>EMPLOYER</th>
                     <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)' }}>COUNTRY</th>
+                    <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)' }}>CITY</th>
                     <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)' }}>POSITION</th>
                     <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)' }}>SLOTS FILLED</th>
                     <th style={{ padding: '0 22px 12px', fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.1em', borderBottom: '1px solid var(--line-2)' }}>DATES</th>
@@ -112,6 +114,9 @@ export default async function JobOffersPage({ searchParams }: { searchParams: Pr
                         </td>
                         <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
                           <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{countryName}</span> <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{countryCode}</span>
+                        </td>
+                        <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--ink)', fontSize: '13px', fontWeight: 500 }}>
+                          {(o as any).city_of_employment || <span style={{ color: 'var(--muted)', fontSize: '12px' }}>—</span>}
                         </td>
                         <td style={{ padding: '16px 22px', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', color: 'var(--slate)' }}>
                           {positionName}
@@ -150,7 +155,7 @@ export default async function JobOffersPage({ searchParams }: { searchParams: Pr
                   })}
                   {offers.length === 0 && (
                     <tr>
-                      <td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
+                      <td colSpan={10} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
                         {q ? `No job offers match "${q}".` : 'No job offers found.'}
                       </td>
                     </tr>

@@ -170,6 +170,10 @@ export default async function EmployerOfferDetailsPage({ params }: { params: Pro
                       <div className="v">{countryName} <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', marginLeft: '4px', border: 'none' }}>{cCode.substring(0,3).toUpperCase()}</span></div>
                     </div>
                     <div className="r">
+                      <div className="k">City of Employment</div>
+                      <div className="v">{offer.city_of_employment || <span style={{ color: 'var(--muted)' }}>—</span>}</div>
+                    </div>
+                    <div className="r">
                       <div className="k">Position</div>
                       <div className="v">{role}</div>
                     </div>

@@ -208,6 +208,10 @@ export async function createMultipleJobOffers(formData: FormData) {
       salary_amount: offer.salaryAmount ? parseFloat(offer.salaryAmount) : null,
       start_date: offer.startDate || null,
       end_date: offer.endDate || null,
+      city_of_employment: offer.cityOfEmployment || null,
+      flight_ticket_provided: offer.flightTicket === 'true',
+      pickup_at_airport: offer.pickup === 'true',
+      accommodation_provided: offer.accommodation === 'true',
       created_by: user.id,
       assigned_salesperson_id: defaultSalespersonId,
       status: 'open',
@@ -365,6 +369,7 @@ export async function updateJobOffer(offerId: string, formData: FormData) {
     const salaryAmount = formData.get('salaryAmount') as string;
     const startDate = (formData.get('startDate') as string) || null;
     const endDate = (formData.get('endDate') as string) || null;
+    const cityOfEmployment = (formData.get('cityOfEmployment') as string) || null;
     const status = formData.get('status') as string || 'open';
 
     if (!positionId || !countryId || !staffNeededStr) {
@@ -385,6 +390,7 @@ export async function updateJobOffer(offerId: string, formData: FormData) {
         salary_amount: salaryAmount ? parseFloat(salaryAmount) : null,
         start_date: startDate,
         end_date: endDate,
+        city_of_employment: cityOfEmployment,
         status: status,
       })
       .eq('id', offerId);

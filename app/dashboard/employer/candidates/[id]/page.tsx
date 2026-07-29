@@ -1,7 +1,7 @@
 import AppSidebar from '../../../../components/AppSidebar';
 import AppTopbar from '../../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
-import { getCandidateDocumentSignedUrls } from '@/app/lib/queries';
+import { getCandidateDocumentSignedUrls, getCandidatePhotoMap } from '@/app/lib/queries';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
@@ -87,9 +87,11 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
   // "candidate-documents" is a private bucket — every link needs a signed URL.
   const docUrls = await getCandidateDocumentSignedUrls((docs || []).map(d => d.file_path));
 
+  const photoMap = await getCandidatePhotoMap(supabase, [cand.id]);
+  const photoUrl = photoMap[cand.id];
+
   const initials = `${cand.first_name?.[0] || ''}${cand.last_name?.[0] || ''}`.toUpperCase();
   const name = `${cand.first_name} ${cand.last_name}`;
-  const photo = docs?.find(d => d.type === 'photo');
   const cv = docs?.find(d => d.type === 'cv');
 
   const getDocIcon = (type: string) => {
@@ -126,9 +128,9 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
             {/* LEFT PROFILE CARD */}
             <div>
               <div className="prof-card">
-                {photo && docUrls[photo.file_path] ? (
+                {photoUrl ? (
                   <div className="pp" style={{
-                    backgroundImage: `url(${docUrls[photo.file_path]})`,
+                    backgroundImage: `url(${photoUrl})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     border: 'none'
