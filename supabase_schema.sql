@@ -1104,6 +1104,12 @@ create policy "lawyer reads employers for assigned cases"
 to authenticated
 using (public.is_lawyer_case_employer(employers.id));
 
+drop policy if exists "agent reads employers" on public.employers;
+create policy "agent reads employers"
+  on public.employers for select
+to authenticated
+using (public.current_user_role() = 'agent');
+
 drop policy if exists "salesperson creates employers" on public.employers;
 create policy "salesperson creates employers"
   on public.employers for insert
