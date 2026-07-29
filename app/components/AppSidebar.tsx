@@ -149,25 +149,7 @@ export default function AppSidebar({ role }: { role: Role }) {
     <aside className="side">
       <div className="logo" style={{ padding: '6px 8px 22px' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-          {/* Inline flower mark */}
-          <svg width="34" height="34" viewBox="0 0 100 100" aria-hidden="true">
-            <defs>
-              <linearGradient id="sg1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#A768FD" />
-                <stop offset="52%" stopColor="#608FF7" />
-                <stop offset="100%" stopColor="#1AB3F6" />
-              </linearGradient>
-            </defs>
-            <circle cx="50" cy="50" r="50" fill="url(#sg1)" />
-            <ellipse cx="50" cy="26" rx="9" ry="18" fill="rgba(255,255,255,0.85)" transform="rotate(0 50 50)" />
-            <ellipse cx="50" cy="26" rx="9" ry="18" fill="rgba(255,255,255,0.75)" transform="rotate(60 50 50)" />
-            <ellipse cx="50" cy="26" rx="9" ry="18" fill="rgba(255,255,255,0.65)" transform="rotate(120 50 50)" />
-            <ellipse cx="50" cy="26" rx="9" ry="18" fill="rgba(255,255,255,0.85)" transform="rotate(180 50 50)" />
-            <ellipse cx="50" cy="26" rx="9" ry="18" fill="rgba(255,255,255,0.75)" transform="rotate(240 50 50)" />
-            <ellipse cx="50" cy="26" rx="9" ry="18" fill="rgba(255,255,255,0.65)" transform="rotate(300 50 50)" />
-            <circle cx="50" cy="50" r="13" fill="#608FF7" />
-            <circle cx="50" cy="50" r="8" fill="rgba(255,255,255,0.9)" />
-          </svg>
+          <img src="/logo.jpeg" alt="Excelente Logo" style={{ width: 34, height: 34, objectFit: 'contain', borderRadius: '4px' }} />
           <div>
             <div className="name">Excelente</div>
             <div className="sub">{config.label}</div>
