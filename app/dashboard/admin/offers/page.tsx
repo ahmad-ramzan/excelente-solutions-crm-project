@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
@@ -25,7 +26,7 @@ export default async function JobOffersPage({ searchParams }: { searchParams: Pr
     `)
     .order('created_at', { ascending: false });
 
-  const offers = q
+  const filteredOffers = q
     ? (allOffers || []).filter((o: any) => {
         const employerName = ((o.employers as any)?.name || '').toLowerCase();
         const countryName = ((o.countries as any)?.name || '').toLowerCase();
@@ -38,6 +39,20 @@ export default async function JobOffersPage({ searchParams }: { searchParams: Pr
         );
       })
     : (allOffers || []);
+
+  // Organized by country — grouped alphabetically, newest-first within each
+  // country (the query above already orders by created_at desc, and this
+  // grouping is stable so that relative order survives).
+  const countryGroups = new Map<string, { name: string; code: string; offers: any[] }>();
+  filteredOffers.forEach((o: any) => {
+    const name = (o.countries as any)?.name || 'Unknown';
+    const code = (o.countries as any)?.code || '--';
+    if (!countryGroups.has(name)) countryGroups.set(name, { name, code, offers: [] });
+    countryGroups.get(name)!.offers.push(o);
+  });
+  const groupedOffers = Array.from(countryGroups.values()).sort((a, b) => a.name.localeCompare(b.name));
+
+  const offers = filteredOffers;
 
   // Get filled counts
   const offerIds = offers.map((o: any) => o.id);
@@ -93,7 +108,20 @@ export default async function JobOffersPage({ searchParams }: { searchParams: Pr
                   </tr>
                 </thead>
                 <tbody>
-                  {offers.map((o) => {
+                  {groupedOffers.map((group) => (
+                    <Fragment key={group.name}>
+                      <tr>
+                        <td colSpan={10} style={{ padding: '18px 22px 8px', border: 'none' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', fontWeight: 700, color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                            {group.name}
+                            <span className="chip" style={{ background: 'var(--ink)', color: '#fff', padding: '2px 6px', fontSize: '10px', border: 'none' }}>{group.code}</span>
+                            <span style={{ color: 'var(--muted)', fontWeight: 500, textTransform: 'none', letterSpacing: 'normal' }}>
+                              · {group.offers.length} offer{group.offers.length === 1 ? '' : 's'}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                      {group.offers.map((o) => {
                     const countryName = (o.countries as any)?.name || 'Unknown';
                     const countryCode = (o.countries as any)?.code || '--';
                     const employerName = (o.employers as any)?.name || 'Unknown';
@@ -151,8 +179,10 @@ export default async function JobOffersPage({ searchParams }: { searchParams: Pr
                           </Link>
                         </td>
                       </tr>
-                    );
-                  })}
+                        );
+                      })}
+                    </Fragment>
+                  ))}
                   {offers.length === 0 && (
                     <tr>
                       <td colSpan={10} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>

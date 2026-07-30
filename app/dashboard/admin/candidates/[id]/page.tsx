@@ -175,10 +175,6 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                 <div className="card-b" style={{ padding: '4px 0' }}>
                   <div className="kv" style={{ padding: '0 22px' }}>
                     <div className="r">
-                      <div className="k">Father's name</div>
-                      <div className="v">{priv?.contact_name || '--'}</div>
-                    </div>
-                    <div className="r">
                       <div className="k">Date of birth</div>
                       <div className="v">{priv?.date_of_birth || '--'}</div>
                     </div>
