@@ -145,9 +145,9 @@ function LoginForm() {
             >
               <input type="checkbox" defaultChecked /> Keep me signed in
             </label>
-            <a className="small" style={{ color: 'var(--gold)', fontWeight: 600, cursor: 'pointer' }}>
+            <Link href="/forgot-password" className="small" style={{ color: 'var(--gold)', fontWeight: 600, cursor: 'pointer' }}>
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           <button
