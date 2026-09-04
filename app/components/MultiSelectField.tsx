@@ -93,11 +93,9 @@ export default function MultiSelectField({
           );
         })}
       </div>
-      {(max || selected.size > 0) && (
-        <div className="msel-count">
-          {selected.size} selected{max ? ` (max ${max})` : ''}
-        </div>
-      )}
+      <div className="msel-count">
+        {selected.size} selected{max ? ` (max ${max})` : ''}
+      </div>
     </div>
   );
 }
