@@ -342,7 +342,6 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                           <a href={docUrls[d.file_path] || '#'} target="_blank" rel="noopener noreferrer">
                             <button className="ico-btn">↓</button>
                           </a>
-                          <DocumentRowActions documentId={d.id} />
                         </div>
                       </div>
                     );

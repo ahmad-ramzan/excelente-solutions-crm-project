@@ -3,7 +3,18 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
-import { canManageCandidate } from '@/app/lib/candidate-access';
+import { canManageCandidate, getUserRole } from '@/app/lib/candidate-access';
+
+// Visa documents are uploaded by lawyers and reviewed by admins — agents may
+// view/download them but must not be able to edit or delete them.
+const VISA_DOCUMENT_TYPES = new Set(['visa_application_slip', 'approved_visa']);
+
+async function canManageDocument(supabase: any, userId: string, candidateId: string, docType: string) {
+  if (VISA_DOCUMENT_TYPES.has(docType)) {
+    return (await getUserRole(supabase, userId)) === 'admin';
+  }
+  return canManageCandidate(supabase, userId, candidateId);
+}
 
 function revalidateCandidatePaths() {
   revalidatePath('/dashboard/agent/candidates');
@@ -21,13 +32,13 @@ export async function deleteCandidateDocument(documentId: string) {
 
   const { data: doc } = await adminClient
     .from('candidate_documents')
-    .select('id, candidate_id, file_path')
+    .select('id, candidate_id, type, file_path')
     .eq('id', documentId)
     .single();
 
   if (!doc) return { error: 'Document not found' };
 
-  if (!(await canManageCandidate(supabase, user.id, doc.candidate_id))) {
+  if (!(await canManageDocument(supabase, user.id, doc.candidate_id, doc.type))) {
     return { error: 'Unauthorized' };
   }
 
@@ -72,7 +83,7 @@ export async function replaceCandidateDocument(documentId: string, formData: For
 
   if (!doc) return { error: 'Document not found' };
 
-  if (!(await canManageCandidate(supabase, user.id, doc.candidate_id))) {
+  if (!(await canManageDocument(supabase, user.id, doc.candidate_id, doc.type))) {
     return { error: 'Unauthorized' };
   }
 
