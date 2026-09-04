@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { autoProvisionEntityForActiveUser as provisionEntityForActiveUser } from '@/app/lib/provisioning';
 import { revalidatePath } from 'next/cache';
+import { notifyUsers } from '@/app/lib/notifications';
 
 const CREATABLE_ROLES = ['admin', 'salesperson', 'agent', 'employer', 'lawyer'];
 
@@ -177,6 +178,9 @@ export async function updatePosition(positionId: string, formData: FormData) {
 
 export async function assignSalesperson(employerId: string, salespersonId: string) {
   const supabase = await createClient();
+  const { data: { user: caller } } = await supabase.auth.getUser();
+
+  const { data: employer } = await supabase.from('employers').select('name').eq('id', employerId).maybeSingle();
 
   const { error } = await supabase
     .from('employers')
@@ -191,6 +195,17 @@ export async function assignSalesperson(employerId: string, salespersonId: strin
     .update({ assigned_salesperson_id: salespersonId || null })
     .eq('employer_id', employerId);
 
+  if (salespersonId && caller) {
+    await notifyUsers(createAdminClient(), [salespersonId], {
+      actorId: caller.id,
+      type: 'system',
+      title: 'Employer assigned to you',
+      body: `You've been assigned to ${employer?.name || 'an employer'}.`,
+      entityTable: 'employers',
+      entityId: employerId,
+    });
+  }
+
   revalidatePath('/dashboard/admin/employers');
   revalidatePath('/dashboard/salesperson/employers');
   revalidatePath('/dashboard/salesperson/orders');
@@ -199,6 +214,7 @@ export async function assignSalesperson(employerId: string, salespersonId: strin
 
 export async function updateUserStatus(userId: string, newStatus: string) {
   const supabase = await createClient();
+  const { data: { user: caller } } = await supabase.auth.getUser();
 
   const { error } = await supabase
     .from('profiles')
@@ -211,12 +227,24 @@ export async function updateUserStatus(userId: string, newStatus: string) {
     await autoProvisionEntityForActiveUser(userId);
   }
 
+  if (caller) {
+    await notifyUsers(createAdminClient(), [userId], {
+      actorId: caller.id,
+      type: 'system',
+      title: newStatus === 'active' ? 'Account activated' : 'Account status updated',
+      body: newStatus === 'active' ? 'Your account has been activated — you can now sign in.' : `Your account status is now "${newStatus}".`,
+      entityTable: 'profiles',
+      entityId: userId,
+    });
+  }
+
   revalidatePath('/dashboard/admin/users');
   return { success: true };
 }
 
 export async function updateUserRoleStatus(userId: string, formData: FormData) {
   const supabase = await createClient();
+  const { data: { user: caller } } = await supabase.auth.getUser();
   const role = formData.get('role') as string;
   const status = formData.get('status') as string;
 
@@ -229,6 +257,17 @@ export async function updateUserRoleStatus(userId: string, formData: FormData) {
 
   if (status === 'active') {
     await autoProvisionEntityForActiveUser(userId);
+  }
+
+  if (caller) {
+    await notifyUsers(createAdminClient(), [userId], {
+      actorId: caller.id,
+      type: 'system',
+      title: status === 'active' ? 'Account activated' : 'Account updated',
+      body: status === 'active' ? `Your account has been activated as ${role}.` : `Your account role/status was updated (${role}, ${status}).`,
+      entityTable: 'profiles',
+      entityId: userId,
+    });
   }
 
   revalidatePath('/dashboard/admin/users');

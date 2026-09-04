@@ -4,6 +4,24 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { canManageCandidate } from '@/app/lib/candidate-access';
+import { notifyAdmins, notifyUsers, getCaseAssignees } from '@/app/lib/notifications';
+
+async function notifyResumeChange(adminClient: any, actorId: string, candidateId: string, action: 'deleted' | 'replaced') {
+  const { data: candidate } = await adminClient.from('candidates').select('agent_id, first_name, last_name').eq('id', candidateId).maybeSingle();
+  const { lawyerId } = await getCaseAssignees(adminClient, candidateId);
+  const candidateName = candidate ? `${candidate.first_name} ${candidate.last_name}` : 'a candidate';
+
+  const options = {
+    actorId,
+    type: 'visa_updated' as const,
+    title: action === 'deleted' ? 'Resume deleted' : 'Resume updated',
+    body: `${candidateName}'s resume was ${action}.`,
+    entityTable: 'candidates',
+    entityId: candidateId,
+  };
+  await notifyUsers(adminClient, [candidate?.agent_id, lawyerId], options);
+  await notifyAdmins(adminClient, options);
+}
 
 function revalidateCandidatePaths() {
   revalidatePath('/dashboard/agent/candidates');
@@ -51,6 +69,8 @@ export async function deleteResume(candidateId: string) {
     console.error('Resume DB delete error:', dbError);
     return { error: 'Failed to delete resume record' };
   }
+
+  await notifyResumeChange(adminClient, user.id, candidateId, 'deleted');
 
   revalidateCandidatePaths();
   return { success: true };
@@ -119,6 +139,8 @@ export async function replaceResume(formData: FormData) {
     console.error('Resume DB insert error:', dbError);
     return { error: 'Failed to save resume record' };
   }
+
+  await notifyResumeChange(adminClient, user.id, candidateId, 'replaced');
 
   revalidateCandidatePaths();
   return { success: true };

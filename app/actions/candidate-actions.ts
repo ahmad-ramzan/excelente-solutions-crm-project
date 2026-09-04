@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
+import { notifyAdmins } from '@/app/lib/notifications';
 
 export async function createCandidate(formData: FormData) {
   const supabase = await createClient();
@@ -226,6 +227,12 @@ export async function deleteCandidate(candidateId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
+  const { data: candidate } = await supabase
+    .from('candidates')
+    .select('first_name, last_name')
+    .eq('id', candidateId)
+    .single();
+
   const { error } = await supabase
     .from('candidates')
     .delete()
@@ -235,6 +242,16 @@ export async function deleteCandidate(candidateId: string) {
     console.error('Delete error', error);
     return { error: 'Failed to delete' };
   }
+
+  const candidateName = candidate ? `${candidate.first_name} ${candidate.last_name}` : 'A candidate';
+  await notifyAdmins(createAdminClient(), {
+    actorId: user.id,
+    type: 'system',
+    title: 'Candidate deleted',
+    body: `${candidateName} was removed by their agent.`,
+    entityTable: 'candidates',
+    entityId: candidateId,
+  });
 
   revalidatePath('/dashboard/agent/candidates');
   revalidatePath('/dashboard/admin/candidates');

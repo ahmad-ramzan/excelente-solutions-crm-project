@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
+import { notifyAdmins, notifyUsers } from '@/app/lib/notifications';
 
 export async function uploadLawyerDocument(formData: FormData) {
   const supabase = await createClient();
@@ -52,6 +53,27 @@ export async function uploadLawyerDocument(formData: FormData) {
   if (dbError) {
     console.error('DB insert error:', dbError);
     return { error: 'Failed to save document record' };
+  }
+
+  // Visa document uploaded by the lawyer — notify the candidate's agent and admins.
+  const { data: candidate } = await adminClient
+    .from('candidates')
+    .select('agent_id, first_name, last_name')
+    .eq('id', candidateId)
+    .maybeSingle();
+
+  if (candidate) {
+    const candidateName = `${candidate.first_name} ${candidate.last_name}`;
+    const notifyOptions = {
+      actorId: user.id,
+      type: 'visa_updated' as const,
+      title: 'Visa document uploaded',
+      body: `A new ${type.replace(/_/g, ' ')} was uploaded for ${candidateName}.`,
+      entityTable: 'candidates',
+      entityId: candidateId,
+    };
+    await notifyUsers(adminClient, [candidate.agent_id], notifyOptions);
+    await notifyAdmins(adminClient, notifyOptions);
   }
 
   revalidatePath('/dashboard/lawyer/search');

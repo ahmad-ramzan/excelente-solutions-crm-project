@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
+import { notifyAdmins, notifyUsers, getCaseAssignees } from '@/app/lib/notifications';
 
 export async function uploadCandidateDocument(formData: FormData) {
   const supabase = await createClient();
@@ -65,6 +66,19 @@ export async function uploadCandidateDocument(formData: FormData) {
     console.error('DB insert error:', dbError);
     return { error: 'Failed to save document record' };
   }
+
+  // Let the assigned lawyer and admins know a new document is available.
+  const { lawyerId } = await getCaseAssignees(adminClient, candidateId);
+  const notifyOptions = {
+    actorId: user.id,
+    type: 'visa_updated' as const,
+    title: 'New document uploaded',
+    body: `A new ${type.replace(/_/g, ' ')} was uploaded.`,
+    entityTable: 'candidates',
+    entityId: candidateId,
+  };
+  await notifyUsers(adminClient, [lawyerId], notifyOptions);
+  await notifyAdmins(adminClient, notifyOptions);
 
   revalidatePath('/dashboard/agent/selected');
   return { success: true };

@@ -1,7 +1,9 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
+import { notifyAdmins, notifyUsers } from '@/app/lib/notifications';
 
 type JobOfferInput = {
   employerId: string;
@@ -105,6 +107,15 @@ export async function createJobOffer(formData: FormData) {
   }
 
   // The DB trigger `create_slots_after_job_offer_insert` will auto-create the slots
+
+  const { data: employer } = await supabase.from('employers').select('name').eq('id', employerId).maybeSingle();
+  await notifyAdmins(createAdminClient(), {
+    actorId: user.id,
+    type: 'job_offer_created',
+    title: 'New job offer created',
+    body: `${employer?.name || 'An employer'} created a new job offer for ${staffNeeded} position${staffNeeded === 1 ? '' : 's'}.`,
+    entityTable: 'job_offers',
+  });
 
   revalidatePath('/dashboard/salesperson/orders');
   revalidatePath('/dashboard/employer/offers');
@@ -268,6 +279,16 @@ export async function createMultipleJobOffers(formData: FormData) {
       return { error: uploadError instanceof Error ? uploadError.message : 'Failed to upload vacancy attachments' };
     }
 
+    const { data: employer } = await supabase.from('employers').select('name').eq('id', offers[0].employerId).maybeSingle();
+    const totalStaff = offers.reduce((sum, o) => sum + (parseInt(o.staffNeeded) || 0), 0);
+    await notifyAdmins(createAdminClient(), {
+      actorId: user.id,
+      type: 'job_offer_created',
+      title: 'New job offers created',
+      body: `${employer?.name || 'An employer'} created ${offers.length} new job offer${offers.length === 1 ? '' : 's'} (${totalStaff} position${totalStaff === 1 ? '' : 's'} total).`,
+      entityTable: 'job_offers',
+    });
+
     revalidatePath('/dashboard/employer/offers');
     revalidatePath('/dashboard/employer/vacancies');
     revalidatePath('/dashboard/employer/selected');
@@ -335,18 +356,8 @@ export async function selectCandidate(formData: FormData) {
     }
   }
 
-  // --- MOCK EMAIL NOTIFICATION ---
-  // In a real environment, we'd use Resend, SendGrid, etc.
-  console.log(`
-  ===========================================
-  EMAIL NOTIFICATION TRIGGERED
-  To: Admin, Agent
-  Subject: Candidate Selected!
-  Body: Candidate ${candidateId} has been selected by Employer for Job Offer ${jobOfferId}.
-  A signed contract has been uploaded.
-  Please begin the visa process.
-  ===========================================
-  `);
+  // Real in-app notifications for the agent and admins already fire from the
+  // `select_candidate_for_job_offer` DB trigger this RPC calls above.
 
   revalidatePath('/dashboard/employer/candidates');
   revalidatePath('/dashboard/employer/offers');
@@ -427,6 +438,28 @@ export async function updateJobOffer(offerId: string, formData: FormData) {
         .eq('status', 'vacant')
         .gt('slot_no', staffNeeded);
     }
+
+    // Notify admins and any agents whose candidates are already selected on
+    // this offer — they're the ones affected by details/status changing.
+    const adminClient = createAdminClient();
+    const { data: selections } = await adminClient
+      .from('job_offer_selections')
+      .select('candidates(agent_id)')
+      .eq('job_offer_id', offerId);
+    const agentIds = (selections || [])
+      .map((s: any) => (Array.isArray(s.candidates) ? s.candidates[0] : s.candidates)?.agent_id)
+      .filter(Boolean);
+
+    const notifyOptions = {
+      actorId: user.id,
+      type: 'job_offer_created' as const,
+      title: 'Job offer updated',
+      body: `A job offer with your candidate${agentIds.length === 1 ? '' : 's'} was updated${status !== 'open' ? ` (status: ${status})` : ''}.`,
+      entityTable: 'job_offers',
+      entityId: offerId,
+    };
+    await notifyUsers(adminClient, agentIds, notifyOptions);
+    await notifyAdmins(adminClient, notifyOptions);
 
     revalidatePath('/dashboard/employer/offers');
     revalidatePath(`/dashboard/employer/offers/${offerId}`);

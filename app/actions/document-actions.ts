@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { canManageCandidate, getUserRole } from '@/app/lib/candidate-access';
+import { notifyAdmins, notifyUsers, getCaseAssignees } from '@/app/lib/notifications';
 
 // Visa documents are uploaded by lawyers and reviewed by admins — agents may
 // view/download them but must not be able to edit or delete them.
@@ -14,6 +15,24 @@ async function canManageDocument(supabase: any, userId: string, candidateId: str
     return (await getUserRole(supabase, userId)) === 'admin';
   }
   return canManageCandidate(supabase, userId, candidateId);
+}
+
+async function notifyDocumentChange(adminClient: any, actorId: string, candidateId: string, docType: string, action: 'deleted' | 'replaced') {
+  const { data: candidate } = await adminClient.from('candidates').select('agent_id, first_name, last_name').eq('id', candidateId).maybeSingle();
+  const { lawyerId } = await getCaseAssignees(adminClient, candidateId);
+  const candidateName = candidate ? `${candidate.first_name} ${candidate.last_name}` : 'a candidate';
+  const docLabel = docType.replace(/_/g, ' ');
+
+  const options = {
+    actorId,
+    type: 'visa_updated' as const,
+    title: action === 'deleted' ? 'Document deleted' : 'Document replaced',
+    body: `${docLabel} for ${candidateName} was ${action}.`,
+    entityTable: 'candidates',
+    entityId: candidateId,
+  };
+  await notifyUsers(adminClient, [candidate?.agent_id, lawyerId], options);
+  await notifyAdmins(adminClient, options);
 }
 
 function revalidateCandidatePaths() {
@@ -60,6 +79,8 @@ export async function deleteCandidateDocument(documentId: string) {
     console.error('Document DB delete error:', dbError);
     return { error: 'Failed to delete document record' };
   }
+
+  await notifyDocumentChange(adminClient, user.id, doc.candidate_id, doc.type, 'deleted');
 
   revalidateCandidatePaths();
   return { success: true };
@@ -123,6 +144,8 @@ export async function replaceCandidateDocument(documentId: string, formData: For
 
   // Only remove the old file once the DB row points at the new one.
   await adminClient.storage.from('candidate-documents').remove([doc.file_path]);
+
+  await notifyDocumentChange(adminClient, user.id, doc.candidate_id, doc.type, 'replaced');
 
   revalidateCandidatePaths();
   return { success: true };
