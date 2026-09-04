@@ -16,15 +16,20 @@ const MIME_LABELS: Record<string, string> = {
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
   'image/jpeg': 'JPG',
   'image/png': 'PNG',
-  'image/*': 'Images',
 };
+
+function humanizeMime(mime: string) {
+  if (MIME_LABELS[mime]) return MIME_LABELS[mime];
+  if (mime.endsWith('/*')) {
+    const category = mime.slice(0, -2);
+    return category.charAt(0).toUpperCase() + category.slice(1) + 's';
+  }
+  return mime.split('/').pop()?.toUpperCase() || mime;
+}
 
 function acceptLabel(accept?: string) {
   if (!accept) return 'Any file';
-  const labels = accept.split(',').map((mime) => {
-    const trimmed = mime.trim();
-    return MIME_LABELS[trimmed] || trimmed.split('/').pop()?.toUpperCase() || trimmed;
-  });
+  const labels = accept.split(',').map((mime) => humanizeMime(mime.trim()));
   return Array.from(new Set(labels)).join(', ');
 }
 
