@@ -1,0 +1,118 @@
+'use server';
+
+import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
+import { revalidatePath } from 'next/cache';
+import { canManageCandidate } from '@/app/lib/candidate-access';
+
+function revalidateCandidatePaths() {
+  revalidatePath('/dashboard/agent/candidates');
+  revalidatePath('/dashboard/admin/candidates');
+  revalidatePath('/dashboard/employer/candidates');
+  revalidatePath('/dashboard/employer');
+}
+
+export async function deleteCandidateDocument(documentId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated' };
+
+  const adminClient = createAdminClient();
+
+  const { data: doc } = await adminClient
+    .from('candidate_documents')
+    .select('id, candidate_id, file_path')
+    .eq('id', documentId)
+    .single();
+
+  if (!doc) return { error: 'Document not found' };
+
+  if (!(await canManageCandidate(supabase, user.id, doc.candidate_id))) {
+    return { error: 'Unauthorized' };
+  }
+
+  const { error: storageError } = await adminClient.storage
+    .from('candidate-documents')
+    .remove([doc.file_path]);
+
+  if (storageError) {
+    console.error('Document storage delete error:', storageError);
+    return { error: 'Failed to delete document file' };
+  }
+
+  const { error: dbError } = await adminClient
+    .from('candidate_documents')
+    .delete()
+    .eq('id', documentId);
+
+  if (dbError) {
+    console.error('Document DB delete error:', dbError);
+    return { error: 'Failed to delete document record' };
+  }
+
+  revalidateCandidatePaths();
+  return { success: true };
+}
+
+export async function replaceCandidateDocument(documentId: string, formData: FormData) {
+  const file = formData.get('file') as File;
+  if (!file || file.size === 0) return { error: 'A file is required' };
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated' };
+
+  const adminClient = createAdminClient();
+
+  const { data: doc } = await adminClient
+    .from('candidate_documents')
+    .select('id, candidate_id, type, file_path')
+    .eq('id', documentId)
+    .single();
+
+  if (!doc) return { error: 'Document not found' };
+
+  if (!(await canManageCandidate(supabase, user.id, doc.candidate_id))) {
+    return { error: 'Unauthorized' };
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const filePath = `${doc.candidate_id}/${doc.type}-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+
+  // Admin client — "candidate-documents" is a private bucket with no storage
+  // RLS policies, so the regular session-scoped client can't write to it.
+  const { error: uploadError } = await adminClient.storage
+    .from('candidate-documents')
+    .upload(filePath, buffer, {
+      contentType: file.type,
+      upsert: true,
+    });
+
+  if (uploadError) {
+    console.error('Document upload error:', uploadError);
+    return { error: 'Failed to upload document' };
+  }
+
+  const { error: updateError } = await adminClient
+    .from('candidate_documents')
+    .update({
+      file_path: filePath,
+      file_name: file.name,
+      mime_type: file.type,
+      size_bytes: file.size,
+      uploaded_by: user.id,
+    })
+    .eq('id', documentId);
+
+  if (updateError) {
+    console.error('Document DB update error:', updateError);
+    return { error: 'Failed to update document record' };
+  }
+
+  // Only remove the old file once the DB row points at the new one.
+  await adminClient.storage.from('candidate-documents').remove([doc.file_path]);
+
+  revalidateCandidatePaths();
+  return { success: true };
+}

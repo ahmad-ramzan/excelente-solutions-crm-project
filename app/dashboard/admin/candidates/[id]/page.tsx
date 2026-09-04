@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { getCandidateDocumentSignedUrls, getCandidatePhotoMap } from '@/app/lib/queries';
 import { notFound } from 'next/navigation';
 import ResumeActions from '@/app/components/ResumeActions';
+import DocumentRowActions from '@/app/components/DocumentRowActions';
 
 export default async function CandidateDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -281,6 +282,7 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                           <a href={docUrls[d.file_path] || '#'} target="_blank" rel="noopener noreferrer">
                             <button className="ico-btn">↓</button>
                           </a>
+                          <DocumentRowActions documentId={d.id} />
                         </div>
                       </div>
                     );
@@ -311,6 +313,7 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                           <a href={docUrls[d.file_path] || '#'} target="_blank" rel="noopener noreferrer">
                             <button className="ico-btn">↓</button>
                           </a>
+                          <DocumentRowActions documentId={d.id} />
                         </div>
                       </div>
                     );
