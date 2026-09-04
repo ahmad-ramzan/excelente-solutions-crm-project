@@ -3,6 +3,7 @@ import AppTopbar from '../../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
 import { getCandidateDocumentSignedUrls, getCandidatePhotoMap } from '@/app/lib/queries';
 import { notFound } from 'next/navigation';
+import ResumeActions from '@/app/components/ResumeActions';
 
 export default async function CandidateDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -50,6 +51,7 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
 
   // "candidate-documents" is a private bucket — every link needs a signed URL.
   const docUrls = await getCandidateDocumentSignedUrls((docs || []).map(d => d.file_path));
+  const cvDoc = docs?.find(d => d.type === 'cv');
 
   const photoMap = await getCandidatePhotoMap(supabase, [cand.id]);
   const photoUrl = photoMap[cand.id];
@@ -117,13 +119,16 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                     <span className="tag" style={{ background: currentStatusProps.bg, color: currentStatusProps.color, border: 'none', lineHeight: '1.2' }}>• {currentStatusProps.label}</span>
                   </div>
                 </div>
-                {docs?.find(d => d.type === 'cv') && docUrls[docs.find(d => d.type === 'cv')!.file_path] && (
+                {cvDoc && docUrls[cvDoc.file_path] && (
                   <div className="pact">
-                    <a href={docUrls[docs.find(d => d.type === 'cv')!.file_path]} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', width: '100%' }}>
+                    <a href={docUrls[cvDoc.file_path]} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', width: '100%' }}>
                       <button className="btn btn-ghost" style={{ width: '100%', justifyContent: 'center' }}>View CV</button>
                     </a>
                   </div>
                 )}
+                <div className="pact">
+                  <ResumeActions candidateId={cand.id} hasResume={!!cvDoc} />
+                </div>
               </div>
             </div>
 
