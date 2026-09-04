@@ -28,6 +28,7 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
           { icon: '✦', label: 'Countries', href: '/dashboard/admin/countries' },
           { icon: '📋', label: 'Positions', href: '/dashboard/admin/positions' },
           { icon: '👤', label: 'Users & roles', href: '/dashboard/admin/users' },
+          { icon: '🧑‍🤝‍🧑', label: 'Our Team', href: '/dashboard/admin/team' },
         ],
       },
       {

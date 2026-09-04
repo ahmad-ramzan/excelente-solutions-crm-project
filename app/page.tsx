@@ -3,8 +3,16 @@ import PublicNav from './components/PublicNav';
 import Footer from './components/Footer';
 import FlowerLogo from './components/FlowerLogo';
 import SectionPhoto from './components/SectionPhoto';
+import { createClient } from '@/utils/supabase/server';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient();
+  const { data: teamMembers } = await supabase
+    .from('team_members')
+    .select('*')
+    .order('display_order')
+    .order('created_at');
+
   return (
     <>
       <PublicNav />
@@ -265,6 +273,44 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ===== OUR TEAM ===== */}
+      {teamMembers && teamMembers.length > 0 && (
+        <section className="team" id="our-team">
+          <div className="team-head">
+            <div className="eyebrow">Meet the people</div>
+            <h2>Our Team</h2>
+          </div>
+          <div className="team-grid">
+            {teamMembers.map((m) => {
+              const photoUrl = m.photo_path
+                ? supabase.storage.from('team-photos').getPublicUrl(m.photo_path).data.publicUrl
+                : null;
+              const initials = m.name
+                .split(' ')
+                .map((part: string) => part[0])
+                .filter(Boolean)
+                .slice(0, 2)
+                .join('')
+                .toUpperCase();
+
+              return (
+                <div key={m.id} className="team-card">
+                  {photoUrl ? (
+                    <div className="team-photo">
+                      <img src={photoUrl} alt={m.name} />
+                    </div>
+                  ) : (
+                    <div className="team-photo is-empty">{initials}</div>
+                  )}
+                  <div className="team-name">{m.name}</div>
+                  <div className="team-role">{m.position}</div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <Footer />
     </>

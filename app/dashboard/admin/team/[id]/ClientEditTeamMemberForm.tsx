@@ -1,0 +1,135 @@
+'use client';
+
+import { updateTeamMember, deleteTeamMember } from '@/app/actions/team-actions';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import FileUploadField from '@/app/components/FileUploadField';
+
+export default function ClientEditTeamMemberForm({
+  member,
+  photoUrl,
+}: {
+  member: { id: string; name: string; position: string; display_order: number };
+  photoUrl: string | null;
+}) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    const formData = new FormData(e.currentTarget);
+    const res = await updateTeamMember(member.id, formData);
+
+    if (res.error) {
+      setError(res.error);
+      setLoading(false);
+    } else {
+      router.push('/dashboard/admin/team');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Remove ${member.name} from the team section?`)) return;
+
+    setDeleting(true);
+    setError('');
+    const res = await deleteTeamMember(member.id);
+
+    if (res.error) {
+      setError(res.error);
+      setDeleting(false);
+    } else {
+      router.push('/dashboard/admin/team');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {error && <div style={{ color: 'var(--red)', fontSize: '13px', padding: '10px', background: '#fee2e2', borderRadius: '6px' }}>{error}</div>}
+
+      {photoUrl && (
+        <div
+          style={{
+            width: '72px',
+            height: '90px',
+            borderRadius: '8px',
+            border: '1px solid var(--line)',
+            backgroundImage: `url(${photoUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+      )}
+
+      <div>
+        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Full name</label>
+        <input
+          name="name"
+          type="text"
+          required
+          defaultValue={member.name}
+          style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }}
+        />
+      </div>
+
+      <div>
+        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Position</label>
+        <input
+          name="position"
+          type="text"
+          required
+          defaultValue={member.position}
+          style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }}
+        />
+      </div>
+
+      <FileUploadField name="photo" label="Replace photo (leave empty to keep existing)" accept="image/jpeg,image/png" />
+
+      <div>
+        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Display order</label>
+        <input
+          name="displayOrder"
+          type="number"
+          defaultValue={member.display_order}
+          style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)' }}
+        />
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={deleting || loading}
+          className="btn btn-ghost"
+          style={{ color: 'var(--red)' }}
+        >
+          {deleting ? <><span className="btn-spinner" />Removing...</> : 'Remove'}
+        </button>
+
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="btn"
+            style={{ background: '#fff', border: '1px solid var(--line-2)', color: 'var(--ink)', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600 }}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading || deleting}
+            className="btn"
+            style={{ background: 'linear-gradient(135deg, #7b61ff, #36b9ff)', border: 'none', color: '#fff', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? <><span className="btn-spinner" />Saving...</> : 'Save changes'}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}

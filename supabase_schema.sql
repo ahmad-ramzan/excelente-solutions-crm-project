@@ -1742,3 +1742,39 @@ insert into public.country_document_requirements (country_id, type, description)
 select id, 'approved_visa', 'Approved visa copy is required'
 from public.countries
 on conflict (country_id, type) do nothing;
+
+-- =========================
+-- TEAM MEMBERS (public "Our Team" homepage section)
+-- =========================
+
+create table if not exists public.team_members (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  position text not null,
+  photo_path text,
+  display_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_team_members_order on public.team_members(display_order);
+
+alter table public.team_members enable row level security;
+
+-- The homepage "Our Team" section is public — visible to logged-out visitors too.
+drop policy if exists "team members publicly readable" on public.team_members;
+create policy "team members publicly readable"
+  on public.team_members for select
+  to public
+  using (true);
+
+drop policy if exists "admin manages team members" on public.team_members;
+create policy "admin manages team members"
+  on public.team_members for all
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+insert into storage.buckets (id, name, public)
+values ('team-photos', 'team-photos', true)
+on conflict (id) do nothing;
