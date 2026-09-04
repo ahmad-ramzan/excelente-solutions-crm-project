@@ -4,6 +4,7 @@ import { updateCandidate } from '@/app/actions/candidate-actions';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import FileUploadField from '@/app/components/FileUploadField';
+import MultiSelectField from '@/app/components/MultiSelectField';
 
 interface VacancyPosition {
   id: string;
@@ -32,6 +33,7 @@ export default function EditClientForm({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [openToAllCountries, setOpenToAllCountries] = useState(!!candidate.open_to_all_countries);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -40,7 +42,13 @@ export default function EditClientForm({
 
     const formData = new FormData(e.currentTarget);
     const selectedPositions = formData.getAll('positions');
-    
+
+    if (selectedPositions.length === 0) {
+      setError('Please select at least one position.');
+      setLoading(false);
+      return;
+    }
+
     if (selectedPositions.length > 3) {
       setError('Candidate can apply for a maximum of 3 positions.');
       setLoading(false);
@@ -63,6 +71,18 @@ export default function EditClientForm({
   // vacancy — keep it selectable so saving the form doesn't silently drop it.
   const vacancyIds = new Set(vacancyPositions.map(v => v.id));
   const staleSelectedPositions = positions.filter(p => selectedPositionIds.includes(p.id) && !vacancyIds.has(p.id));
+
+  const countryOptions = countries.map(c => ({ value: c.id, label: c.name }));
+  const positionOptions = hasOpenVacancies
+    ? [
+        ...vacancyPositions.map(p => ({
+          value: p.id,
+          label: p.name,
+          sublabel: `${p.openRoles} open role${p.openRoles === 1 ? '' : 's'} · ${p.countries.join(', ')}`,
+        })),
+        ...staleSelectedPositions.map(p => ({ value: p.id, label: p.name, sublabel: 'Currently assigned · no open vacancy' })),
+      ]
+    : positions.map(p => ({ value: p.id, label: p.name }));
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
@@ -143,14 +163,24 @@ export default function EditClientForm({
       <div className="resp-grid-2">
         <div style={{ gridColumn: '1 / -1' }}>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Destination Country (Select multiple or Any)</label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', color: 'var(--ink)', cursor: 'pointer' }}>
-              <input type="checkbox" name="openToAllCountries" defaultChecked={candidate.open_to_all_countries} style={{ width: '16px', height: '16px' }} />
+              <input
+                type="checkbox"
+                name="openToAllCountries"
+                checked={openToAllCountries}
+                onChange={(e) => setOpenToAllCountries(e.target.checked)}
+                style={{ width: '16px', height: '16px' }}
+              />
               Open to Any Country
             </label>
-            <select name="countries" multiple defaultValue={candidate.country_ids || []} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)', minHeight: '100px' }}>
-              {countries.map(c => <option key={c.id} value={c.id} style={{ padding: '4px' }}>{c.name}</option>)}
-            </select>
+            <MultiSelectField
+              name="countries"
+              options={countryOptions}
+              defaultValues={candidate.country_ids || []}
+              disabled={openToAllCountries}
+              searchPlaceholder="Search countries..."
+            />
           </div>
         </div>
         <div>
@@ -186,21 +216,14 @@ export default function EditClientForm({
       </div>
 
       <div style={{ marginBottom: '8px' }}>
-        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Select positions (Ctrl/Cmd to select multiple)</label>
-        <select name="positions" defaultValue={selectedPositionIds} required multiple style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff', fontSize: '13.5px', color: 'var(--ink)', minHeight: '120px' }}>
-          {hasOpenVacancies
-            ? <>
-                {vacancyPositions.map(p => (
-                  <option key={p.id} value={p.id} style={{ padding: '4px' }}>
-                    {p.name} — {p.openRoles} open role{p.openRoles === 1 ? '' : 's'} · {p.countries.join(', ')}
-                  </option>
-                ))}
-                {staleSelectedPositions.map(p => (
-                  <option key={p.id} value={p.id} style={{ padding: '4px' }}>{p.name} (currently assigned · no open vacancy)</option>
-                ))}
-              </>
-            : positions.map(p => <option key={p.id} value={p.id} style={{ padding: '4px' }}>{p.name}</option>)}
-        </select>
+        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--ink)', marginBottom: '8px' }}>Select positions (up to 3)</label>
+        <MultiSelectField
+          name="positions"
+          options={positionOptions}
+          defaultValues={selectedPositionIds}
+          max={3}
+          searchPlaceholder="Search positions..."
+        />
       </div>
       <p style={{ fontSize: '11.5px', color: 'var(--slate)', margin: 0, marginBottom: '24px' }}>
         {hasOpenVacancies
