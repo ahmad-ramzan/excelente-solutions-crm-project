@@ -62,7 +62,7 @@ export default function ResumeActions({ candidateId, hasResume }: { candidateId:
         <FileUploadField
           name="file"
           label={hasResume ? 'New resume file' : 'Resume file'}
-          accept="application/pdf,image/jpeg"
+          accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg"
           onFilesChange={(files) => setHasFile(files.length > 0)}
         />
         <div style={{ display: 'flex', gap: '8px' }}>

@@ -233,8 +233,8 @@ export default function ClientForm({ countries, positions, vacancyPositions }: {
         />
         <FileUploadField
           name="cv"
-          label="PDF Resume / CV"
-          accept="application/pdf,image/jpeg"
+          label="Resume / CV"
+          accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg"
           hint="Counts toward 5 MB total"
         />
         <div style={{ gridColumn: '1 / -1' }}>

@@ -10,11 +10,22 @@ function formatSize(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+const MIME_LABELS: Record<string, string> = {
+  'application/pdf': 'PDF',
+  'application/msword': 'DOC',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+  'image/jpeg': 'JPG',
+  'image/png': 'PNG',
+  'image/*': 'Images',
+};
+
 function acceptLabel(accept?: string) {
   if (!accept) return 'Any file';
-  if (accept.startsWith('image/')) return 'PNG, JPG';
-  if (accept === 'application/pdf') return 'PDF';
-  return accept;
+  const labels = accept.split(',').map((mime) => {
+    const trimmed = mime.trim();
+    return MIME_LABELS[trimmed] || trimmed.split('/').pop()?.toUpperCase() || trimmed;
+  });
+  return Array.from(new Set(labels)).join(', ');
 }
 
 /**

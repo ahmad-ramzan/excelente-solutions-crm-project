@@ -227,7 +227,7 @@ export default function EditClientForm({
         <FileUploadField
           name="cv"
           label="CV (leave empty to keep existing)"
-          accept="application/pdf,image/jpeg"
+          accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg"
         />
       </div>
 
