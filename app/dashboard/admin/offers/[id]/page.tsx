@@ -133,6 +133,10 @@ export default async function OfferDetailsPage({ params }: { params: Promise<{ i
                 <div className="card-b" style={{ padding: '4px 0' }}>
                   <div className="kv" style={{ padding: '0 22px' }}>
                     <div className="r">
+                      <div className="k">Date posted</div>
+                      <div className="v">{formatDate(offer.created_at)}</div>
+                    </div>
+                    <div className="r">
                       <div className="k">Employer</div>
                       <div className="v">{employerName}</div>
                     </div>
