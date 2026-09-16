@@ -330,8 +330,13 @@ export async function selectCandidate(formData: FormData) {
     const filePath = `${candidateId}/contract/${Date.now()}-${safeName}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
+    // Stored in "candidate-documents" (not "contracts") — this file becomes a
+    // candidate_documents row, and every page reads those download links via
+    // getCandidateDocumentSignedUrls, which signs against "candidate-documents".
+    // Uploading to "contracts" here silently breaks the download link for
+    // every role, since the signed URL would be requested from the wrong bucket.
     const { error: uploadError } = await adminClient.storage
-      .from('contracts')
+      .from('candidate-documents')
       .upload(filePath, buffer, { contentType: file.type || 'application/pdf', upsert: true });
 
     if (uploadError) {
@@ -352,6 +357,19 @@ export async function selectCandidate(formData: FormData) {
       if (docError) {
         console.error('Signed contract document record error:', docError);
         warning = 'Candidate selected, but the signed contract failed to save. Please upload it again from Selected Candidates.';
+      } else {
+        const { data: candidate } = await adminClient.from('candidates').select('agent_id, first_name, last_name').eq('id', candidateId).maybeSingle();
+        const candidateName = candidate ? `${candidate.first_name} ${candidate.last_name}` : 'A candidate';
+        const notifyOptions = {
+          actorId: user.id,
+          type: 'visa_updated' as const,
+          title: 'Signed contract uploaded',
+          body: `A signed contract was uploaded for ${candidateName}.`,
+          entityTable: 'candidates',
+          entityId: candidateId,
+        };
+        await notifyUsers(adminClient, [candidate?.agent_id], notifyOptions);
+        await notifyAdmins(adminClient, notifyOptions);
       }
     }
   }
