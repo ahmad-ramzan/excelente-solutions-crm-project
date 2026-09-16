@@ -9,6 +9,7 @@ import Link from 'next/link';
 import DeleteCandidateButton from './DeleteCandidateButton';
 import ResumeActions from '@/app/components/ResumeActions';
 import DocumentRowActions from '@/app/components/DocumentRowActions';
+import AgentUploadVisaButton from '@/app/components/AgentUploadVisaButton';
 
 export default async function CandidateDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -326,7 +327,10 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
               <div className="card">
                 <div className="card-h">
                   <h3>Visa documents</h3>
-                  <span className="chip" style={{ background: '#fff0db', color: '#b46d00', border: 'none', fontSize: '10px', fontWeight: 700 }}>↑ FROM LAWYER</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span className="chip" style={{ background: '#fff0db', color: '#b46d00', border: 'none', fontSize: '10px', fontWeight: 700 }}>VISA</span>
+                    <AgentUploadVisaButton candidateId={cand.id} visaCaseId={visa?.id} />
+                  </div>
                 </div>
                 <div className="card-b" style={{ padding: '0 22px' }}>
                   {docs?.filter(d => d.type === 'visa_application_slip' || d.type === 'approved_visa').map(d => {

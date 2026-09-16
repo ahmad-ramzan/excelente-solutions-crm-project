@@ -216,10 +216,12 @@ export default async function LawyerCaseDetailPage({ params }: { params: Promise
               <div className="card">
                 <div className="card-h">
                   <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Documents</h3>
-                  <span className="chip" style={{ background: 'var(--paper)', color: 'var(--slate)', border: 'none', fontSize: '11px', fontWeight: 700 }}>{documents?.length || 0}</span>
+                  <span className="chip" style={{ background: 'var(--paper)', color: 'var(--slate)', border: 'none', fontSize: '11px', fontWeight: 700 }}>
+                    {documents?.filter(d => d.type !== 'visa_application_slip' && d.type !== 'approved_visa').length || 0}
+                  </span>
                 </div>
                 <div className="card-b" style={{ padding: '0 22px' }}>
-                  {(documents || []).map(doc => {
+                  {documents?.filter(d => d.type !== 'visa_application_slip' && d.type !== 'approved_visa').map(doc => {
                     const style = getDocIcon(doc.mime_type);
                     return (
                       <div key={doc.id} className="doc">
@@ -238,8 +240,40 @@ export default async function LawyerCaseDetailPage({ params }: { params: Promise
                       </div>
                     );
                   })}
-                  {(!documents || documents.length === 0) && (
+                  {!documents?.some(d => d.type !== 'visa_application_slip' && d.type !== 'approved_visa') && (
                     <div style={{ padding: '20px 0', fontSize: '13px', color: 'var(--muted)' }}>No documents uploaded yet.</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Visa documents */}
+              <div className="card">
+                <div className="card-h">
+                  <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Visa documents</h3>
+                  <span className="chip" style={{ background: '#fff0db', color: '#b46d00', border: 'none', fontSize: '10px', fontWeight: 700 }}>VISA</span>
+                </div>
+                <div className="card-b" style={{ padding: '0 22px' }}>
+                  {documents?.filter(d => d.type === 'visa_application_slip' || d.type === 'approved_visa').map(doc => {
+                    const style = getDocIcon(doc.mime_type);
+                    return (
+                      <div key={doc.id} className="doc">
+                        <div className="dic" style={{ color: style.color, background: style.bg, borderColor: style.bg }}>{getDocFormat(doc.mime_type, doc.file_path)}</div>
+                        <div>
+                          <div className="dnm" style={{ textTransform: 'capitalize' }}>{doc.type.replace(/_/g, ' ')}</div>
+                          <div className="dmeta">
+                            {doc.file_name}{doc.size_bytes ? ` · ${(doc.size_bytes / 1024 / 1024).toFixed(1)} MB` : ''} · {new Date(doc.created_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div className="dright">
+                          <a href={docUrls[doc.file_path] || '#'} target="_blank" rel="noopener noreferrer">
+                            <button className="ico-btn">↓</button>
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {!documents?.some(d => d.type === 'visa_application_slip' || d.type === 'approved_visa') && (
+                    <div style={{ padding: '20px 0', fontSize: '13px', color: 'var(--muted)' }}>No visa documents yet.</div>
                   )}
 
                   <div style={{ margin: '0 -22px', padding: '20px 22px', borderTop: '1px solid var(--line)', background: 'var(--paper)' }}>

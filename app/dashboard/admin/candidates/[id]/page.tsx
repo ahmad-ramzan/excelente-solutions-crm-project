@@ -297,7 +297,7 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
               <div className="card">
                 <div className="card-h">
                   <h3>Visa documents</h3>
-                  <span className="chip" style={{ background: '#fff0db', color: '#b46d00', border: 'none', fontSize: '10px', fontWeight: 700 }}>↑ FROM LAWYER</span>
+                  <span className="chip" style={{ background: '#fff0db', color: '#b46d00', border: 'none', fontSize: '10px', fontWeight: 700 }}>VISA</span>
                 </div>
                 <div className="card-b" style={{ padding: '0 22px' }}>
                   {docs?.filter(d => d.type === 'visa_application_slip' || d.type === 'approved_visa').map(d => {

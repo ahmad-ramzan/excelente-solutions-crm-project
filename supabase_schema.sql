@@ -1388,6 +1388,18 @@ with check (
   )
 );
 
+drop policy if exists "salesperson reads documents for assigned cases" on public.candidate_documents;
+create policy "salesperson reads documents for assigned cases"
+  on public.candidate_documents for select
+to authenticated
+using (
+  exists (
+    select 1 from public.visa_cases vc
+    where vc.candidate_id = candidate_documents.candidate_id
+    and public.is_salesperson_job_offer(vc.job_offer_id)
+  )
+);
+
 drop policy if exists "employers read documents for visible candidates" on public.candidate_documents;
 create policy "employers read documents for visible candidates"
   on public.candidate_documents for select

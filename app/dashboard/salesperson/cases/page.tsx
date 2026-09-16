@@ -2,7 +2,7 @@ import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
-import { getCandidatePhotoMap } from '@/app/lib/queries';
+import { getCandidatePhotoMap, getCandidateDocumentSignedUrls } from '@/app/lib/queries';
 import Link from 'next/link';
 import TravelCoordinationCard from '@/app/components/TravelCoordinationCard';
 
@@ -54,6 +54,7 @@ export default async function SalespersonCasesPage({ searchParams }: { searchPar
   const cases = casesData.map((c: any) => ({
     id: c.id,
     public_code: c.public_code,
+    candidateId: c.candidate_id,
     candidateName: `${c.candidates?.first_name} ${c.candidates?.last_name}`,
     candidateInitials: `${c.candidates?.first_name?.[0] || ''}${c.candidates?.last_name?.[0] || ''}`.toUpperCase(),
     candidatePhotoUrl: photoMap[c.candidate_id],
@@ -66,9 +67,20 @@ export default async function SalespersonCasesPage({ searchParams }: { searchPar
   const selected = cases.find(c => c.public_code === selectedCode);
 
   let travel = null;
+  let visaDocs: { id: string; type: string; file_name: string; file_path: string }[] = [];
+  let visaDocUrls: Record<string, string> = {};
   if (selected) {
     const { data } = await adminClient.from('visa_case_travel').select('*').eq('visa_case_id', selected.id).maybeSingle();
     travel = data;
+
+    const { data: docs } = await adminClient
+      .from('candidate_documents')
+      .select('id, type, file_name, file_path')
+      .eq('candidate_id', selected.candidateId)
+      .in('type', ['visa_application_slip', 'approved_visa'])
+      .order('created_at', { ascending: false });
+    visaDocs = docs || [];
+    visaDocUrls = await getCandidateDocumentSignedUrls(visaDocs.map(d => d.file_path));
   }
 
   return (
@@ -143,7 +155,37 @@ export default async function SalespersonCasesPage({ searchParams }: { searchPar
             </div>
 
             {selected && (
-              <TravelCoordinationCard visaCaseId={selected.id} travel={travel} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <TravelCoordinationCard visaCaseId={selected.id} travel={travel} />
+
+                <div className="card">
+                  <div className="card-h">
+                    <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Visa documents</h3>
+                    <span className="chip" style={{ background: '#fff0db', color: '#b46d00', border: 'none', fontSize: '10px', fontWeight: 700 }}>VISA</span>
+                  </div>
+                  <div className="card-b" style={{ padding: '0 22px' }}>
+                    {visaDocs.map(d => (
+                      <div key={d.id} className="doc">
+                        <div className="dic" style={{ color: 'var(--red)', background: '#fee2e2', borderColor: '#fecaca' }}>
+                          {d.file_path.split('.').pop()?.toUpperCase() || 'FILE'}
+                        </div>
+                        <div>
+                          <div className="dnm" style={{ textTransform: 'capitalize' }}>{d.type.replace(/_/g, ' ')}</div>
+                          <div className="dmeta">{d.file_name}</div>
+                        </div>
+                        <div className="dright">
+                          <a href={visaDocUrls[d.file_path] || '#'} target="_blank" rel="noopener noreferrer">
+                            <button className="ico-btn">↓</button>
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                    {visaDocs.length === 0 && (
+                      <div style={{ padding: '20px 0', fontSize: '13px', color: 'var(--muted)' }}>No visa documents yet.</div>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </div>

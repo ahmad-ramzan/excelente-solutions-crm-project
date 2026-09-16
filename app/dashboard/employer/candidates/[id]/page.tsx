@@ -254,6 +254,36 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
                 </div>
               </div>
 
+              {/* Visa documents */}
+              <div className="card">
+                <div className="card-h">
+                  <h3>Visa documents</h3>
+                  <span className="chip" style={{ background: '#fff0db', color: '#b46d00', border: 'none', fontSize: '10px', fontWeight: 700 }}>VISA</span>
+                </div>
+                <div className="card-b" style={{ padding: '0 22px' }}>
+                  {docs?.filter(d => d.type === 'visa_application_slip' || d.type === 'approved_visa').map(d => {
+                    const style = getDocIcon(d.mime_type);
+                    return (
+                      <div key={d.id} className="doc">
+                        <div className="dic" style={{ color: style.color, background: style.bg, borderColor: style.border }}>{getDocFormat(d.mime_type, d.file_path)}</div>
+                        <div>
+                          <div className="dnm" style={{ textTransform: 'capitalize' }}>{d.type.replace(/_/g, ' ')}</div>
+                          <div className="dmeta">{d.file_name}</div>
+                        </div>
+                        <div className="dright">
+                          <a href={docUrls[d.file_path] || '#'} target="_blank" rel="noopener noreferrer">
+                            <button className="ico-btn">↓</button>
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {!docs?.some(d => d.type === 'visa_application_slip' || d.type === 'approved_visa') && (
+                    <div style={{ padding: '20px 0', fontSize: '13px', color: 'var(--muted)' }}>No visa documents yet.</div>
+                  )}
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
