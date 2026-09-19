@@ -3,6 +3,7 @@ import AppTopbar from '../../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { getCandidateDocumentSignedUrls, getCandidatePhotoMap } from '@/app/lib/queries';
+import { formatFileSize } from '@/app/lib/format';
 import { notFound } from 'next/navigation';
 import ClientAgentDocumentUpload from './ClientAgentDocumentUpload';
 import Link from 'next/link';
@@ -303,7 +304,7 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
                         <div className="dic" style={{ color: style.color, background: style.bg, borderColor: style.border }}>{getDocFormat(d.mime_type, d.file_path)}</div>
                         <div>
                           <div className="dnm" style={{ textTransform: 'capitalize' }}>{d.type.replace(/_/g, ' ')}</div>
-                          <div className="dmeta">{d.file_name} · {(d.size_bytes / 1024 / 1024).toFixed(1)} MB</div>
+                          <div className="dmeta">{d.file_name} · {formatFileSize(d.size_bytes)}</div>
                         </div>
                         <div className="dright">
                           <a href={docUrls[d.file_path] || '#'} target="_blank" rel="noopener noreferrer">

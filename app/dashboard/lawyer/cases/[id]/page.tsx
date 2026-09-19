@@ -2,6 +2,7 @@ import AppSidebar from '../../../../components/AppSidebar';
 import AppTopbar from '../../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
 import { getCandidateDocumentSignedUrls } from '@/app/lib/queries';
+import { formatFileSize } from '@/app/lib/format';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import ClientCaseStatusForm from './ClientCaseStatusForm';
@@ -229,7 +230,7 @@ export default async function LawyerCaseDetailPage({ params }: { params: Promise
                         <div>
                           <div className="dnm" style={{ textTransform: 'capitalize' }}>{doc.type.replace(/_/g, ' ')}</div>
                           <div className="dmeta">
-                            {doc.file_name}{doc.size_bytes ? ` · ${(doc.size_bytes / 1024 / 1024).toFixed(1)} MB` : ''} · {new Date(doc.created_at).toLocaleDateString()}
+                            {doc.file_name}{doc.size_bytes ? ` · ${formatFileSize(doc.size_bytes)}` : ''} · {new Date(doc.created_at).toLocaleDateString()}
                           </div>
                         </div>
                         <div className="dright">
@@ -261,7 +262,7 @@ export default async function LawyerCaseDetailPage({ params }: { params: Promise
                         <div>
                           <div className="dnm" style={{ textTransform: 'capitalize' }}>{doc.type.replace(/_/g, ' ')}</div>
                           <div className="dmeta">
-                            {doc.file_name}{doc.size_bytes ? ` · ${(doc.size_bytes / 1024 / 1024).toFixed(1)} MB` : ''} · {new Date(doc.created_at).toLocaleDateString()}
+                            {doc.file_name}{doc.size_bytes ? ` · ${formatFileSize(doc.size_bytes)}` : ''} · {new Date(doc.created_at).toLocaleDateString()}
                           </div>
                         </div>
                         <div className="dright">
