@@ -401,7 +401,7 @@ create table if not exists public.job_offer_slots (
   id uuid primary key default gen_random_uuid(),
   job_offer_id uuid not null references public.job_offers(id) on delete cascade,
   slot_no int not null,
-  candidate_id uuid references public.candidates(id),
+  candidate_id uuid references public.candidates(id) on delete set null,
   status slot_status not null default 'vacant',
   reserved_at timestamptz,
   filled_at timestamptz,
@@ -418,7 +418,7 @@ create table if not exists public.job_offer_selections (
   id uuid primary key default gen_random_uuid(),
   job_offer_id uuid not null references public.job_offers(id) on delete cascade,
   slot_id uuid not null references public.job_offer_slots(id) on delete cascade,
-  candidate_id uuid not null references public.candidates(id),
+  candidate_id uuid not null references public.candidates(id) on delete cascade,
   employer_id uuid not null references public.employers(id),
   selected_by uuid references public.profiles(id),
   status candidate_status not null default 'selected',
@@ -436,7 +436,7 @@ create table if not exists public.visa_cases (
   public_code text not null unique default ('VP-' || nextval('visa_case_code_seq')::text),
 
   selection_id uuid unique references public.job_offer_selections(id) on delete cascade,
-  candidate_id uuid not null references public.candidates(id),
+  candidate_id uuid not null references public.candidates(id) on delete cascade,
   job_offer_id uuid not null references public.job_offers(id),
   employer_id uuid not null references public.employers(id),
   agent_id uuid not null references public.profiles(id),
@@ -1790,3 +1790,48 @@ create policy "admin manages team members"
 insert into storage.buckets (id, name, public)
 values ('team-photos', 'team-photos', true)
 on conflict (id) do nothing;
+
+-- =========================
+-- FIX: candidate deletion was blocked by foreign keys with no ON DELETE
+-- behavior (job_offer_slots/job_offer_selections/visa_cases all referenced
+-- candidates(id) with no action, so deleting a candidate who'd ever been
+-- selected for a job failed with a "still referenced" error).
+-- =========================
+
+-- A slot is a generated position on the job offer, not candidate-owned data —
+-- deleting the candidate should release the slot, not delete it.
+alter table public.job_offer_slots
+  drop constraint if exists job_offer_slots_candidate_id_fkey,
+  add constraint job_offer_slots_candidate_id_fkey
+    foreign key (candidate_id) references public.candidates(id) on delete set null;
+
+-- A plain FK can only null candidate_id, not reset the sibling status fields —
+-- this trigger releases the slot back to fully vacant, mirroring the same
+-- cleanup the app already does when a visa is rejected (see updateVisaStatus).
+create or replace function public.release_candidate_slots()
+returns trigger as $$
+begin
+  update public.job_offer_slots
+  set status = 'vacant', candidate_id = null, reserved_at = null, filled_at = null
+  where candidate_id = old.id;
+  return old;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists trg_release_candidate_slots on public.candidates;
+create trigger trg_release_candidate_slots
+before delete on public.candidates
+for each row execute function public.release_candidate_slots();
+
+-- These records are meaningless without the candidate, so they cascade —
+-- their own child rows (visa_case_events, visa_case_travel) already cascade
+-- from visa_cases, so this cleans up the whole chain.
+alter table public.job_offer_selections
+  drop constraint if exists job_offer_selections_candidate_id_fkey,
+  add constraint job_offer_selections_candidate_id_fkey
+    foreign key (candidate_id) references public.candidates(id) on delete cascade;
+
+alter table public.visa_cases
+  drop constraint if exists visa_cases_candidate_id_fkey,
+  add constraint visa_cases_candidate_id_fkey
+    foreign key (candidate_id) references public.candidates(id) on delete cascade;
