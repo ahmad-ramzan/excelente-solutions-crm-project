@@ -1835,3 +1835,92 @@ alter table public.visa_cases
   drop constraint if exists visa_cases_candidate_id_fkey,
   add constraint visa_cases_candidate_id_fkey
     foreign key (candidate_id) references public.candidates(id) on delete cascade;
+
+-- =========================
+-- FIX: Admin could not delete an Agent/Employer/Lawyer/Salesperson account
+-- once it had any associated business data — every foreign key from
+-- candidates/employers/job_offers/visa_cases/etc. back to profiles(id) had
+-- no ON DELETE behavior, so deleteUserByAdmin always hit a 23503 foreign
+-- key violation and fell back to "suspend instead" rather than deleting.
+--
+-- Membership/join tables (employer_users, agency_users, law_firm_users,
+-- salesperson_profiles, lawyer_countries, notifications.recipient_id)
+-- already cascade correctly — this only fixes the ones that didn't.
+-- =========================
+
+-- A deleted agent's candidates/cases should survive, just unassigned —
+-- relax NOT NULL so the column can be nulled out instead of blocking deletion.
+alter table public.candidates alter column agent_id drop not null;
+alter table public.visa_cases alter column agent_id drop not null;
+
+alter table public.employers
+  drop constraint if exists employers_assigned_salesperson_id_fkey,
+  add constraint employers_assigned_salesperson_id_fkey
+    foreign key (assigned_salesperson_id) references public.profiles(id) on delete set null,
+  drop constraint if exists employers_created_by_fkey,
+  add constraint employers_created_by_fkey
+    foreign key (created_by) references public.profiles(id) on delete set null;
+
+alter table public.agencies
+  drop constraint if exists agencies_created_by_fkey,
+  add constraint agencies_created_by_fkey
+    foreign key (created_by) references public.profiles(id) on delete set null;
+
+alter table public.law_firms
+  drop constraint if exists law_firms_created_by_fkey,
+  add constraint law_firms_created_by_fkey
+    foreign key (created_by) references public.profiles(id) on delete set null;
+
+alter table public.candidates
+  drop constraint if exists candidates_agent_id_fkey,
+  add constraint candidates_agent_id_fkey
+    foreign key (agent_id) references public.profiles(id) on delete set null;
+
+alter table public.candidate_documents
+  drop constraint if exists candidate_documents_uploaded_by_fkey,
+  add constraint candidate_documents_uploaded_by_fkey
+    foreign key (uploaded_by) references public.profiles(id) on delete set null,
+  drop constraint if exists candidate_documents_verified_by_fkey,
+  add constraint candidate_documents_verified_by_fkey
+    foreign key (verified_by) references public.profiles(id) on delete set null;
+
+alter table public.job_offers
+  drop constraint if exists job_offers_created_by_fkey,
+  add constraint job_offers_created_by_fkey
+    foreign key (created_by) references public.profiles(id) on delete set null,
+  drop constraint if exists job_offers_assigned_salesperson_id_fkey,
+  add constraint job_offers_assigned_salesperson_id_fkey
+    foreign key (assigned_salesperson_id) references public.profiles(id) on delete set null;
+
+alter table public.job_offer_selections
+  drop constraint if exists job_offer_selections_selected_by_fkey,
+  add constraint job_offer_selections_selected_by_fkey
+    foreign key (selected_by) references public.profiles(id) on delete set null;
+
+alter table public.visa_cases
+  drop constraint if exists visa_cases_agent_id_fkey,
+  add constraint visa_cases_agent_id_fkey
+    foreign key (agent_id) references public.profiles(id) on delete set null,
+  drop constraint if exists visa_cases_lawyer_id_fkey,
+  add constraint visa_cases_lawyer_id_fkey
+    foreign key (lawyer_id) references public.profiles(id) on delete set null;
+
+alter table public.visa_case_events
+  drop constraint if exists visa_case_events_changed_by_fkey,
+  add constraint visa_case_events_changed_by_fkey
+    foreign key (changed_by) references public.profiles(id) on delete set null;
+
+alter table public.notifications
+  drop constraint if exists notifications_actor_id_fkey,
+  add constraint notifications_actor_id_fkey
+    foreign key (actor_id) references public.profiles(id) on delete set null;
+
+alter table public.audit_logs
+  drop constraint if exists audit_logs_actor_id_fkey,
+  add constraint audit_logs_actor_id_fkey
+    foreign key (actor_id) references public.profiles(id) on delete set null;
+
+alter table public.visa_case_travel
+  drop constraint if exists visa_case_travel_coordinated_by_fkey,
+  add constraint visa_case_travel_coordinated_by_fkey
+    foreign key (coordinated_by) references public.profiles(id) on delete set null;
