@@ -12,6 +12,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
   let query = supabase
     .from('profiles')
     .select('id, full_name, role, email, phone, status, countries(name, code)')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
 
   if (currentRole !== 'all') {
@@ -41,7 +42,10 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
               <h1>Users &amp; roles</h1>
               <p className="ph-sub">Everyone with access to the platform.</p>
             </div>
-            <div className="ph-act">
+            <div className="ph-act" style={{ display: 'flex', gap: '10px' }}>
+              <Link href="/dashboard/admin/users/trash">
+                <button className="btn btn-ghost">🗑 Trash</button>
+              </Link>
               <Link href="/dashboard/admin/users/new">
                 <button className="btn btn-gold">+ Add user</button>
               </Link>

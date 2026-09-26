@@ -288,19 +288,88 @@ export async function getActiveCountries() {
   return data || [];
 }
 
+async function requireCallerIsAdmin(supabase: any, targetUserId: string) {
+  const { data: { user: caller } } = await supabase.auth.getUser();
+  if (!caller) return { error: 'Not authenticated' } as const;
+
+  if (caller.id === targetUserId) {
+    return { error: 'You cannot delete your own account.' } as const;
+  }
+
+  const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', caller.id).single();
+  if (callerProfile?.role !== 'admin') return { error: 'Only admins can do this' } as const;
+
+  return { caller } as const;
+}
+
+function revalidateUserPaths() {
+  revalidatePath('/dashboard/admin/users');
+  revalidatePath('/dashboard/admin/users/trash');
+}
+
+// Moves an Agent/Employer/Lawyer/Salesperson account to trash — the profile
+// row and everything linked to it (candidates, job offers, cases, etc.)
+// stays intact, the account is just suspended and hidden from the main
+// Users & roles list until an admin restores or permanently deletes it.
 export async function deleteUserByAdmin(userId: string) {
   try {
     const supabase = await createClient();
+    const auth = await requireCallerIsAdmin(supabase, userId);
+    if ('error' in auth) return { error: auth.error };
 
+    const adminClient = createAdminClient();
+    const { error } = await adminClient
+      .from('profiles')
+      .update({ deleted_at: new Date().toISOString(), status: 'suspended' })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Move user to trash error:', error);
+      return { error: `Failed to delete user: ${error.message}` };
+    }
+
+    revalidateUserPaths();
+    return { success: true };
+  } catch (err: any) {
+    console.error('Unexpected error deleting user:', err);
+    return { error: err?.message || 'Failed to delete user' };
+  }
+}
+
+export async function restoreUserByAdmin(userId: string) {
+  try {
+    const supabase = await createClient();
     const { data: { user: caller } } = await supabase.auth.getUser();
     if (!caller) return { error: 'Not authenticated' };
 
-    if (caller.id === userId) {
-      return { error: 'You cannot delete your own account.' };
+    const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', caller.id).single();
+    if (callerProfile?.role !== 'admin') return { error: 'Only admins can restore users' };
+
+    const adminClient = createAdminClient();
+    const { error } = await adminClient
+      .from('profiles')
+      .update({ deleted_at: null, status: 'active' })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Restore user error:', error);
+      return { error: `Failed to restore user: ${error.message}` };
     }
 
-    const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', caller.id).single();
-    if (callerProfile?.role !== 'admin') return { error: 'Only admins can delete users' };
+    revalidateUserPaths();
+    return { success: true };
+  } catch (err: any) {
+    console.error('Unexpected error restoring user:', err);
+    return { error: err?.message || 'Failed to restore user' };
+  }
+}
+
+// Real, irreversible deletion — only reachable from the Trash page.
+export async function permanentlyDeleteUserByAdmin(userId: string) {
+  try {
+    const supabase = await createClient();
+    const auth = await requireCallerIsAdmin(supabase, userId);
+    if ('error' in auth) return { error: auth.error };
 
     const adminClient = createAdminClient();
 
@@ -310,10 +379,8 @@ export async function deleteUserByAdmin(userId: string) {
 
     if (profileError) {
       console.error('Delete profile error:', profileError);
-      // Foreign key violation — this user still owns records elsewhere (candidates,
-      // job offers, visa cases, etc.) that don't cascade-delete.
       if (profileError.code === '23503') {
-        return { error: 'This user still has linked records (candidates, job offers, or cases) and cannot be deleted. Suspend the account instead to revoke access.' };
+        return { error: 'This user still has linked records that block permanent deletion.' };
       }
       return { error: `Failed to delete user: ${profileError.message}` };
     }
@@ -325,10 +392,10 @@ export async function deleteUserByAdmin(userId: string) {
       return { error: `Failed to delete user: ${error.message}` };
     }
 
-    revalidatePath('/dashboard/admin/users');
+    revalidateUserPaths();
     return { success: true };
   } catch (err: any) {
-    console.error('Unexpected error deleting user:', err);
+    console.error('Unexpected error permanently deleting user:', err);
     return { error: err?.message || 'Failed to delete user' };
   }
 }

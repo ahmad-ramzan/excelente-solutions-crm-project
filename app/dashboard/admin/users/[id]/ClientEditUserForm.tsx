@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateUserRoleStatus, deleteUserByAdmin, updateUserStatus } from '@/app/actions/admin-actions';
+import { updateUserRoleStatus, deleteUserByAdmin } from '@/app/actions/admin-actions';
 
 export default function ClientEditUserForm({ user }: { user: { id: string; full_name: string; role: string; status: string } }) {
   const router = useRouter();
@@ -10,8 +10,6 @@ export default function ClientEditUserForm({ user }: { user: { id: string; full_
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
-  const [suspending, setSuspending] = useState(false);
-  const hasLinkedRecords = deleteError.includes('linked records');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -31,7 +29,7 @@ export default function ClientEditUserForm({ user }: { user: { id: string; full_
 
   const handleDelete = async () => {
     const confirmed = window.confirm(
-      `Delete ${user.full_name}? This permanently removes their login and profile. This cannot be undone.`
+      `Move ${user.full_name} to trash? Their login is suspended immediately, and you can restore or permanently delete them later from Users trash.`
     );
     if (!confirmed) return;
 
@@ -43,18 +41,6 @@ export default function ClientEditUserForm({ user }: { user: { id: string; full_
     if (res.error) {
       setDeleteError(res.error);
       setDeleting(false);
-    } else {
-      router.push('/dashboard/admin/users');
-    }
-  };
-
-  const handleSuspend = async () => {
-    setSuspending(true);
-    const res = await updateUserStatus(user.id, 'suspended');
-    setSuspending(false);
-
-    if (res.error) {
-      setDeleteError(res.error);
     } else {
       router.push('/dashboard/admin/users');
     }
@@ -101,7 +87,7 @@ export default function ClientEditUserForm({ user }: { user: { id: string; full_
           className="btn"
           style={{ background: '#fff', border: '1px solid #fecaca', color: '#dc2626', padding: '10px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, opacity: deleting ? 0.7 : 1 }}
         >
-          {deleting ? <><span className="btn-spinner" />Deleting...</> : 'Delete user'}
+          {deleting ? <><span className="btn-spinner" />Moving to trash...</> : 'Move to trash'}
         </button>
 
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -125,19 +111,8 @@ export default function ClientEditUserForm({ user }: { user: { id: string; full_
       </div>
 
       {deleteError && (
-        <div style={{ padding: '10px', background: '#fee2e2', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-start' }}>
+        <div style={{ padding: '10px', background: '#fee2e2', borderRadius: '6px' }}>
           <div style={{ color: '#dc2626', fontSize: '13px' }}>{deleteError}</div>
-          {hasLinkedRecords && (
-            <button
-              type="button"
-              onClick={handleSuspend}
-              disabled={suspending}
-              className="btn"
-              style={{ background: '#fff', border: '1px solid #fecaca', color: '#dc2626', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 600, opacity: suspending ? 0.7 : 1 }}
-            >
-              {suspending ? <><span className="btn-spinner" />Suspending...</> : 'Suspend this user instead'}
-            </button>
-          )}
         </div>
       )}
     </form>

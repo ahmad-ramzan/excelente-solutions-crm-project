@@ -1966,3 +1966,14 @@ left join public.candidate_positions cp on cp.candidate_id = cand.id
 left join public.positions p on p.id = cp.position_id
 where cand.deleted_at is null
 group by cand.id;
+
+-- =========================
+-- USER TRASH: deleting an Agent/Employer/Lawyer/Salesperson account from
+-- Admin now soft-deletes (sets deleted_at + suspends) instead of removing
+-- the profile/auth user, so it can be restored later. Permanent deletion is
+-- still available separately from the Trash page.
+-- =========================
+
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+
+create index if not exists idx_profiles_deleted_at on public.profiles(deleted_at);
