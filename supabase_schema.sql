@@ -1924,3 +1924,45 @@ alter table public.visa_case_travel
   drop constraint if exists visa_case_travel_coordinated_by_fkey,
   add constraint visa_case_travel_coordinated_by_fkey
     foreign key (coordinated_by) references public.profiles(id) on delete set null;
+
+-- =========================
+-- CANDIDATE TRASH: deleting a candidate now soft-deletes (sets deleted_at)
+-- instead of removing the row, so agents/admins can restore it later.
+-- =========================
+
+ALTER TABLE public.candidates ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+
+create index if not exists idx_candidates_deleted_at on public.candidates(deleted_at);
+
+-- Every page that reads from this view (agent/admin candidate lists, the
+-- employer-visible candidate pool, detail pages) should never see a
+-- trashed candidate — filtering it once here means none of that app code
+-- needs its own deleted_at check.
+drop view if exists public.candidate_public_view;
+create view public.candidate_public_view with (security_invoker = true) as
+select
+  cand.id,
+  cand.public_code,
+  cand.first_name,
+  cand.last_name,
+  cand.gender,
+  cand.nationality,
+  cand.city,
+  cand.photo_url,
+  cand.available_from,
+  cand.available_until,
+  cand.languages,
+  cand.open_to_all_countries,
+  array_agg(distinct c.id) filter (where c.id is not null) as country_ids,
+  array_agg(distinct c.name) filter (where c.name is not null) as country_names,
+  cand.status,
+  cand.agent_id,
+  array_agg(distinct p.name) filter (where p.name is not null) as positions,
+  cand.created_at
+from public.candidates cand
+left join public.candidate_countries cc on cc.candidate_id = cand.id
+left join public.countries c on c.id = cc.country_id
+left join public.candidate_positions cp on cp.candidate_id = cand.id
+left join public.positions p on p.id = cp.position_id
+where cand.deleted_at is null
+group by cand.id;

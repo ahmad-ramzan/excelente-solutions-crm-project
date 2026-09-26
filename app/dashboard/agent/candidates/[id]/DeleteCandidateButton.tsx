@@ -9,10 +9,10 @@ export default function DeleteCandidateButton({ candidateId }: { candidateId: st
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this candidate? This action cannot be undone.')) {
+    if (!window.confirm('Move this candidate to trash? You can restore them later from the Trash page.')) {
       return;
     }
-    
+
     setLoading(true);
     const res = await deleteCandidate(candidateId);
     if (res.error) {
@@ -24,13 +24,13 @@ export default function DeleteCandidateButton({ candidateId }: { candidateId: st
   };
 
   return (
-    <button 
-      onClick={handleDelete} 
+    <button
+      onClick={handleDelete}
       disabled={loading}
-      className="btn btn-ghost" 
+      className="btn btn-ghost"
       style={{ width: '100%', justifyContent: 'center', color: 'var(--red)', marginTop: '8px' }}
     >
-      {loading ? <><span className="btn-spinner" />Deleting...</> : 'Delete candidate'}
+      {loading ? <><span className="btn-spinner" />Moving to trash...</> : 'Move to trash'}
     </button>
   );
 }

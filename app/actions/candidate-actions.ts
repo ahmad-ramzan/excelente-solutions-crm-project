@@ -4,6 +4,14 @@ import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { notifyAdmins } from '@/app/lib/notifications';
+import { canManageCandidate, getUserRole } from '@/app/lib/candidate-access';
+
+function revalidateCandidatePaths() {
+  revalidatePath('/dashboard/agent/candidates');
+  revalidatePath('/dashboard/admin/candidates');
+  revalidatePath('/dashboard/employer/candidates');
+  revalidatePath('/dashboard/employer');
+}
 
 export async function createCandidate(formData: FormData) {
   const supabase = await createClient();
@@ -233,9 +241,11 @@ export async function deleteCandidate(candidateId: string) {
     .eq('id', candidateId)
     .single();
 
+  // Soft delete — move to trash instead of removing the row, so it can be
+  // restored later.
   const { error } = await supabase
     .from('candidates')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .match({ id: candidateId, agent_id: user.id });
 
   if (error) {
@@ -243,20 +253,88 @@ export async function deleteCandidate(candidateId: string) {
     return { error: 'Failed to delete' };
   }
 
+  const adminClient = createAdminClient();
+
+  // Release any job offer slot this candidate was occupying so it becomes
+  // available to other candidates again.
+  await adminClient
+    .from('job_offer_slots')
+    .update({ status: 'vacant', candidate_id: null, reserved_at: null, filled_at: null })
+    .eq('candidate_id', candidateId);
+
   const candidateName = candidate ? `${candidate.first_name} ${candidate.last_name}` : 'A candidate';
-  await notifyAdmins(createAdminClient(), {
+  await notifyAdmins(adminClient, {
     actorId: user.id,
     type: 'system',
-    title: 'Candidate deleted',
-    body: `${candidateName} was removed by their agent.`,
+    title: 'Candidate moved to trash',
+    body: `${candidateName} was moved to trash by their agent.`,
     entityTable: 'candidates',
     entityId: candidateId,
   });
 
-  revalidatePath('/dashboard/agent/candidates');
-  revalidatePath('/dashboard/admin/candidates');
-  revalidatePath('/dashboard/employer/candidates');
-  revalidatePath('/dashboard/employer');
+  revalidateCandidatePaths();
+  revalidatePath('/dashboard/agent/candidates/trash');
+  revalidatePath('/dashboard/admin/candidates/trash');
+
+  return { success: true };
+}
+
+export async function restoreCandidate(candidateId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated' };
+
+  if (!(await canManageCandidate(supabase, user.id, candidateId))) {
+    return { error: 'Unauthorized' };
+  }
+
+  const adminClient = createAdminClient();
+  const { error } = await adminClient
+    .from('candidates')
+    .update({ deleted_at: null })
+    .eq('id', candidateId);
+
+  if (error) {
+    console.error('Restore error', error);
+    return { error: 'Failed to restore candidate' };
+  }
+
+  revalidateCandidatePaths();
+  revalidatePath('/dashboard/agent/candidates/trash');
+  revalidatePath('/dashboard/admin/candidates/trash');
+
+  return { success: true };
+}
+
+export async function permanentlyDeleteCandidate(candidateId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated' };
+
+  if ((await getUserRole(supabase, user.id)) !== 'admin') {
+    return { error: 'Only admins can permanently delete a candidate' };
+  }
+
+  const adminClient = createAdminClient();
+
+  const { data: docs } = await adminClient
+    .from('candidate_documents')
+    .select('file_path')
+    .eq('candidate_id', candidateId);
+
+  if (docs && docs.length > 0) {
+    await adminClient.storage.from('candidate-documents').remove(docs.map((d) => d.file_path));
+  }
+
+  const { error } = await adminClient.from('candidates').delete().eq('id', candidateId);
+
+  if (error) {
+    console.error('Permanent delete error', error);
+    return { error: 'Failed to permanently delete candidate' };
+  }
+
+  revalidateCandidatePaths();
+  revalidatePath('/dashboard/admin/candidates/trash');
 
   return { success: true };
 }

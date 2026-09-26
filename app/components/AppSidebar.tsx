@@ -36,6 +36,7 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
         items: [
           { icon: '🏢', label: 'Employers', href: '/dashboard/admin/employers' },
           { icon: '👥', label: 'Candidates', href: '/dashboard/admin/candidates' },
+          { icon: '🗑', label: 'Trash', href: '/dashboard/admin/candidates/trash' },
           { icon: '📄', label: 'Job Offers', href: '/dashboard/admin/offers' },
           { icon: '🛂', label: 'Visa processes', href: '/dashboard/admin/visas' },
         ],
@@ -73,6 +74,7 @@ const navByRole: Record<Role, { groups: { title: string; items: NavItem[] }[] }>
         items: [
           { icon: '🪪', label: 'My candidates', href: '/dashboard/agent/candidates' },
           { icon: '+', label: 'Add candidate', href: '/dashboard/agent/candidates/new' },
+          { icon: '🗑', label: 'Trash', href: '/dashboard/agent/candidates/trash' },
         ],
       },
     ],
