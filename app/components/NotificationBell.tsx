@@ -10,6 +10,7 @@ interface NotificationItem {
   body: string | null;
   created_at: string;
   read_at: string | null;
+  link_url?: string | null;
 }
 
 export default function NotificationBell({ notifications, unreadCount }: { notifications: NotificationItem[]; unreadCount: number }) {
@@ -27,9 +28,15 @@ export default function NotificationBell({ notifications, unreadCount }: { notif
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleMarkOne = async (id: string) => {
-    await markNotificationRead(id);
-    router.refresh();
+  const handleOpen = async (n: NotificationItem) => {
+    if (!n.read_at) await markNotificationRead(n.id);
+
+    if (n.link_url) {
+      setOpen(false);
+      router.push(n.link_url.replace(/^https?:\/\/[^/]+/, ''));
+    } else {
+      router.refresh();
+    }
   };
 
   const handleMarkAll = async () => {
@@ -76,12 +83,12 @@ export default function NotificationBell({ notifications, unreadCount }: { notif
             notifications.map(n => (
               <div
                 key={n.id}
-                onClick={() => !n.read_at && handleMarkOne(n.id)}
+                onClick={() => handleOpen(n)}
                 style={{
                   padding: '12px 16px',
                   borderBottom: '1px solid var(--line)',
                   background: n.read_at ? '#fff' : 'var(--paper, #f9f8f6)',
-                  cursor: n.read_at ? 'default' : 'pointer',
+                  cursor: n.link_url || !n.read_at ? 'pointer' : 'default',
                 }}
               >
                 <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--ink)', marginBottom: '3px' }}>{n.title}</div>

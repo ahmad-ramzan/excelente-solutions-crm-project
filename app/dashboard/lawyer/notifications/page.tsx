@@ -2,6 +2,7 @@ import AppSidebar from '../../../components/AppSidebar';
 import AppTopbar from '../../../components/AppTopbar';
 import { createClient } from '@/utils/supabase/server';
 import { markAllNotificationsRead } from '@/app/dashboard/notifications-actions';
+import Link from 'next/link';
 
 function iconStyle(type: string) {
   if (type === 'visa_approved' || type === 'order_milestone') return { color: 'var(--green)', bg: 'var(--green-soft, #e6f6ec)' };
@@ -16,7 +17,7 @@ export default async function LawyerNotificationsPage() {
 
   const { data: notifications } = await supabase
     .from('notifications')
-    .select('id, title, body, type, created_at, read_at')
+    .select('id, title, body, type, created_at, read_at, link_url')
     .eq('recipient_id', user.id)
     .order('created_at', { ascending: false });
 
@@ -83,6 +84,11 @@ export default async function LawyerNotificationsPage() {
                     <div style={{ color: 'var(--muted)', fontSize: '12px', fontFamily: 'var(--font-mono)' }}>
                       {new Date(n.created_at).toLocaleString()}
                     </div>
+                    {n.link_url && (
+                      <Link href={n.link_url.replace(/^https?:\/\/[^/]+/, '')} style={{ display: 'inline-block', marginTop: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--brand)', textDecoration: 'none' }}>
+                        View details →
+                      </Link>
+                    )}
                   </div>
                 </div>
               );

@@ -241,27 +241,25 @@ export async function reassignLawyer(visaCaseId: string, newLawyerId: string) {
   const candidate: any = vc.candidates;
   const candidateName = candidate ? `${candidate.first_name} ${candidate.last_name}` : 'a candidate';
 
-  await supabase.from('notifications').insert({
-    recipient_id: newLawyerId,
-    actor_id: user.id,
+  const adminClient = createAdminClient();
+
+  await notifyUsers(adminClient, [newLawyerId], {
+    actorId: user.id,
     type: 'visa_updated',
     title: 'Case assigned to you',
     body: `You've been assigned the visa case for ${candidateName}.`,
-    entity_table: 'visa_cases',
-    entity_id: visaCaseId,
+    entityTable: 'visa_cases',
+    entityId: visaCaseId,
   });
 
-  if (vc.agent_id && vc.agent_id !== user.id) {
-    await supabase.from('notifications').insert({
-      recipient_id: vc.agent_id,
-      actor_id: user.id,
-      type: 'visa_updated',
-      title: 'Lawyer reassigned',
-      body: `${candidateName}'s visa case now has a new lawyer.`,
-      entity_table: 'visa_cases',
-      entity_id: visaCaseId,
-    });
-  }
+  await notifyUsers(adminClient, [vc.agent_id], {
+    actorId: user.id,
+    type: 'visa_updated',
+    title: 'Lawyer reassigned',
+    body: `${candidateName}'s visa case now has a new lawyer.`,
+    entityTable: 'visa_cases',
+    entityId: visaCaseId,
+  });
 
   revalidatePath(`/dashboard/admin/visas`);
   revalidatePath(`/dashboard/lawyer/cases`);

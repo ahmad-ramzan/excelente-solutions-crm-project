@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { revalidatePath } from 'next/cache';
-import { notifyAdmins, notifyUsers } from '@/app/lib/notifications';
+import { notifyAdmins, notifyUsers, emailRecipients, getActiveAdminIds } from '@/app/lib/notifications';
 
 type JobOfferInput = {
   employerId: string;
@@ -374,8 +374,29 @@ export async function selectCandidate(formData: FormData) {
     }
   }
 
-  // Real in-app notifications for the agent and admins already fire from the
-  // `select_candidate_for_job_offer` DB trigger this RPC calls above.
+  // The in-app notifications for the agent and admins already fire from the
+  // `select_candidate_for_job_offer` DB trigger this RPC calls above — a
+  // trigger can't send mail, so the matching emails go out here.
+  {
+    const adminClient = createAdminClient();
+    const { data: candidate } = await adminClient
+      .from('candidates')
+      .select('agent_id, first_name, last_name')
+      .eq('id', candidateId)
+      .maybeSingle();
+
+    const candidateName = candidate ? `${candidate.first_name} ${candidate.last_name}` : 'A candidate';
+    const adminIds = await getActiveAdminIds(adminClient);
+
+    await emailRecipients(adminClient, [candidate?.agent_id, ...adminIds], {
+      actorId: user.id,
+      type: 'candidate_selected',
+      title: 'Candidate selected',
+      body: `${candidateName} has been selected for a job offer. The visa process can now begin.`,
+      entityTable: 'candidates',
+      entityId: candidateId,
+    });
+  }
 
   revalidatePath('/dashboard/employer/candidates');
   revalidatePath('/dashboard/employer/offers');

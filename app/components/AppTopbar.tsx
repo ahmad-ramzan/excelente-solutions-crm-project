@@ -22,7 +22,7 @@ export default async function AppTopbar({ section, role, searchPlaceholder, sear
     const supabase = await createClient();
     const { data: notifData } = await supabase
       .from('notifications')
-      .select('id, title, body, created_at, read_at')
+      .select('id, title, body, created_at, read_at, link_url')
       .eq('recipient_id', user.id)
       .order('created_at', { ascending: false })
       .limit(8);

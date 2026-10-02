@@ -1,3 +1,6 @@
+import { sendNotificationEmail } from '@/app/lib/email';
+import { buildNotificationLink } from '@/app/lib/notification-links';
+
 export type NotificationType =
   | 'candidate_selected'
   | 'document_requested'
@@ -20,9 +23,28 @@ interface NotifyOptions {
 // or a lawyer notifying an employer's users), which regular RLS won't allow —
 // callers must pass the admin (service-role) client, not the session client.
 
+// Candidates and visa cases are deep-linkable by public_code — resolve it so
+// the notification/email can point straight at the record instead of a list.
+async function resolvePublicCode(adminClient: any, entityTable?: string, entityId?: string): Promise<string | null> {
+  if (!entityId || (entityTable !== 'candidates' && entityTable !== 'visa_cases')) return null;
+
+  const { data } = await adminClient.from(entityTable).select('public_code').eq('id', entityId).maybeSingle();
+  return data?.public_code ?? null;
+}
+
 export async function notifyUsers(adminClient: any, recipientIds: (string | null | undefined)[], options: NotifyOptions) {
   const ids = Array.from(new Set(recipientIds.filter((id): id is string => !!id && id !== options.actorId)));
   if (ids.length === 0) return;
+
+  const [{ data: recipients }, publicCode] = await Promise.all([
+    adminClient.from('profiles').select('id, role, email, full_name').in('id', ids),
+    resolvePublicCode(adminClient, options.entityTable, options.entityId),
+  ]);
+
+  const byId: Record<string, { role: string; email: string | null }> = {};
+  (recipients || []).forEach((r: any) => {
+    byId[r.id] = { role: r.role, email: r.email };
+  });
 
   const rows = ids.map((recipient_id) => ({
     recipient_id,
@@ -32,10 +54,52 @@ export async function notifyUsers(adminClient: any, recipientIds: (string | null
     body: options.body ?? null,
     entity_table: options.entityTable ?? null,
     entity_id: options.entityId ?? null,
+    link_url: buildNotificationLink(byId[recipient_id]?.role || 'admin', options.entityTable, publicCode),
   }));
 
   const { error } = await adminClient.from('notifications').insert(rows);
   if (error) console.error('Notification insert error:', error);
+
+  await Promise.all(
+    ids.map(async (recipientId) => {
+      const recipient = byId[recipientId];
+      if (!recipient?.email) return;
+
+      await sendNotificationEmail({
+        to: recipient.email,
+        subject: options.title,
+        heading: options.title,
+        body: options.body || options.title,
+        linkUrl: buildNotificationLink(recipient.role, options.entityTable, publicCode),
+      });
+    })
+  );
+}
+
+// For events whose in-app notification is created by a database trigger
+// (candidate selection) — the row already exists, this just sends the email.
+export async function emailRecipients(adminClient: any, recipientIds: (string | null | undefined)[], options: NotifyOptions) {
+  const ids = Array.from(new Set(recipientIds.filter((id): id is string => !!id && id !== options.actorId)));
+  if (ids.length === 0) return;
+
+  const [{ data: recipients }, publicCode] = await Promise.all([
+    adminClient.from('profiles').select('id, role, email').in('id', ids),
+    resolvePublicCode(adminClient, options.entityTable, options.entityId),
+  ]);
+
+  await Promise.all(
+    (recipients || [])
+      .filter((r: any) => r.email)
+      .map((r: any) =>
+        sendNotificationEmail({
+          to: r.email,
+          subject: options.title,
+          heading: options.title,
+          body: options.body || options.title,
+          linkUrl: buildNotificationLink(r.role, options.entityTable, publicCode),
+        })
+      )
+  );
 }
 
 export async function getActiveAdminIds(adminClient: any): Promise<string[]> {

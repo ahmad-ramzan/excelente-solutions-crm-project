@@ -1977,3 +1977,11 @@ group by cand.id;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 
 create index if not exists idx_profiles_deleted_at on public.profiles(deleted_at);
+
+-- =========================
+-- NOTIFICATION LINKS: every notification now carries the URL the recipient
+-- should open to see what changed (also used as the button target in the
+-- email that goes out alongside it).
+-- =========================
+
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS link_url text;
